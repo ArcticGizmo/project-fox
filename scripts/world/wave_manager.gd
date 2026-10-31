@@ -45,7 +45,7 @@ func start() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	alive.assign(alive.filter(func(e: Enemy) -> bool: return is_instance_valid(e) and not e.health.is_dead))
+	alive.assign(alive.filter(func(e: Variant) -> bool: return is_instance_valid(e) and not (e as Enemy).health.is_dead))
 	if wave_number > 0 and alive.is_empty() and _next_wave_timer < 0.0:
 		wave_cleared.emit(wave_number)
 		_next_wave_timer = delay_between_waves

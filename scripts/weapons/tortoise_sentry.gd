@@ -11,7 +11,7 @@ var sentries: Array[Sentry] = []
 
 func _fire(aim: AimInfo) -> void:
 	var s := stats()
-	sentries.assign(sentries.filter(func(n: Sentry) -> bool: return is_instance_valid(n) and not n.is_queued_for_deletion()))
+	sentries.assign(sentries.filter(func(n: Variant) -> bool: return is_instance_valid(n) and not (n as Node).is_queued_for_deletion()))
 	while sentries.size() >= maxi(1, s.projectile_count):
 		sentries.pop_front().expire()
 	var sentry := Sentry.new()

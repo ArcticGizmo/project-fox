@@ -11,7 +11,7 @@ var decoys: Array[MothLanternDecoy] = []
 
 func _fire(aim: AimInfo) -> void:
 	var s := stats()
-	decoys.assign(decoys.filter(func(d: MothLanternDecoy) -> bool: return is_instance_valid(d) and not d.is_queued_for_deletion()))
+	decoys.assign(decoys.filter(func(d: Variant) -> bool: return is_instance_valid(d) and not (d as Node).is_queued_for_deletion()))
 	while decoys.size() >= maxi(1, s.projectile_count):
 		decoys.pop_front().burst()
 	var decoy := MothLanternDecoy.new()

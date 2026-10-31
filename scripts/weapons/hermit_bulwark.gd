@@ -11,7 +11,7 @@ var walls: Array[Bulwark] = []
 
 func _fire(aim: AimInfo) -> void:
 	var s := stats()
-	walls.assign(walls.filter(func(b: Bulwark) -> bool: return is_instance_valid(b) and not b.is_queued_for_deletion()))
+	walls.assign(walls.filter(func(b: Variant) -> bool: return is_instance_valid(b) and not (b as Node).is_queued_for_deletion()))
 	while walls.size() >= maxi(1, s.projectile_count):
 		walls.pop_front().expire()
 	var wall := Bulwark.new()
