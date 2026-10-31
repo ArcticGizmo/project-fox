@@ -28,8 +28,9 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
 from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
 (`is_dot`) skips all of that. `Enemy._on_damaged` does the equivalent, scaled by
-`knockback_resistance`. HitBoxes skip invulnerable hurtboxes, so a hit during i-frames does
-nothing at all.
+`knockback_resistance`. `HurtBox.receive()` rejects hits while invulnerable, but `HitBox`
+records the hit time first, so a one-shot HitBox that touches a dodging player has spent its
+hit for that activation (use `repeat_interval` for lingering hazards).
 
 ## Commands
 
