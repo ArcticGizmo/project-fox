@@ -1,0 +1,47 @@
+extends Node
+## Renders the main scene (needs a GPU, so not --headless), waits, saves PNGs
+## and quits. Lets an agent check visuals without anyone at the keyboard.
+##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
+
+var out_dir: String = "res://screenshots"
+var wait: float = 2.5
+
+
+func _ready() -> void:
+	for arg: String in OS.get_cmdline_user_args():
+		if arg.begins_with("--out="):
+			out_dir = arg.trim_prefix("--out=")
+		elif arg.begins_with("--wait="):
+			wait = arg.trim_prefix("--wait=").to_float()
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out_dir))
+	# Stop the editor importing screenshots as game assets.
+	FileAccess.open(out_dir.path_join(".gdignore"), FileAccess.WRITE)
+	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	add_child(arena)
+	await get_tree().create_timer(wait).timeout
+	await _capture("gameplay.png")
+	# Pull the trigger through the real input map (same path as a controller).
+	Input.action_press(&"fire")
+	await get_tree().create_timer(0.2).timeout
+	await _capture("firing.png")
+	Input.action_release(&"fire")
+	DebugSettings.show_boxes = true
+	await get_tree().create_timer(0.1).timeout
+	await _capture("debug_boxes.png")
+	# Overview from above to check layout and enemy scale.
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = Vector3(0, 45, 32)
+	cam.look_at(Vector3(0, 0, -2))
+	cam.make_current()
+	await get_tree().create_timer(0.1).timeout
+	await _capture("overview.png")
+	get_tree().quit()
+
+
+func _capture(file_name: String) -> void:
+	await RenderingServer.frame_post_draw
+	var img := get_viewport().get_texture().get_image()
+	var path := ProjectSettings.globalize_path(out_dir.path_join(file_name))
+	img.save_png(path)
+	print("saved ", path)

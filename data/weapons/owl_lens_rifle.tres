@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/owl_lens_rifle.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 45.0
+fire_interval = 0.95
+max_ammo = 10
+max_range = 60.0
+knockback = 6.0
+crit_multiplier = 1.5
+hit_stop = 0.04
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 55.0
+fire_interval = 0.9
+max_ammo = 12
+max_range = 60.0
+knockback = 6.0
+crit_multiplier = 1.75
+hit_stop = 0.04
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 65.0
+fire_interval = 0.85
+max_ammo = 14
+pierce = 1
+max_range = 70.0
+knockback = 7.0
+crit_multiplier = 2.0
+hit_stop = 0.05
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 80.0
+fire_interval = 0.75
+max_ammo = 16
+pierce = 2
+max_range = 80.0
+knockback = 8.0
+crit_multiplier = 2.5
+hit_stop = 0.06
+
+[resource]
+script = ExtResource("1_data")
+id = &"owl_lens_rifle"
+display_name = "Owl-Lens Rifle"
+description = "A brass owl's eye focused into a piercing beam. Weak-spot hits crit."
+color = Color(0.55, 0.85, 1, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(50, 120, 240)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/salamander_breath.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 4.0
+fire_interval = 0.1
+max_ammo = 150
+max_range = 5.0
+area_radius = 1.6
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 5.0
+fire_interval = 0.1
+max_ammo = 180
+max_range = 5.5
+area_radius = 1.8
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 5.5
+fire_interval = 0.1
+max_ammo = 200
+max_range = 6.0
+area_radius = 2.0
+knockback = 1.0
+burn_dps = 6.0
+burn_duration = 3.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 6.5
+fire_interval = 0.1
+max_ammo = 240
+max_range = 7.0
+area_radius = 2.4
+knockback = 1.2
+burn_dps = 10.0
+burn_duration = 4.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"salamander_breath"
+display_name = "Salamander Breath"
+description = "A brass salamander that breathes a short cone of fire. Sets enemies alight at level 3."
+color = Color(1, 0.45, 0.1, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(80, 180, 320)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

@@ -1,0 +1,166 @@
+class_name Hud
+extends CanvasLayer
+## Prototype HUD: health, current weapon (level, XP, ammo), weapon list,
+## crosshair, wave counter, level-up popup and debug hints.
+
+const HELP_TEXT := "Back / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave\nLB/RB or Q/E: switch weapon    LT / RMB: strafe    B / Shift: dodge"
+
+var _player: Player
+var _hp_bar: ProgressBar
+var _hp_label: Label
+var _weapon_label: Label
+var _ammo_label: Label
+var _xp_bar: ProgressBar
+var _weapon_list: Label
+var _crosshair: Label
+var _wave_label: Label
+var _popup: Label
+var _popup_tween: Tween
+
+
+func _ready() -> void:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(root)
+
+	var top_left := _corner(root, Control.PRESET_TOP_LEFT, Vector2(24, 20))
+	_hp_label = _label(top_left, "HP", 22)
+	_hp_bar = _bar(top_left, Color(0.9, 0.25, 0.2), Vector2(300, 20))
+
+	var bottom_right := _corner(root, Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -20))
+	bottom_right.alignment = BoxContainer.ALIGNMENT_END
+	_weapon_list = _label(bottom_right, "", 16)
+	_weapon_label = _label(bottom_right, "", 26)
+	_ammo_label = _label(bottom_right, "", 22)
+	_xp_bar = _bar(bottom_right, Color(0.4, 0.8, 1.0), Vector2(300, 12))
+	for l: Label in [_weapon_list, _weapon_label, _ammo_label]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+
+	var bottom_left := _corner(root, Control.PRESET_BOTTOM_LEFT, Vector2(24, -20))
+	var help := _label(bottom_left, HELP_TEXT, 14)
+	help.modulate.a = 0.6
+
+	_crosshair = Label.new()
+	_crosshair.text = "+"
+	_crosshair.add_theme_font_size_override(&"font_size", 30)
+	_crosshair.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_crosshair.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	root.add_child(_crosshair)
+
+	_wave_label = Label.new()
+	_wave_label.add_theme_font_size_override(&"font_size", 24)
+	_wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_wave_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_wave_label.offset_top = 16
+	root.add_child(_wave_label)
+
+	_popup = Label.new()
+	_popup.add_theme_font_size_override(&"font_size", 40)
+	_popup.add_theme_color_override(&"font_color", Color(1, 0.85, 0.3))
+	_popup.add_theme_constant_override(&"outline_size", 8)
+	_popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_popup.offset_top = -160
+	_popup.modulate.a = 0.0
+	root.add_child(_popup)
+
+
+func bind(player: Player, waves: WaveManager) -> void:
+	_player = player
+	player.health.changed.connect(_on_health_changed)
+	player.weapon_changed.connect(_on_weapon_changed)
+	player.weapon_leveled.connect(_on_weapon_leveled)
+	for w: Weapon in player.weapons:
+		w.ammo_changed.connect(func(_c: int, _m: int) -> void: _refresh_weapon())
+		w.xp_changed.connect(func(_x: int, _n: int) -> void: _refresh_weapon())
+	_on_health_changed(player.health.current, player.health.max_health)
+	_refresh_weapon()
+	if waves != null:
+		waves.wave_started.connect(func(n: int) -> void: _wave_label.text = "Wave %d" % n)
+		waves.wave_cleared.connect(func(n: int) -> void: _show_popup("Wave %d cleared!" % n))
+
+
+func _process(_delta: float) -> void:
+	if _player != null:
+		_crosshair.modulate = Color(1, 0.3, 0.2) if _player.aim_target != null else Color(1, 1, 1, 0.8)
+
+
+func _on_health_changed(current: float, maximum: float) -> void:
+	_hp_bar.max_value = maximum
+	_hp_bar.value = current
+	_hp_label.text = "HP %d / %d" % [ceili(current), ceili(maximum)]
+
+
+func _on_weapon_changed(_w: Weapon) -> void:
+	_refresh_weapon()
+
+
+func _on_weapon_leveled(w: Weapon, level: int) -> void:
+	_show_popup("%s  Lv %d!" % [w.data.display_name, level])
+	_refresh_weapon()
+
+
+func _refresh_weapon() -> void:
+	if _player == null:
+		return
+	var w := _player.current_weapon()
+	if w == null:
+		return
+	var lv := "MAX" if w.is_max_level() else str(w.level)
+	_weapon_label.text = "%s  Lv %s" % [w.data.display_name, lv]
+	_weapon_label.add_theme_color_override(&"font_color", w.data.color)
+	_ammo_label.text = "%d / %d" % [w.ammo, w.max_ammo()]
+	_xp_bar.max_value = maxi(1, w.xp_needed())
+	_xp_bar.value = w.xp_needed() if w.is_max_level() else w.xp
+	var lines := PackedStringArray()
+	for i: int in _player.weapons.size():
+		var ww := _player.weapons[i]
+		lines.append("%s %d. %s" % ["▶" if ww == w else "  ", i + 1, ww.data.display_name])
+	_weapon_list.text = "\n".join(lines)
+
+
+func _show_popup(text: String) -> void:
+	_popup.text = text
+	if _popup_tween != null:
+		_popup_tween.kill()
+	_popup.modulate.a = 1.0
+	_popup_tween = create_tween()
+	_popup_tween.tween_interval(1.2)
+	_popup_tween.tween_property(_popup, "modulate:a", 0.0, 0.5)
+
+
+func _corner(root: Control, preset: Control.LayoutPreset, offset: Vector2) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(box)
+	box.set_anchors_and_offsets_preset(preset)
+	box.grow_horizontal = Control.GROW_DIRECTION_BEGIN if offset.x < 0 else Control.GROW_DIRECTION_END
+	box.grow_vertical = Control.GROW_DIRECTION_BEGIN if offset.y < 0 else Control.GROW_DIRECTION_END
+	box.position += offset
+	return box
+
+
+func _label(parent: Control, text: String, font_size: int) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override(&"font_size", font_size)
+	l.add_theme_constant_override(&"outline_size", 6)
+	l.add_theme_color_override(&"font_outline_color", Color.BLACK)
+	parent.add_child(l)
+	return l
+
+
+func _bar(parent: Control, fill: Color, min_size: Vector2) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = min_size
+	bar.show_percentage = false
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.5)
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = fill
+	bar.add_theme_stylebox_override(&"background", bg)
+	bar.add_theme_stylebox_override(&"fill", fg)
+	parent.add_child(bar)
+	return bar

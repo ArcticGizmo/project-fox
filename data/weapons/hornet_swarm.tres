@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/hornet_swarm.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 9.0
+fire_interval = 0.6
+max_ammo = 30
+projectile_count = 3
+projectile_speed = 20.0
+spread_deg = 50.0
+homing_deg_per_sec = 260.0
+max_range = 40.0
+knockback = 2.5
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 10.0
+fire_interval = 0.55
+max_ammo = 36
+projectile_count = 4
+projectile_speed = 21.0
+spread_deg = 60.0
+homing_deg_per_sec = 300.0
+max_range = 40.0
+knockback = 2.5
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 12.0
+fire_interval = 0.5
+max_ammo = 42
+projectile_count = 5
+projectile_speed = 22.0
+spread_deg = 70.0
+homing_deg_per_sec = 360.0
+max_range = 45.0
+knockback = 3.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 14.0
+fire_interval = 0.45
+max_ammo = 50
+projectile_count = 6
+projectile_speed = 24.0
+spread_deg = 80.0
+pierce = 1
+homing_deg_per_sec = 420.0
+max_range = 50.0
+knockback = 3.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"hornet_swarm"
+display_name = "Hornet Swarm"
+description = "A fan of clockwork hornets that curve into your target."
+color = Color(1, 0.75, 0.1, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(60, 140, 260)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])
