@@ -29,6 +29,11 @@ func _ready() -> void:
 	DebugSettings.show_boxes = true
 	await get_tree().create_timer(0.1).timeout
 	await _capture("debug_boxes.png")
+	Input.action_press(&"melee")
+	await get_tree().create_timer(0.1).timeout
+	Input.action_release(&"melee")
+	await _capture("melee.png")
+	await get_tree().create_timer(0.5).timeout
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)

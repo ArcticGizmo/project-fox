@@ -34,6 +34,7 @@ var health: Health
 var hurt_box: HurtBox
 var visual: Node3D
 var muzzle: Node3D
+var melee: StaffMelee
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
@@ -158,6 +159,10 @@ func _build_visual() -> void:
 	_gun_material = _flat_material(Color.WHITE)
 	_add_box(Vector3(0.16, 0.16, 0.5), Vector3(0.45, 1.2, -0.3), _gun_material)
 
+	melee = StaffMelee.new()
+	melee.tuning = tuning
+	visual.add_child(melee)
+
 
 func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -202,6 +207,7 @@ func _physics_process(delta: float) -> void:
 	_handle_weapon_switch()
 	_update_camera_mode()
 	_update_aim()
+	_handle_melee(delta)
 	_move(delta)
 	_handle_fire()
 	_update_facing(delta)
@@ -236,8 +242,14 @@ func _move(delta: float) -> void:
 
 	var wish := camera_relative(input.move)
 
+	# Melee can be interrupted by dodge (always) or jump (after the hit lands).
+	if melee.is_busy() and melee.can_cancel():
+		var after_hit := melee.phase != StaffMelee.Phase.SWING or melee.phase_time > tuning.melee_active_end
+		if input.dodge_pressed or (_jump_buffer > 0.0 and after_hit):
+			melee.cancel()
+
 	# Dodge
-	if input.dodge_pressed and _dodge_cooldown <= 0.0 and _dodge_time <= 0.0 and (on_floor or not _air_dodge_used):
+	if input.dodge_pressed and not melee.is_busy() and _dodge_cooldown <= 0.0 and _dodge_time <= 0.0 and (on_floor or not _air_dodge_used):
 		_dodge_dir = wish.normalized() if wish.length_squared() > 0.01 else facing_forward()
 		_dodge_time = tuning.dodge_duration
 		_dodge_cooldown = tuning.dodge_duration + tuning.dodge_cooldown
@@ -250,6 +262,17 @@ func _move(delta: float) -> void:
 	var h := Vector3(velocity.x, 0.0, velocity.z) - _knockback
 	if is_dodging():
 		h = _dodge_dir * tuning.dodge_speed
+	elif melee.phase == StaffMelee.Phase.SWING:
+		if melee.phase_time < tuning.melee_lunge_time:
+			h = facing_forward() * tuning.melee_lunge_speed
+		else:
+			h = h.move_toward(Vector3.ZERO, tuning.ground_deceleration * delta)
+	elif melee.phase == StaffMelee.Phase.SLAM_HOVER or melee.phase == StaffMelee.Phase.SLAM_FALL:
+		h = Vector3.ZERO
+	elif melee.phase == StaffMelee.Phase.POUNCE:
+		pass  # keep the launch momentum
+	elif melee.phase == StaffMelee.Phase.SLAM_RECOVER:
+		h = h.move_toward(Vector3.ZERO, tuning.ground_deceleration * delta)
 	else:
 		var target_h := wish * move_speed_for(wish)
 		var accel: float
@@ -264,7 +287,7 @@ func _move(delta: float) -> void:
 	h += _knockback
 
 	# Jump
-	if _jump_buffer > 0.0:
+	if _jump_buffer > 0.0 and not melee.is_busy():
 		if on_floor or _coyote > 0.0:
 			velocity.y = tuning.jump_velocity()
 			_jump_buffer = 0.0
@@ -274,8 +297,12 @@ func _move(delta: float) -> void:
 			_air_jumps_left -= 1
 			_jump_buffer = 0.0
 
-	# Gravity (none during an air dodge so it reads as a dash)
-	if not (is_dodging() and not on_floor):
+	# Gravity (none during an air dodge so it reads as a dash; slams set it directly)
+	if melee.phase == StaffMelee.Phase.SLAM_HOVER:
+		velocity.y = 0.0
+	elif melee.phase == StaffMelee.Phase.SLAM_FALL:
+		velocity.y = -tuning.slam_fall_speed
+	elif not (is_dodging() and not on_floor):
 		var g := tuning.gravity
 		if velocity.y < 0.0:
 			g *= tuning.fall_gravity_multiplier
@@ -286,6 +313,50 @@ func _move(delta: float) -> void:
 	velocity.x = h.x
 	velocity.z = h.z
 	move_and_slide()
+	if is_on_floor() and (melee.phase == StaffMelee.Phase.SLAM_FALL or melee.phase == StaffMelee.Phase.POUNCE):
+		melee.land(global_position)
+
+
+# --- Melee --------------------------------------------------------------------
+
+func _handle_melee(delta: float) -> void:
+	if input.melee_pressed and not is_dodging():
+		var stick := camera_relative(input.move)
+		var started := melee.request_attack(is_on_floor(), stick)
+		match started:
+			StaffMelee.Phase.SWING:
+				_snap_facing_for_swing(stick)
+			StaffMelee.Phase.POUNCE:
+				var dir := stick.normalized()
+				facing_yaw = yaw_of(dir)
+				velocity = dir * tuning.pounce_speed + Vector3.UP * tuning.pounce_up_speed
+	# A buffered press chains into the next swing inside update(); re-aim it too.
+	var before := melee.combo_index
+	melee.update(delta)
+	if melee.phase == StaffMelee.Phase.SWING and melee.combo_index != before and melee.phase_time == 0.0:
+		_snap_facing_for_swing(camera_relative(input.move))
+
+
+## Turn toward the closest enemy near the stick direction (or facing), so swings connect.
+func _snap_facing_for_swing(stick: Vector3) -> void:
+	var reference := stick.normalized() if stick.length_squared() > 0.04 else facing_forward()
+	var best: Node3D = null
+	var best_dist := tuning.melee_snap_range
+	for n: Node3D in AimAssist.nodes_in_group(get_tree(), &"enemies"):
+		var to := n.global_position - global_position
+		to.y = 0.0
+		var dist := to.length()
+		if dist < 0.01 or dist > best_dist:
+			continue
+		if rad_to_deg(reference.angle_to(to / dist)) > tuning.melee_snap_angle_deg:
+			continue
+		best = n
+		best_dist = dist
+	if best != null:
+		facing_yaw = yaw_of(best.global_position - global_position)
+	elif stick.length_squared() > 0.04:
+		facing_yaw = yaw_of(stick)
+	visual.rotation.y = facing_yaw
 
 
 ## Top speed for a wish direction: full run, strafe (slower, slowest backwards) or scoped.
@@ -333,7 +404,9 @@ func camera_relative(move: Vector2) -> Vector3:
 func _update_facing(delta: float) -> void:
 	var target_yaw := facing_yaw
 	var speed := deg_to_rad(tuning.turn_speed_deg)
-	if is_strafing():
+	if melee.is_busy():
+		pass  # facing is set when the attack starts
+	elif is_strafing():
 		# Lock to the camera, not the aim target, so strafing never jitters
 		# when aim assist swaps targets.
 		target_yaw = camera_rig.yaw
@@ -404,7 +477,7 @@ func _handle_fire() -> void:
 	var w := current_weapon()
 	if w == null:
 		return
-	var firing := input.fire_held and not is_dodging()
+	var firing := input.fire_held and not is_dodging() and not melee.is_busy()
 	if firing:
 		_fire_facing = tuning.fire_facing_time
 	w.trigger(firing, current_aim())
@@ -484,6 +557,7 @@ func _on_died(_info: DamageInfo) -> void:
 	_respawn_timer = RESPAWN_DELAY
 	velocity = Vector3.ZERO
 	current_weapon().on_unequipped()
+	melee.cancel()
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
 	died.emit()

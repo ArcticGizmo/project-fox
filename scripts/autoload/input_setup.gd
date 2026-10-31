@@ -25,6 +25,7 @@ func _enter_tree() -> void:
 	# Buttons.
 	_add_button(&"jump", [JOY_BUTTON_A], [KEY_SPACE])
 	_add_button(&"dodge", [JOY_BUTTON_B], [KEY_SHIFT])
+	_add_button(&"melee", [JOY_BUTTON_X], [KEY_F], [MOUSE_BUTTON_XBUTTON1])
 	_add_button(&"weapon_next", [JOY_BUTTON_RIGHT_SHOULDER], [KEY_E])
 	_add_button(&"weapon_prev", [JOY_BUTTON_LEFT_SHOULDER], [KEY_Q])
 	_add_button(&"weapon_slot_1", [], [KEY_1])

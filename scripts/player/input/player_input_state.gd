@@ -13,6 +13,7 @@ var mouse_look: Vector2 = Vector2.ZERO
 var jump_pressed: bool = false
 var jump_held: bool = false
 var dodge_pressed: bool = false
+var melee_pressed: bool = false
 var fire_held: bool = false
 var strafe_held: bool = false
 var weapon_next: bool = false
@@ -28,6 +29,7 @@ func copy_from(other: PlayerInputState) -> void:
 	jump_pressed = other.jump_pressed
 	jump_held = other.jump_held
 	dodge_pressed = other.dodge_pressed
+	melee_pressed = other.melee_pressed
 	fire_held = other.fire_held
 	strafe_held = other.strafe_held
 	weapon_next = other.weapon_next

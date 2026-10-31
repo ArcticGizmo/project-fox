@@ -17,6 +17,7 @@ func poll(state: PlayerInputState, _delta: float) -> void:
 	state.jump_pressed = Input.is_action_just_pressed(&"jump")
 	state.jump_held = Input.is_action_pressed(&"jump")
 	state.dodge_pressed = Input.is_action_just_pressed(&"dodge")
+	state.melee_pressed = Input.is_action_just_pressed(&"melee")
 	state.fire_held = Input.is_action_pressed(&"fire")
 	state.strafe_held = Input.is_action_pressed(&"strafe")
 	state.weapon_next = Input.is_action_just_pressed(&"weapon_next")

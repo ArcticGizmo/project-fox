@@ -14,7 +14,7 @@ $classNames = Get-ChildItem -Path $root -Recurse -Filter *.gd |
     Select-String -Pattern '^class_name\s+(\w+)' |
     ForEach-Object { $_.Matches[0].Groups[1].Value }
 $cache = Join-Path $root ".godot\global_script_class_cache.cfg"
-for ($i = 0; $i -lt 3; $i++) {
+for ($i = 0; $i -lt 6; $i++) {
     $null = & godot --headless --path $root --import 2>&1
     $cached = if (Test-Path $cache) { Get-Content $cache -Raw } else { "" }
     $missing = $classNames | Where-Object { $cached -notmatch "&`"$_`"" }

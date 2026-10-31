@@ -11,6 +11,8 @@ signal hit_landed(hurt_box: HurtBox, info: DamageInfo)
 @export var knockback_up: float = 2.0
 @export var repeat_interval: float = 0.0
 @export var hit_stop: float = 0.0
+## False hides the debug outline while inactive (big, rarely-live boxes like slams).
+@export var outline_when_inactive: bool = true
 
 var active: bool = false:
 	set(value):
@@ -74,6 +76,10 @@ func _pick_hurt_boxes() -> Array[HurtBox]:
 func refresh_outline() -> void:
 	if _outline != null:
 		_outline.rebuild()
+
+
+func outline_visible() -> bool:
+	return active or outline_when_inactive
 
 
 func get_debug_color() -> Color:

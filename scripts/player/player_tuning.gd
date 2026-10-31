@@ -67,6 +67,39 @@ extends Resource
 @export var max_shake_offset: float = 0.35
 
 
+@export_group("Staff combo")
+## One entry per combo hit; the combo length is the array size.
+@export var melee_damage: PackedFloat32Array = PackedFloat32Array([14.0, 14.0, 28.0])
+@export var melee_knockback: PackedFloat32Array = PackedFloat32Array([4.0, 4.0, 11.0])
+## Total duration of each swing in seconds.
+@export var melee_swing_time: PackedFloat32Array = PackedFloat32Array([0.3, 0.3, 0.45])
+@export var melee_hit_stop: PackedFloat32Array = PackedFloat32Array([0.03, 0.03, 0.07])
+## Window (seconds into the swing) where the staff hitbox is live.
+@export var melee_active_start: float = 0.06
+@export var melee_active_end: float = 0.16
+## Forward step at the start of each swing.
+@export var melee_lunge_speed: float = 7.0
+@export var melee_lunge_time: float = 0.12
+## After the last swing ends, a press within this time still continues the combo.
+@export var melee_combo_grace: float = 0.25
+## Swings snap the fox toward the closest enemy within this range/angle.
+@export var melee_snap_range: float = 4.5
+@export var melee_snap_angle_deg: float = 75.0
+
+@export_group("Slam and pounce")
+## Melee in the air with the stick neutral: hover, then plunge straight down.
+@export var slam_hover_time: float = 0.12
+@export var slam_fall_speed: float = 32.0
+@export var slam_damage: float = 30.0
+@export var slam_radius: float = 3.5
+@export var slam_knockback: float = 10.0
+@export var slam_knockback_up: float = 7.0
+@export var slam_recovery: float = 0.3
+## Melee in the air with the stick pushed: long-jump arc that slams on landing.
+@export var pounce_enabled: bool = true
+@export var pounce_speed: float = 15.0
+@export var pounce_up_speed: float = 6.0
+
 @export_group("Strafe and zoom")
 ## Camera pulls in slightly while strafing so the mode change reads.
 @export var strafe_camera_distance: float = 4.6

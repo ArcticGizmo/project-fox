@@ -110,6 +110,8 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if DebugSettings.show_boxes and _area.has_method(&"outline_visible"):
+		visible = bool(_area.call(&"outline_visible"))
 	if visible and _area.has_method(&"get_debug_color"):
 		_material.albedo_color = _area.call(&"get_debug_color")
 
