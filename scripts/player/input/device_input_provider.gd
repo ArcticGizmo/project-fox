@@ -22,6 +22,7 @@ func poll(state: PlayerInputState, _delta: float) -> void:
 	state.strafe_held = Input.is_action_pressed(&"strafe")
 	state.weapon_next = Input.is_action_just_pressed(&"weapon_next")
 	state.weapon_prev = Input.is_action_just_pressed(&"weapon_prev")
+	state.wheel_held = Input.is_action_pressed(&"weapon_wheel")
 	state.weapon_slot = -1
 	for i: int in 8:
 		if Input.is_action_just_pressed(StringName("weapon_slot_%d" % (i + 1))):

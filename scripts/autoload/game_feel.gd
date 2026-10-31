@@ -1,6 +1,11 @@
 extends Node
-## Global "juice": hit-stop, camera shake requests, damage numbers, impact puffs.
-## Tests switch the timing-sensitive parts off (hit_stop_enabled = false).
+## Global "juice": hit-stop, slow-motion, camera shake requests, damage
+## numbers, impact puffs. Tests switch the timing-sensitive parts off
+## (hit_stop_enabled = false).
+##
+## Engine.time_scale is owned here: it is the minimum of every active
+## slow-motion source (e.g. the weapon wheel) and any running hit-stop, so
+## sources never overwrite each other. Do not set Engine.time_scale elsewhere.
 
 signal shake_requested(strength: float)
 
@@ -8,6 +13,8 @@ var hit_stop_enabled: bool = true
 var damage_numbers_enabled: bool = true
 
 var _hit_stop_end_ms: int = 0
+var _hit_stop_scale: float = 1.0
+var _slowmo: Dictionary = {}
 
 
 func _ready() -> void:
@@ -17,15 +24,43 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if _hit_stop_end_ms > 0 and Time.get_ticks_msec() >= _hit_stop_end_ms:
 		_hit_stop_end_ms = 0
-		Engine.time_scale = 1.0
+		_apply_time_scale()
 
 
 ## Briefly slows time so heavy hits "land". Duration is in real seconds.
 func hit_stop(duration: float, time_scale: float = 0.05) -> void:
 	if not hit_stop_enabled or duration <= 0.0:
 		return
-	Engine.time_scale = time_scale
+	_hit_stop_scale = time_scale
 	_hit_stop_end_ms = maxi(_hit_stop_end_ms, Time.get_ticks_msec() + int(duration * 1000.0))
+	_apply_time_scale()
+
+
+## Holds time at `scale` until clear_slowmo(source). Several sources can overlap.
+func set_slowmo(source: StringName, scale: float) -> void:
+	_slowmo[source] = scale
+	_apply_time_scale()
+
+
+func clear_slowmo(source: StringName) -> void:
+	_slowmo.erase(source)
+	_apply_time_scale()
+
+
+## Back to normal time (scene restart, between tests).
+func reset() -> void:
+	_slowmo.clear()
+	_hit_stop_end_ms = 0
+	_apply_time_scale()
+
+
+func _apply_time_scale() -> void:
+	var s := 1.0
+	for v: float in _slowmo.values():
+		s = minf(s, v)
+	if _hit_stop_end_ms > 0:
+		s = minf(s, _hit_stop_scale)
+	Engine.time_scale = s
 
 
 func shake(strength: float) -> void:

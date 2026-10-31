@@ -11,6 +11,7 @@ signal weapon_changed(weapon: Weapon)
 signal weapon_leveled(weapon: Weapon, level: int)
 signal died
 signal respawned
+signal wheel_toggled(open: bool)
 
 const RADIUS := 0.45
 const HEIGHT := 1.8
@@ -28,6 +29,7 @@ const DEFAULT_WEAPONS: Array[String] = [
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5
 const KILL_PLANE_Y := -20.0
+const WHEEL_SLOWMO := &"weapon_wheel"
 
 @export var tuning: PlayerTuning
 @export var weapon_paths: Array[String] = DEFAULT_WEAPONS
@@ -52,6 +54,9 @@ var aim_direction: Vector3 = Vector3.FORWARD
 
 var facing_yaw: float = 0.0
 var is_dead: bool = false
+var wheel_open: bool = false
+var wheel_highlight: int = 0
+var _wheel_cursor: Vector2 = Vector2.ZERO
 
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
@@ -209,7 +214,9 @@ func _physics_process(delta: float) -> void:
 
 	input_provider.poll(input, delta)
 	_update_timers(delta)
-	camera_rig.apply_look(input, delta)
+	_update_wheel()
+	if not wheel_open:
+		camera_rig.apply_look(input, delta)
 	_handle_weapon_switch()
 	_update_camera_mode()
 	_update_aim()
@@ -326,7 +333,7 @@ func _move(delta: float) -> void:
 # --- Melee --------------------------------------------------------------------
 
 func _handle_melee(delta: float) -> void:
-	if input.melee_pressed and not is_dodging():
+	if input.melee_pressed and not is_dodging() and not wheel_open:
 		var stick := camera_relative(input.move)
 		var started := melee.request_attack(is_on_floor(), stick)
 		match started:
@@ -483,10 +490,46 @@ func _handle_fire() -> void:
 	var w := current_weapon()
 	if w == null:
 		return
-	var firing := input.fire_held and not is_dodging() and not melee.is_busy()
+	var firing := input.fire_held and not is_dodging() and not melee.is_busy() and not wheel_open
 	if firing:
 		_fire_facing = tuning.fire_facing_time
 	w.trigger(firing, current_aim())
+
+
+## Hold the wheel button: time slows, the right stick (or mouse) highlights a
+## slot, releasing equips it. Movement still works (slowed); camera, firing
+## and melee are paused while it is open.
+func _update_wheel() -> void:
+	if input.wheel_held and not wheel_open and not weapons.is_empty():
+		wheel_open = true
+		wheel_highlight = current_weapon_index
+		_wheel_cursor = Vector2.ZERO
+		GameFeel.set_slowmo(WHEEL_SLOWMO, tuning.wheel_time_scale)
+		wheel_toggled.emit(true)
+	elif not input.wheel_held and wheel_open:
+		close_wheel(true)
+	if not wheel_open:
+		return
+	_wheel_cursor = (_wheel_cursor + input.mouse_look).limit_length(tuning.wheel_mouse_threshold * 3.0)
+	if input.look.length() >= tuning.wheel_stick_threshold:
+		wheel_highlight = WeaponWheel.index_for_direction(input.look, weapons.size())
+	elif _wheel_cursor.length() >= tuning.wheel_mouse_threshold:
+		wheel_highlight = WeaponWheel.index_for_direction(_wheel_cursor, weapons.size())
+
+
+func close_wheel(equip: bool) -> void:
+	if not wheel_open:
+		return
+	wheel_open = false
+	GameFeel.clear_slowmo(WHEEL_SLOWMO)
+	if equip:
+		_select_weapon(wheel_highlight)
+	wheel_toggled.emit(false)
+
+
+func _exit_tree() -> void:
+	# Never leave the game in slow motion if the player is removed (scene restart).
+	GameFeel.clear_slowmo(WHEEL_SLOWMO)
 
 
 func _handle_weapon_switch() -> void:
@@ -564,6 +607,7 @@ func _on_died(_info: DamageInfo) -> void:
 	velocity = Vector3.ZERO
 	current_weapon().on_unequipped()
 	melee.cancel()
+	close_wheel(false)
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
 	died.emit()

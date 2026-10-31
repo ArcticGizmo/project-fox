@@ -1,9 +1,9 @@
 class_name Hud
 extends CanvasLayer
-## Prototype HUD: health, current weapon (level, XP, ammo), weapon list,
+## Prototype HUD: health, current weapon (level, XP, ammo), weapon wheel,
 ## crosshair, wave counter, level-up popup and debug hints.
 
-const HELP_TEXT := "Back / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave\nLB/RB or Q/E: switch weapon    LT / RMB: strafe    B / Shift: dodge"
+const HELP_TEXT := "X / F: staff (in air: slam, +stick: pounce)    Y hold / Tab: weapon wheel    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave"
 
 var _player: Player
 var _hp_bar: ProgressBar
@@ -11,7 +11,7 @@ var _hp_label: Label
 var _weapon_label: Label
 var _ammo_label: Label
 var _xp_bar: ProgressBar
-var _weapon_list: Label
+var _wheel: WeaponWheel
 var _reticle: Reticle
 var _wave_label: Label
 var _popup: Label
@@ -30,16 +30,18 @@ func _ready() -> void:
 
 	var bottom_right := _corner(root, Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -20))
 	bottom_right.alignment = BoxContainer.ALIGNMENT_END
-	_weapon_list = _label(bottom_right, "", 16)
 	_weapon_label = _label(bottom_right, "", 26)
 	_ammo_label = _label(bottom_right, "", 22)
 	_xp_bar = _bar(bottom_right, Color(0.4, 0.8, 1.0), Vector2(300, 12))
-	for l: Label in [_weapon_list, _weapon_label, _ammo_label]:
+	for l: Label in [_weapon_label, _ammo_label]:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 	var bottom_left := _corner(root, Control.PRESET_BOTTOM_LEFT, Vector2(24, -20))
 	var help := _label(bottom_left, HELP_TEXT, 14)
 	help.modulate.a = 0.6
+
+	_wheel = WeaponWheel.new()
+	root.add_child(_wheel)
 
 	_reticle = Reticle.new()
 	root.add_child(_reticle)
@@ -64,6 +66,7 @@ func _ready() -> void:
 
 func bind(player: Player, waves: WaveManager) -> void:
 	_player = player
+	_wheel.player = player
 	player.health.changed.connect(_on_health_changed)
 	player.weapon_changed.connect(_on_weapon_changed)
 	player.weapon_leveled.connect(_on_weapon_leveled)
@@ -79,6 +82,7 @@ func bind(player: Player, waves: WaveManager) -> void:
 
 func _process(_delta: float) -> void:
 	if _player != null:
+		_reticle.visible = not _player.wheel_open
 		_reticle.locked = _player.aim_target != null
 		_reticle.zoomed = _player.is_zoomed()
 
@@ -110,11 +114,6 @@ func _refresh_weapon() -> void:
 	_ammo_label.text = "%d / %d" % [w.ammo, w.max_ammo()]
 	_xp_bar.max_value = maxi(1, w.xp_needed())
 	_xp_bar.value = w.xp_needed() if w.is_max_level() else w.xp
-	var lines := PackedStringArray()
-	for i: int in _player.weapons.size():
-		var ww := _player.weapons[i]
-		lines.append("%s %d. %s" % ["▶" if ww == w else "  ", i + 1, ww.data.display_name])
-	_weapon_list.text = "\n".join(lines)
 
 
 func _show_popup(text: String) -> void:

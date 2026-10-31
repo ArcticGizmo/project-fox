@@ -26,6 +26,15 @@ func _ready() -> void:
 	await get_tree().create_timer(0.2).timeout
 	await _capture("firing.png")
 	Input.action_release(&"fire")
+	# Weapon wheel held with the right stick pushed right (slot 3 highlighted).
+	Input.action_press(&"weapon_wheel")
+	Input.action_press(&"look_right", 1.0)
+	await get_tree().create_timer(0.3, true, false, true).timeout
+	await _capture("wheel.png")
+	Input.action_release(&"look_right")
+	await get_tree().create_timer(0.1, true, false, true).timeout
+	Input.action_release(&"weapon_wheel")
+	await get_tree().create_timer(0.3).timeout
 	if "--weapons" in OS.get_cmdline_user_args():
 		await _capture_each_weapon(arena.get("player") as Player)
 	DebugSettings.show_boxes = true

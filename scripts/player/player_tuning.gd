@@ -100,6 +100,14 @@ extends Resource
 @export var pounce_speed: float = 15.0
 @export var pounce_up_speed: float = 6.0
 
+@export_group("Weapon wheel")
+## Game speed while the wheel is open.
+@export var wheel_time_scale: float = 0.1
+## Stick deflection needed to change the highlighted slot.
+@export var wheel_stick_threshold: float = 0.5
+## Mouse travel (pixels) needed to change the highlighted slot.
+@export var wheel_mouse_threshold: float = 30.0
+
 @export_group("Strafe and zoom")
 ## Camera pulls in slightly while strafing so the mode change reads.
 @export var strafe_camera_distance: float = 4.6

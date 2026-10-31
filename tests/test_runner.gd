@@ -50,7 +50,8 @@ func _ready() -> void:
 			await get_tree().physics_frame
 			await get_tree().physics_frame
 			DebugSettings.show_boxes = false
-			Engine.time_scale = 1.0
+			GameFeel.reset()
+			get_tree().paused = false
 
 	print("")
 	print("%d passed, %d failed (%d ms)" % [passed, failed, Time.get_ticks_msec() - start_ms])

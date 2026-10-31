@@ -18,6 +18,8 @@ var fire_held: bool = false
 var strafe_held: bool = false
 var weapon_next: bool = false
 var weapon_prev: bool = false
+## Weapon wheel button held (opens the wheel and slows time).
+var wheel_held: bool = false
 ## 0-based slot requested this frame, or -1.
 var weapon_slot: int = -1
 
@@ -34,4 +36,5 @@ func copy_from(other: PlayerInputState) -> void:
 	strafe_held = other.strafe_held
 	weapon_next = other.weapon_next
 	weapon_prev = other.weapon_prev
+	wheel_held = other.wheel_held
 	weapon_slot = other.weapon_slot
