@@ -200,8 +200,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		device.add_mouse_motion((event as InputEventMouseMotion).relative)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	elif event.is_action_pressed(&"release_mouse"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _physics_process(delta: float) -> void:

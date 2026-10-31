@@ -35,6 +35,12 @@ func _ready() -> void:
 	await get_tree().create_timer(0.1, true, false, true).timeout
 	Input.action_release(&"weapon_wheel")
 	await get_tree().create_timer(0.3).timeout
+	var menu := arena.get("pause_menu") as PauseMenu
+	menu.open()
+	await get_tree().create_timer(0.2).timeout
+	await _capture("pause.png")
+	menu.close()
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if "--weapons" in OS.get_cmdline_user_args():
 		await _capture_each_weapon(arena.get("player") as Player)
 	DebugSettings.show_boxes = true

@@ -6,6 +6,7 @@ const PLAYER_TUNING := preload("res://data/player_tuning.tres")
 
 var player: Player
 var hud: Hud
+var pause_menu: PauseMenu
 
 @onready var wave_manager: WaveManager = $WaveManager
 @onready var player_spawn: Marker3D = $PlayerSpawn
@@ -22,6 +23,9 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.bind(player, wave_manager)
+	pause_menu = PauseMenu.new()
+	add_child(pause_menu)
+	pause_menu.restart_requested.connect(restart)
 	if wave_manager.autostart:
 		wave_manager.start()
 
@@ -31,6 +35,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		wave_manager.spawn_next_wave()
 	elif event.is_action_pressed(&"debug_give_xp"):
 		player.debug_level_current_weapon()
+
+
+## Fresh arena: new waves, full health and ammo, weapon levels reset.
+func restart() -> void:
+	get_tree().paused = false
+	GameFeel.reset()
+	get_tree().reload_current_scene()
 
 
 func _build_environment() -> void:

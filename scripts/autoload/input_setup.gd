@@ -31,12 +31,14 @@ func _enter_tree() -> void:
 	_add_button(&"weapon_wheel", [JOY_BUTTON_Y], [KEY_TAB])
 	for i: int in 8:
 		_add_button(StringName("weapon_slot_%d" % (i + 1)), [], [KEY_1 + i])
-	_add_button(&"release_mouse", [], [KEY_ESCAPE])
+	_add_button(&"pause", [JOY_BUTTON_START], [KEY_ESCAPE, KEY_P])
 
 	# Debug.
 	_add_button(&"debug_toggle_boxes", [JOY_BUTTON_BACK], [KEY_F1])
 	_add_button(&"debug_give_xp", [JOY_BUTTON_DPAD_UP], [KEY_F2])
 	_add_button(&"debug_next_wave", [JOY_BUTTON_DPAD_DOWN], [KEY_F3])
+
+	_extend_ui_navigation()
 
 
 func _add_axis(action: StringName, axis: JoyAxis, direction: float, keys: Array[int] = [], mouse_buttons: Array[int] = [], deadzone: float = STICK_DEADZONE) -> void:
@@ -74,3 +76,33 @@ func _ensure(action: StringName, deadzone: float) -> void:
 	else:
 		InputMap.add_action(action, deadzone)
 	InputMap.action_set_deadzone(action, deadzone)
+
+
+## Make sure menus work with a controller: D-pad and left stick to move,
+## A to accept, B to go back. Adds to Godot's defaults rather than replacing.
+func _extend_ui_navigation() -> void:
+	_ensure_joy_axis(&"ui_up", JOY_AXIS_LEFT_Y, -1.0)
+	_ensure_joy_axis(&"ui_down", JOY_AXIS_LEFT_Y, 1.0)
+	_ensure_joy_axis(&"ui_left", JOY_AXIS_LEFT_X, -1.0)
+	_ensure_joy_axis(&"ui_right", JOY_AXIS_LEFT_X, 1.0)
+	_ensure_joy_button(&"ui_up", JOY_BUTTON_DPAD_UP)
+	_ensure_joy_button(&"ui_down", JOY_BUTTON_DPAD_DOWN)
+	_ensure_joy_button(&"ui_left", JOY_BUTTON_DPAD_LEFT)
+	_ensure_joy_button(&"ui_right", JOY_BUTTON_DPAD_RIGHT)
+	_ensure_joy_button(&"ui_accept", JOY_BUTTON_A)
+	_ensure_joy_button(&"ui_cancel", JOY_BUTTON_B)
+
+
+func _ensure_joy_axis(action: StringName, axis: JoyAxis, direction: float) -> void:
+	var ev := InputEventJoypadMotion.new()
+	ev.axis = axis
+	ev.axis_value = direction
+	if not InputMap.action_has_event(action, ev):
+		InputMap.action_add_event(action, ev)
+
+
+func _ensure_joy_button(action: StringName, button: JoyButton) -> void:
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = button
+	if not InputMap.action_has_event(action, ev):
+		InputMap.action_add_event(action, ev)

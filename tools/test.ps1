@@ -19,7 +19,9 @@ function Get-MissingClasses {
     $classNames | Where-Object { $cached -notmatch "&`"$_`"" }
 }
 $null = & godot --headless --path $root --import 2>&1
-if (Get-MissingClasses) { $null = & godot --headless --path $root --editor --quit 2>&1 }
+for ($i = 0; $i -lt 3 -and (Get-MissingClasses); $i++) {
+    $null = & godot --headless --path $root --editor --quit 2>&1
+}
 $missing = Get-MissingClasses
 if ($missing) {
     Write-Host "Classes not registered (parse error?): $($missing -join ', ')" -ForegroundColor Red
