@@ -161,6 +161,17 @@ func _capture_hazards(arena_player: Player) -> void:
 			await _capture_lightning(n as LightningBarrier)
 		elif n is Lava:
 			await _capture_lava(n as Lava, arena_player)
+		elif n is ClockworkSweeper:
+			await _capture_sweeper(n as ClockworkSweeper)
+
+
+func _capture_sweeper(sweeper: ClockworkSweeper) -> void:
+	var cam := _hazard_camera(sweeper, Vector3(0, 5.0, 8.0), 0.3)
+	sweeper.enter_state(ClockworkSweeper.SURGE_WARN)
+	sweeper.state_time = sweeper.surge_warning * 0.8
+	await get_tree().create_timer(0.05).timeout
+	await _capture("hazard_sweeper_warn.png")
+	cam.queue_free()
 
 
 func _capture_fire_trap(trap: FireTrap) -> void:

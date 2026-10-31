@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/hazards/fire_trap.gd" id="5_fire"]
 [ext_resource type="Script" path="res://scripts/hazards/lightning_barrier.gd" id="6_lightning"]
 [ext_resource type="Script" path="res://scripts/hazards/lava.gd" id="7_lava"]
+[ext_resource type="Script" path="res://scripts/hazards/clockwork_sweeper.gd" id="8_sweeper"]
 
 [node name="Arena" type="Node3D"]
 script = ExtResource("1_arena")
@@ -188,6 +189,10 @@ phase_offset = 2.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 8)
 script = ExtResource("7_lava")
 size = Vector2(8, 6)
+
+[node name="ClockworkSweeper" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 18)
+script = ExtResource("8_sweeper")
 
 [node name="PlayerSpawn" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 10)

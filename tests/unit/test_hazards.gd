@@ -165,3 +165,45 @@ func test_lava_burns_enemies() -> void:
 	await wait_frames(3)
 	assert_true(bull.health.current < bull.health.max_health, "enemy burnt by lava")
 	assert_true(bull._burn_left > 0.0, "and set alight")
+
+
+# --- Clockwork sweeper ----------------------------------------------------------
+
+func test_sweeper_spins_at_tuned_speed_and_surges() -> void:
+	var s := _add_hazard(ClockworkSweeper.new(), Vector3.ZERO) as ClockworkSweeper
+	await wait_seconds(1.0)
+	assert_near(s.angle, deg_to_rad(s.spin_speed_deg), 0.05, "one second of spin")
+	await wait_seconds(s.surge_interval + s.surge_warning)
+	var warn_at := state_time_in_log(s.state_log, "surge_warn")
+	var surge_at := state_time_in_log(s.state_log, "surge")
+	assert_near(warn_at, s.surge_interval, 0.05, "surge warning after surge_interval")
+	assert_near(surge_at - warn_at, s.surge_warning, 0.05, "warning lasts surge_warning")
+	assert_near(s.current_speed_deg(), s.spin_speed_deg * s.surge_multiplier, 0.01, "surge speed")
+
+
+func test_sweeper_flings_along_the_sweep() -> void:
+	var s := _add_hazard(ClockworkSweeper.new(), Vector3.ZERO) as ClockworkSweeper
+	s.surge_interval = 0.0
+	# A quarter turn ahead of arm 0 (which starts along +X; anticlockwise reaches -Z first).
+	var r := s.radius * 0.7
+	var dummy := add_dummy_target(Vector3(0, 0.05, -r))
+	var hits: Array[DamageInfo] = []
+	s.hit_boxes[0].hit_landed.connect(func(_hb: HurtBox, info: DamageInfo) -> void: hits.append(info))
+	var quarter := 90.0 / s.spin_speed_deg
+	await wait_seconds(quarter + 0.3)
+	assert_eq(hits.size(), 1, "arm 0 hits the dummy once per pass")
+	assert_eq(dummy.damage_taken(), s.damage, "damage")
+	if not hits.is_empty():
+		var away := dummy.hurt_box.center() - hits[0].source_position
+		away.y = 0.0
+		# Tangent at -Z for anticlockwise spin is -X.
+		assert_true(away.normalized().dot(Vector3.LEFT) > 0.8, "flung along the sweep, got %s" % str(away))
+
+
+func test_sweeper_arms_pass_under_a_jump() -> void:
+	var s := _add_hazard(ClockworkSweeper.new(), Vector3.ZERO) as ClockworkSweeper
+	s.surge_interval = 0.0
+	var arm_top := ClockworkSweeper.ARM_HEIGHT + ClockworkSweeper.ARM_THICKNESS
+	var dummy := add_dummy_target(Vector3(0, arm_top + 0.1, -s.radius * 0.7))
+	await wait_seconds(360.0 / s.spin_speed_deg)
+	assert_eq(dummy.damage_taken(), 0.0, "airborne above the arms is safe")
