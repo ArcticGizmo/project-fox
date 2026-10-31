@@ -128,3 +128,7 @@ D-pad up/F2 · next wave D-pad down/F3.
   autoloads are not loaded in that mode; ignore those.
 - Scene reload can't be tested from the runner (it would reload the runner); arena
   restart was verified with a throwaway `-s` SceneTree script instead.
+- The harness can hide real-game ordering bugs (hit-stop is off, process order differs). To
+  measure the real arena, run a throwaway `extends SceneTree` script from outside the repo:
+  `godot --headless --path . -s <abs path>`. It compiles before autoloads exist, so use
+  untyped access (`player.get("health")`) instead of class names like `Player`.
