@@ -4,8 +4,8 @@ extends Hazard
 ## barrier runs along local X (pylons at +/- span/2); cross it while it is off.
 ##
 ## Telegraph: a glass tube on each pylon fills with light over `charge_time`
-## (`charge` 0..1), the top orbs brighten, and for the last stretch weak arcs
-## sputter across the gap. The floor strip marks the line even while off.
+## (`charge` 0..1) and the top orbs brighten. Arcs only cross the gap once the
+## tubes are full and it is live. The floor strip marks the line even while off.
 ## Hits push straight back out the side you came from; enemies are staggered.
 ## States: off -> charging -> on -> off.
 
@@ -16,8 +16,6 @@ const ARC_COLOR := Color(0.55, 0.85, 1.0)
 const BOLT_COUNT := 3
 const BOLT_SEGMENTS := 8
 const PYLON_WIDTH := 0.6
-## Arcs start sputtering at this fraction of the charge.
-const SPUTTER_FROM := 0.6
 const DRAIN_TIME := 0.4
 
 ## Gap between the pylon centres.
@@ -136,10 +134,17 @@ func _update_charge_visuals() -> void:
 	_strip_material.emission = ARC_COLOR * (0.08 + 0.6 * charge * charge) * flicker
 
 
-## Full bolts while on; faint, intermittent ones near the end of the charge.
+func arcs_visible() -> bool:
+	for bolt: Array in _bolts:
+		for mi: MeshInstance3D in bolt:
+			if mi.visible:
+				return true
+	return false
+
+
+## Bolts only while on, so arcs in the gap always mean "dangerous now".
 func _update_bolts(delta: float) -> void:
-	var sputter := state == CHARGING and charge >= SPUTTER_FROM
-	if state != ON and not sputter:
+	if state != ON:
 		for bolt: Array in _bolts:
 			for mi: MeshInstance3D in bolt:
 				mi.visible = false
@@ -148,21 +153,14 @@ func _update_bolts(delta: float) -> void:
 	if _bolt_timer > 0.0:
 		return
 	_bolt_timer = 0.05
-	var strength := 1.0
-	if sputter:
-		strength = inverse_lerp(SPUTTER_FROM, 1.0, charge)
-	_bolt_material.albedo_color.a = 0.9 if state == ON else lerpf(0.15, 0.5, strength)
 	var inner := span * 0.5 - PYLON_WIDTH * 0.5 - 0.1
 	for b: int in _bolts.size():
 		var bolt: Array = _bolts[b]
-		var lit := state == ON or _rng.randf() < 0.25 + 0.5 * strength
 		var y := height * (float(b) + 0.5) / BOLT_COUNT
 		var prev := Vector3(-inner, y + _rng.randf_range(-0.2, 0.2), 0)
 		for s: int in BOLT_SEGMENTS:
 			var mi := bolt[s] as MeshInstance3D
-			mi.visible = lit
-			if not lit:
-				continue
+			mi.visible = true
 			var t := float(s + 1) / BOLT_SEGMENTS
 			var jitter := 0.0 if s == BOLT_SEGMENTS - 1 else 0.3
 			var next := Vector3(lerpf(-inner, inner, t), y + _rng.randf_range(-jitter, jitter), _rng.randf_range(-jitter, jitter) * 0.6)

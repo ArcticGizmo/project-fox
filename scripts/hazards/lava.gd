@@ -85,6 +85,11 @@ func _tick_state(delta: float) -> void:
 
 
 func _on_hit_landed(hb: HurtBox, _info: DamageInfo) -> void:
+	# The burn can land a frame before the contact check sees the body; launch
+	# here too, or the hurt knockback alone gives a cut-short hop.
+	var player := hb.health.get_parent() as Player if hb.health != null else null
+	if player != null:
+		player.launch_up(launch_speed)
 	var e := enemy_hit(hb)
 	if e != null:
 		e.apply_burn(enemy_burn_dps, enemy_burn_duration, null)

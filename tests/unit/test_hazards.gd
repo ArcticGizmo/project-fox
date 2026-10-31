@@ -79,9 +79,12 @@ func test_lightning_charge_indicator_fills_before_it_fires() -> void:
 	assert_true(b.charge < 0.1, "indicator starts empty, %.2f" % b.charge)
 	await wait_seconds(b.charge_time * 0.5)
 	assert_near(b.charge, 0.5, 0.1, "half charged halfway through")
-	await wait_seconds(b.charge_time * 0.5 + 0.1)
+	await wait_seconds(b.charge_time * 0.45)
+	assert_false(b.arcs_visible(), "no arcs until the tubes are full")
+	await wait_seconds(b.charge_time * 0.05 + 0.1)
 	assert_eq(b.state, LightningBarrier.ON, "fires when full")
 	assert_eq(b.charge, 1.0, "full while on")
+	assert_true(b.arcs_visible(), "arcs while live")
 
 
 func test_lightning_only_hurts_while_on_and_pushes_out_sideways() -> void:
@@ -257,3 +260,15 @@ func test_hammer_can_be_baited_onto_enemies() -> void:
 	assert_eq(dummy.damage_taken(), 0.0, "the player is further away")
 	assert_true(bull.health.current < bull.health.max_health, "the nearer enemy gets flattened")
 	assert_true(bull.is_staggered(), "and staggered")
+
+
+func test_lava_damage_bounce_is_full_height_too() -> void:
+	# In the real game the burn can land a frame before the contact check sees
+	# the body; that bounce must still be a full launch, not a cut-short hop.
+	var lava := _add_hazard(Lava.new(), Vector3.ZERO) as Lava
+	lava.contact.collision_mask = 0
+	var player := _spawn_player(Vector3(0, 0.05, 0))
+	var apex := await _apex_within(player, 0.8)
+	var expected := lava.launch_speed * lava.launch_speed / (2.0 * player.tuning.gravity)
+	assert_eq(player.health.max_health - player.health.current, lava.damage, "burnt")
+	assert_near(apex, expected, 0.3, "the hurt bounce is a full launch")

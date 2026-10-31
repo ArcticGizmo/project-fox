@@ -23,7 +23,7 @@ const SHAKE_RADIUS := 12.0
 ## Height of the head's underside between slams.
 @export var rest_height: float = 4.0
 ## Creatures further than this from the rail line are ignored.
-@export var track_reach: float = 3.0
+@export var track_reach: float = 3.45
 @export var track_speed: float = 5.0
 ## Minimum time spent tracking before a slam.
 @export var track_time: float = 2.0
