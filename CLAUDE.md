@@ -52,6 +52,17 @@ D-pad up/F2 · next wave D-pad down/F3.
   `WeaponLevelStats` fields are generic; each weapon script documents which ones it reads.
 - **Area damage** goes through `Explosion.detonate()`; position-dependent melee damage uses
   `HitBox.damage_modifier`.
+- **Status effects live on `Enemy`**: `add_chill`/`freeze`, `root`, `stagger`, `expose`,
+  `add_poison`. The AI runs on `ai_speed()` (chill slows telegraphs too; frozen/staggered
+  pause it and cancel hitboxes, then resume via `_state_after_flinch()`). `status_resistance`
+  scales everything except expose/poison (0 = immune). New enemies get this for free; new
+  attack hitboxes must be HitBox children so `_interrupt()` can switch them off.
+- **Lures**: any node in group `"lures"` with a `lure_radius: float` property is targeted
+  over the player by enemies in range. Give it a PLAYER_HURTBOX hurtbox so attacks land.
+- **Reflect**: areas on `Layers.REFLECTOR` whose parent has `reflect_damage` and `weapon`
+  bounce `LobProjectile`s back at their `source`. New enemy projectiles should do the same.
+- **Wheel pages**: 8 weapons per page (`Player.WHEEL_PAGE_SIZE`); page 2 holds the
+  status/utility weapons.
 - **Time scale belongs to `GameFeel`.** Use `set_slowmo(source, scale)` / `clear_slowmo()`
   / `hit_stop()`; never write `Engine.time_scale` directly. Physics still ticks at 60 Hz
   real-time when slowed, so input read in `_physics_process` stays responsive.
@@ -68,8 +79,12 @@ D-pad up/F2 · next wave D-pad down/F3.
 - Area overlaps need a physics frame after spawning before they register.
 - Free any Node you instantiate outside the tree, or the leak check fails the run.
 - New `class_name` scripts are not always registered by `--import`; test.ps1 verifies the
-  class cache and falls back to headless editor scans. If it still reports a class as
-  unregistered, look for a parse error in that script (or a script it depends on).
+  class cache and falls back to headless editor scans run for 120 frames (`--quit` exits
+  before the background scan finishes). If it still reports a class as unregistered, look
+  for a parse error in that script (or a script it depends on).
+- Status timers accumulate floats: a 0.5s tick can land one frame late, so give tick-count
+  assertions a little slack. Tests that kill small enemies with captured lambdas will hit
+  freed objects; use the bull (160 hp) as a damage sponge.
 - `--check-only --script` reports bogus "Identifier not found: GameFeel" errors because
   autoloads are not loaded in that mode; ignore those.
 - Scene reload can't be tested from the runner (it would reload the runner); arena
