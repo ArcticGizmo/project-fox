@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/echo_horn.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 10.0
+fire_interval = 1.2
+max_ammo = 10
+max_range = 8.0
+area_radius = 3.5
+duration = 1.0
+status_power = 3.0
+knockback = 8.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 12.0
+fire_interval = 1.1
+max_ammo = 12
+max_range = 9.0
+area_radius = 4.0
+duration = 1.2
+status_power = 3.5
+knockback = 8.0
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 14.0
+fire_interval = 1.0
+max_ammo = 14
+max_range = 10.0
+area_radius = 4.5
+duration = 1.5
+status_power = 4.0
+knockback = 9.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 18.0
+fire_interval = 0.9
+max_ammo = 16
+max_range = 12.0
+area_radius = 5.0
+duration = 1.8
+status_power = 5.0
+knockback = 10.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"echo_horn"
+display_name = "Echo Bat Horn"
+description = "A sonic blast that staggers everything in front of you, interrupting attacks, and leaves them exposed to extra damage."
+color = Color(0.35, 0.45, 0.95, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(60, 140, 260)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

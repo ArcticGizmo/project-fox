@@ -73,7 +73,8 @@ func test_pages_flip_with_shoulder_buttons_and_number_keys_follow() -> void:
 	var big_pad := ScriptedInputProvider.new()
 	var big := Player.new()
 	var paths: Array[String] = []
-	paths.assign(Player.DEFAULT_WEAPONS)
+	for i: int in 8:
+		paths.append(Player.DEFAULT_WEAPONS[i])
 	while paths.size() < 10:
 		paths.append(Player.DEFAULT_WEAPONS[0])
 	big.weapon_paths = paths

@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/silk_launcher.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 4.0
+fire_interval = 0.9
+max_ammo = 12
+projectile_speed = 28.0
+max_range = 30.0
+area_radius = 2.5
+duration = 2.5
+knockback = 0.5
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 5.0
+fire_interval = 0.85
+max_ammo = 14
+projectile_speed = 30.0
+max_range = 30.0
+area_radius = 3.0
+duration = 3.0
+knockback = 0.5
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 6.0
+fire_interval = 0.8
+max_ammo = 16
+projectile_speed = 32.0
+max_range = 32.0
+area_radius = 3.5
+duration = 3.5
+knockback = 0.5
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 8.0
+fire_interval = 0.7
+max_ammo = 20
+projectile_speed = 34.0
+max_range = 35.0
+area_radius = 4.0
+duration = 4.5
+knockback = 0.5
+
+[resource]
+script = ExtResource("1_data")
+id = &"silk_launcher"
+display_name = "Spider Silk Launcher"
+description = "Fires a sticky glob that bursts into a web, rooting every enemy inside. Rooted enemies can still turn and attack."
+color = Color(0.95, 0.95, 0.95, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(60, 140, 260)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

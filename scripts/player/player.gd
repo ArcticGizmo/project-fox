@@ -28,6 +28,8 @@ const DEFAULT_WEAPONS: Array[String] = [
 	# Page 2: status-effect weapons
 	"res://data/weapons/frost_narwhal.tres",
 	"res://data/weapons/viper_spitter.tres",
+	"res://data/weapons/silk_launcher.tres",
+	"res://data/weapons/echo_horn.tres",
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5

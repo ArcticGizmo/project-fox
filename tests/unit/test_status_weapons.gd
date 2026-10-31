@@ -87,3 +87,45 @@ func test_poison_kill_credits_the_spitter() -> void:
 	var dead := await wait_until(func() -> bool: return rat.health.is_dead, 3.0)
 	assert_true(dead, "poison killed the rat")
 	assert_eq(w.xp, rat.xp_value, "poison kill credits the weapon")
+
+
+func test_silk_web_roots_everything_in_radius() -> void:
+	var dummy := add_dummy_target(Vector3(0, 0, 8))
+	var a := spawn_enemy(RAT, Vector3(0, 0, -10), 0.0)
+	var b := spawn_enemy(RAT, Vector3(1.5, 0, -10.5), 0.0)
+	var far := spawn_enemy(RAT, Vector3(12, 0, -10), 0.0)
+	var w := _equip("silk_launcher")
+	await wait_frames(2)
+	w.trigger(true, _aim_at(Vector3(0, 0, -10)))
+	w.trigger(false, null)
+	var rooted := await wait_until(func() -> bool: return a.is_rooted(), 1.5)
+	assert_true(rooted, "web roots the target")
+	assert_true(b.is_rooted(), "and its neighbour")
+	assert_false(far.is_rooted(), "but not enemies outside the web")
+	var start := a.global_position
+	await wait_seconds(0.5)
+	assert_true(a.global_position.distance_to(start) < 0.05, "rooted rat can't advance on the player (%s)" % dummy.name)
+
+
+func test_echo_horn_staggers_bull_mid_charge_and_exposes() -> void:
+	add_dummy_target(Vector3(0, 0, 0))
+	var bull := spawn_enemy(BULL, Vector3(0, 0, -14), PI) as BrassBull
+	var w := _equip("echo_horn")
+	var charging := await wait_until(func() -> bool: return bull.state == &"charge" and bull.global_position.z > -9.0, 4.0)
+	assert_true(charging, "bull charging into horn range")
+	w.trigger(true, _aim_at(bull.get_aim_point()))
+	var hits: Array[Enemy] = w.get(&"last_hits")
+	assert_eq(hits.size(), 1, "bull inside the cone")
+	assert_true(bull.is_staggered(), "charge interrupted")
+	assert_false(bull.horn_box.active, "horns no longer dangerous")
+	assert_true(bull.is_exposed(), "exposed for follow-up damage")
+
+
+func test_echo_horn_ignores_enemies_outside_cone() -> void:
+	var behind := _frozen_ai(RAT, Vector3(0, 0, 4))
+	var wide := _frozen_ai(RAT, Vector3(8, 0, -3))
+	var w := _equip("echo_horn")
+	await wait_frames(2)
+	w.trigger(true, _aim_at(Vector3(0, 1, -10)))
+	assert_eq((w.get(&"last_hits") as Array[Enemy]).size(), 0, "nothing in front")
+	assert_false(behind.is_staggered() or wide.is_staggered(), "untouched")
