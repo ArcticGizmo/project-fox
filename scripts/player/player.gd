@@ -40,6 +40,7 @@ var spawn_point: Vector3 = Vector3.ZERO
 
 var aim_target: Node3D = null
 var aim_point: Vector3 = Vector3.ZERO
+var raw_aim_point: Vector3 = Vector3.ZERO
 var aim_direction: Vector3 = Vector3.FORWARD
 
 var facing_yaw: float = 0.0
@@ -199,6 +200,7 @@ func _physics_process(delta: float) -> void:
 	_update_timers(delta)
 	camera_rig.apply_look(input, delta)
 	_handle_weapon_switch()
+	_update_camera_mode()
 	_update_aim()
 	_move(delta)
 	_handle_fire()
@@ -233,7 +235,6 @@ func _move(delta: float) -> void:
 		_air_dodge_used = false
 
 	var wish := camera_relative(input.move)
-	var strafing := input.strafe_held
 
 	# Dodge
 	if input.dodge_pressed and _dodge_cooldown <= 0.0 and _dodge_time <= 0.0 and (on_floor or not _air_dodge_used):
@@ -250,8 +251,7 @@ func _move(delta: float) -> void:
 	if is_dodging():
 		h = _dodge_dir * tuning.dodge_speed
 	else:
-		var speed := tuning.run_speed * (tuning.strafe_speed_multiplier if strafing else 1.0)
-		var target_h := wish * speed
+		var target_h := wish * move_speed_for(wish)
 		var accel: float
 		if not on_floor:
 			accel = tuning.air_acceleration
@@ -288,6 +288,42 @@ func _move(delta: float) -> void:
 	move_and_slide()
 
 
+## Top speed for a wish direction: full run, strafe (slower, slowest backwards) or scoped.
+func move_speed_for(wish: Vector3) -> float:
+	if is_zoomed():
+		return tuning.run_speed * tuning.zoom_move_multiplier
+	if not is_strafing():
+		return tuning.run_speed
+	var speed := tuning.run_speed * tuning.strafe_speed_multiplier
+	if wish.length_squared() > 0.0001:
+		var backwards := maxf(0.0, -wish.normalized().dot(camera_forward()))
+		speed *= lerpf(1.0, tuning.strafe_backpedal_multiplier, backwards)
+	return speed
+
+
+func is_strafing() -> bool:
+	return input.strafe_held and not is_dead
+
+
+## Strafe with a scoped weapon (WeaponData.zoom_fov > 0) looks down the scope.
+func is_zoomed() -> bool:
+	var w := current_weapon()
+	return is_strafing() and w != null and w.data.zoom_fov > 0.0
+
+
+func camera_forward() -> Vector3:
+	return Vector3(-sin(camera_rig.yaw), 0.0, -cos(camera_rig.yaw))
+
+
+func _update_camera_mode() -> void:
+	if is_zoomed():
+		camera_rig.set_view(tuning.zoom_camera_distance, current_weapon().data.zoom_fov, tuning.zoom_shoulder_offset)
+	elif is_strafing():
+		camera_rig.set_view(tuning.strafe_camera_distance, tuning.camera_fov, 0.0)
+	else:
+		camera_rig.set_view(tuning.camera_distance, tuning.camera_fov, 0.0)
+
+
 ## Converts a stick/WASD vector into a world direction relative to the camera.
 func camera_relative(move: Vector2) -> Vector3:
 	var wish := Basis(Vector3.UP, camera_rig.yaw) * Vector3(move.x, 0.0, move.y)
@@ -297,7 +333,12 @@ func camera_relative(move: Vector2) -> Vector3:
 func _update_facing(delta: float) -> void:
 	var target_yaw := facing_yaw
 	var speed := deg_to_rad(tuning.turn_speed_deg)
-	if input.strafe_held or _fire_facing > 0.0:
+	if is_strafing():
+		# Lock to the camera, not the aim target, so strafing never jitters
+		# when aim assist swaps targets.
+		target_yaw = camera_rig.yaw
+		speed = deg_to_rad(tuning.fire_turn_speed_deg)
+	elif _fire_facing > 0.0:
 		target_yaw = yaw_of(aim_direction)
 		speed = deg_to_rad(tuning.fire_turn_speed_deg)
 	elif is_dodging():
@@ -332,15 +373,20 @@ func _update_aim() -> void:
 	var origin := camera_rig.get_aim_origin()
 	var dir := camera_rig.get_aim_direction()
 	# Start near the player so nothing between camera and fox is targeted.
-	var start := origin + dir * (tuning.camera_distance * 0.8)
+	var start := origin + dir * (camera_rig.spring.spring_length * 0.8)
 	var far := start + dir * tuning.aim_max_range
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(start, far, Layers.WORLD | Layers.ENEMY_HURTBOX)
 	q.collide_with_areas = true
 	var hit := space.intersect_ray(q)
-	aim_point = far if hit.is_empty() else (hit["position"] as Vector3)
-	aim_target = AimAssist.pick_target(start, dir, AimAssist.nodes_in_group(get_tree(), &"aim_targets"),
-			tuning.aim_assist_angle_deg, tuning.aim_max_range, space, muzzle.global_position)
+	raw_aim_point = far if hit.is_empty() else (hit["position"] as Vector3)
+	aim_point = raw_aim_point
+	aim_target = null
+	var w := current_weapon()
+	if w == null or w.data.uses_aim_assist:
+		var angle := tuning.zoom_aim_assist_angle_deg if is_zoomed() else tuning.aim_assist_angle_deg
+		aim_target = AimAssist.pick_target(start, dir, AimAssist.nodes_in_group(get_tree(), &"aim_targets"),
+				angle, tuning.aim_max_range, space, muzzle.global_position)
 	if aim_target != null:
 		aim_point = AimAssist.get_aim_point(aim_target)
 	var to := aim_point - muzzle.global_position
@@ -350,6 +396,7 @@ func _update_aim() -> void:
 func current_aim() -> AimInfo:
 	var aim := AimInfo.create(muzzle.global_position, aim_direction, aim_target)
 	aim.point = aim_point
+	aim.raw_point = raw_aim_point
 	return aim
 
 
@@ -458,3 +505,6 @@ func _update_visuals(_delta: float) -> void:
 	_body_material.emission = Color(1.0, 0.1, 0.1) * _flash
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
+	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.
+	if is_zoomed() and camera_rig.camera.fov < tuning.camera_fov * 0.6:
+		visual.visible = false

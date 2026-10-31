@@ -20,6 +20,7 @@ func _ready() -> void:
 	add_child(arena)
 	await get_tree().create_timer(wait).timeout
 	await _capture("gameplay.png")
+	await _capture_scoped(arena.get("player") as Player)
 	# Pull the trigger through the real input map (same path as a controller).
 	Input.action_press(&"fire")
 	await get_tree().create_timer(0.2).timeout
@@ -37,6 +38,29 @@ func _ready() -> void:
 	await get_tree().create_timer(0.1).timeout
 	await _capture("overview.png")
 	get_tree().quit()
+
+
+## Equip the scoped rifle via its number key, hold strafe, capture, restore.
+func _capture_scoped(player: Player) -> void:
+	var slot := player.weapon_paths.find("res://data/weapons/owl_lens_rifle.tres")
+	if slot < 0:
+		return
+	var key := StringName("weapon_slot_%d" % (slot + 1))
+	var previous := player.current_weapon_index
+	Input.action_press(key)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release(key)
+	Input.action_press(&"strafe")
+	await get_tree().create_timer(0.6).timeout
+	await _capture("scoped.png")
+	Input.action_release(&"strafe")
+	key = StringName("weapon_slot_%d" % (previous + 1))
+	Input.action_press(key)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release(key)
+	await get_tree().create_timer(0.4).timeout
 
 
 func _capture(file_name: String) -> void:

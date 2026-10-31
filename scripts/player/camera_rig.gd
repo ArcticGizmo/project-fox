@@ -12,6 +12,9 @@ var camera: Camera3D
 
 var _follow: Vector3 = Vector3.ZERO
 var _shake: float = 0.0
+var _view_distance: float = 0.0
+var _view_fov: float = 0.0
+var _view_shoulder: float = 0.0
 
 
 func _ready() -> void:
@@ -32,7 +35,20 @@ func _ready() -> void:
 	camera.fov = tuning.camera_fov
 	spring.add_child(camera)
 	GameFeel.shake_requested.connect(add_shake)
+	set_view(tuning.camera_distance, tuning.camera_fov, 0.0)
 	snap_to_target()
+
+
+## Target view; follow() blends toward it. Used for strafe and scope modes.
+func set_view(distance: float, fov: float, shoulder: float) -> void:
+	_view_distance = distance
+	_view_fov = fov
+	_view_shoulder = shoulder
+
+
+## Look speed scales with zoom so aiming stays controllable through a scope.
+func look_scale() -> float:
+	return camera.fov / tuning.camera_fov
 
 
 func apply_look(input: PlayerInputState, delta: float) -> void:
@@ -41,10 +57,11 @@ func apply_look(input: PlayerInputState, delta: float) -> void:
 	if mag > 0.0:
 		stick = stick / mag * pow(minf(mag, 1.0), tuning.look_response_exponent)
 	var invert := -1.0 if tuning.invert_y else 1.0
-	yaw -= stick.x * deg_to_rad(tuning.look_speed_yaw_deg) * delta
-	yaw -= deg_to_rad(input.mouse_look.x * tuning.mouse_sensitivity)
-	pitch -= stick.y * deg_to_rad(tuning.look_speed_pitch_deg) * delta * invert
-	pitch -= deg_to_rad(input.mouse_look.y * tuning.mouse_sensitivity) * invert
+	var s := look_scale()
+	yaw -= stick.x * deg_to_rad(tuning.look_speed_yaw_deg) * delta * s
+	yaw -= deg_to_rad(input.mouse_look.x * tuning.mouse_sensitivity) * s
+	pitch -= stick.y * deg_to_rad(tuning.look_speed_pitch_deg) * delta * invert * s
+	pitch -= deg_to_rad(input.mouse_look.y * tuning.mouse_sensitivity) * invert * s
 	pitch = clampf(pitch, deg_to_rad(tuning.pitch_min_deg), deg_to_rad(tuning.pitch_max_deg))
 
 
@@ -59,6 +76,10 @@ func follow(delta: float) -> void:
 	_follow.y = lerpf(_follow.y, desired.y, kv)
 	global_position = _follow
 	rotation = Vector3(pitch, yaw, 0.0)
+	var km := 1.0 - exp(-tuning.camera_mode_sharpness * delta)
+	spring.spring_length = lerpf(spring.spring_length, _view_distance, km)
+	spring.position.x = lerpf(spring.position.x, _view_shoulder, km)
+	camera.fov = lerpf(camera.fov, _view_fov, km)
 	_shake = maxf(0.0, _shake - tuning.shake_decay * delta)
 	var s := _shake * _shake * tuning.max_shake_offset
 	camera.h_offset = randf_range(-s, s)

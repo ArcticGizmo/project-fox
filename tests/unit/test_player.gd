@@ -28,6 +28,51 @@ func test_runs_at_tuned_speed_relative_to_camera() -> void:
 	assert_true(Vector3(player.velocity.x, 0, player.velocity.z).length() < 0.01, "stops when stick released")
 
 
+func _horizontal_speed() -> float:
+	return Vector3(player.velocity.x, 0, player.velocity.z).length()
+
+
+func test_strafe_is_slower_and_slowest_backwards() -> void:
+	pad.next.strafe_held = true
+	pad.next.move = Vector2(1, 0)
+	await wait_seconds(0.6)
+	var t := player.tuning
+	assert_near(_horizontal_speed(), t.run_speed * t.strafe_speed_multiplier, 0.05, "sideways strafe speed")
+	pad.next.move = Vector2(0, 1)
+	await wait_seconds(0.6)
+	assert_near(_horizontal_speed(), t.run_speed * t.strafe_speed_multiplier * t.strafe_backpedal_multiplier, 0.05, "backpedal speed")
+
+
+func test_strafe_faces_camera_not_movement() -> void:
+	pad.next.strafe_held = true
+	pad.next.move = Vector2(1, 0)
+	await wait_seconds(0.5)
+	assert_near(player.facing_yaw, player.camera_rig.yaw, 0.01, "faces camera while moving sideways")
+
+
+func test_rifle_scope_zooms_and_slows() -> void:
+	pad.next.weapon_slot = player.weapon_paths.find("res://data/weapons/owl_lens_rifle.tres")
+	await wait_frames(1)
+	pad.next.strafe_held = true
+	pad.next.move = Vector2(0, -1)
+	await wait_seconds(0.8)
+	assert_true(player.is_zoomed(), "rifle + strafe = scoped")
+	var w := player.current_weapon()
+	assert_near(player.camera_rig.camera.fov, w.data.zoom_fov, 1.0, "scope FOV")
+	assert_near(_horizontal_speed(), player.tuning.run_speed * player.tuning.zoom_move_multiplier, 0.05, "scoped move speed")
+	assert_true(player.camera_rig.look_scale() < 0.5, "look speed reduced when scoped")
+
+
+func test_unscoped_weapon_only_strafes() -> void:
+	pad.next.weapon_slot = player.weapon_paths.find("res://data/weapons/hornet_swarm.tres")
+	await wait_frames(1)
+	pad.next.strafe_held = true
+	await wait_seconds(0.8)
+	assert_false(player.is_zoomed(), "hornets have no scope")
+	assert_near(player.camera_rig.camera.fov, player.tuning.camera_fov, 0.5, "normal FOV")
+	assert_near(player.camera_rig.spring.spring_length, player.tuning.strafe_camera_distance, 0.1, "strafe camera pulls in")
+
+
 func _measure_apex(hold_frames: int) -> float:
 	var start_y := player.global_position.y
 	var apex := start_y

@@ -11,6 +11,10 @@ extends Resource
 ## Script extending Weapon that implements the firing behaviour.
 @export var weapon_script: GDScript
 @export var ammo_per_shot: int = 1
+## False = fires exactly at the reticle (no lock-on), e.g. the basic blaster.
+@export var uses_aim_assist: bool = true
+## > 0 makes the strafe trigger a scope with this camera FOV.
+@export var zoom_fov: float = 0.0
 @export var xp_to_next_level: PackedInt32Array = PackedInt32Array()
 @export var levels: Array[WeaponLevelStats] = []
 

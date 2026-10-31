@@ -53,5 +53,6 @@ display_name = "Owl-Lens Rifle"
 description = "A brass owl's eye focused into a piercing beam. Weak-spot hits crit."
 color = Color(0.55, 0.85, 1, 1)
 weapon_script = ExtResource("3_behaviour")
+zoom_fov = 25.0
 xp_to_next_level = PackedInt32Array(50, 120, 240)
 levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

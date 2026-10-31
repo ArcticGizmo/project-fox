@@ -7,7 +7,20 @@ param([string]$Filter = "")
 $root = Split-Path -Parent $PSScriptRoot
 
 # Refresh the import cache / global class registry (needed after adding class_name scripts).
-$null = & godot --headless --path $root --import 2>&1
+# A brand-new script sometimes needs a second import pass before its class_name is
+# registered, so verify every class_name made it into the cache.
+$classNames = Get-ChildItem -Path $root -Recurse -Filter *.gd |
+    Where-Object { $_.FullName -notmatch '\\\.godot\\' } |
+    Select-String -Pattern '^class_name\s+(\w+)' |
+    ForEach-Object { $_.Matches[0].Groups[1].Value }
+$cache = Join-Path $root ".godot\global_script_class_cache.cfg"
+for ($i = 0; $i -lt 3; $i++) {
+    $null = & godot --headless --path $root --import 2>&1
+    $cached = if (Test-Path $cache) { Get-Content $cache -Raw } else { "" }
+    $missing = $classNames | Where-Object { $cached -notmatch "&`"$_`"" }
+    if (-not $missing) { break }
+}
+if ($missing) { Write-Host "Classes not registered after import: $($missing -join ', ')" -ForegroundColor Red; exit 1 }
 
 $godotArgs = @("--headless", "--fixed-fps", "60", "--path", $root, "res://tests/test_runner.tscn")
 if ($Filter) { $godotArgs += @("--", "--filter=$Filter") }

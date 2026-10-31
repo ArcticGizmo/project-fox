@@ -12,7 +12,7 @@ var _weapon_label: Label
 var _ammo_label: Label
 var _xp_bar: ProgressBar
 var _weapon_list: Label
-var _crosshair: Label
+var _reticle: Reticle
 var _wave_label: Label
 var _popup: Label
 var _popup_tween: Tween
@@ -41,13 +41,8 @@ func _ready() -> void:
 	var help := _label(bottom_left, HELP_TEXT, 14)
 	help.modulate.a = 0.6
 
-	_crosshair = Label.new()
-	_crosshair.text = "+"
-	_crosshair.add_theme_font_size_override(&"font_size", 30)
-	_crosshair.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_crosshair.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	root.add_child(_crosshair)
+	_reticle = Reticle.new()
+	root.add_child(_reticle)
 
 	_wave_label = Label.new()
 	_wave_label.add_theme_font_size_override(&"font_size", 24)
@@ -84,7 +79,8 @@ func bind(player: Player, waves: WaveManager) -> void:
 
 func _process(_delta: float) -> void:
 	if _player != null:
-		_crosshair.modulate = Color(1, 0.3, 0.2) if _player.aim_target != null else Color(1, 1, 1, 0.8)
+		_reticle.locked = _player.aim_target != null
+		_reticle.zoomed = _player.is_zoomed()
 
 
 func _on_health_changed(current: float, maximum: float) -> void:

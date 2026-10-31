@@ -7,7 +7,9 @@ extends Resource
 @export var run_speed: float = 8.5
 @export var ground_acceleration: float = 70.0
 @export var ground_deceleration: float = 90.0
-@export var strafe_speed_multiplier: float = 0.85
+@export var strafe_speed_multiplier: float = 0.6
+## Extra multiplier when moving directly backwards while strafing (1 = none).
+@export var strafe_backpedal_multiplier: float = 0.75
 ## How fast the fox turns to face its movement direction.
 @export var turn_speed_deg: float = 900.0
 ## Faster turn used when snapping to the aim direction while firing.
@@ -59,8 +61,20 @@ extends Resource
 @export var pitch_min_deg: float = -60.0
 @export var pitch_max_deg: float = 35.0
 @export var default_pitch_deg: float = -15.0
+## How quickly distance/FOV/shoulder blend between normal, strafe and zoom views.
+@export var camera_mode_sharpness: float = 12.0
 @export var shake_decay: float = 5.0
 @export var max_shake_offset: float = 0.35
+
+
+@export_group("Strafe and zoom")
+## Camera pulls in slightly while strafing so the mode change reads.
+@export var strafe_camera_distance: float = 4.6
+## Scoped weapons (WeaponData.zoom_fov > 0) use this over-the-shoulder view.
+@export var zoom_camera_distance: float = 2.4
+@export var zoom_shoulder_offset: float = 0.75
+@export var zoom_move_multiplier: float = 0.4
+@export var zoom_aim_assist_angle_deg: float = 1.0
 
 
 func jump_velocity() -> float:
