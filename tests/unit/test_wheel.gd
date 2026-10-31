@@ -37,15 +37,19 @@ func test_slowmo_sources_combine() -> void:
 	assert_near(Engine.time_scale, 1.0, 0.0001, "reset")
 
 
-func test_hold_slows_time_and_stick_selects_on_release() -> void:
+func test_hold_slows_time_and_left_stick_selects_on_release() -> void:
 	pad.next.wheel_held = true
 	await wait_frames(2)
 	assert_true(player.wheel_open, "wheel open")
 	assert_near(Engine.time_scale, player.tuning.wheel_time_scale, 0.0001, "time slowed")
-	pad.next.look = Vector2(1, 0)
-	await wait_frames(2)
-	assert_eq(player.wheel_highlight, 2, "stick right highlights slot 3")
+	var start := player.global_position
+	pad.next.look = Vector2(0, 1)
+	pad.next.move = Vector2(1, 0)
+	await wait_frames(6)
+	assert_eq(player.wheel_highlight, 2, "left stick right highlights slot 3")
+	assert_near(player.global_position.distance_to(start), 0.0, 0.01, "selecting does not walk the fox")
 	pad.next.look = Vector2.ZERO
+	pad.next.move = Vector2.ZERO
 	await wait_frames(2)
 	assert_eq(player.wheel_highlight, 2, "highlight stays when stick recentres")
 	pad.next.wheel_held = false
@@ -90,10 +94,10 @@ func test_pages_flip_with_shoulder_buttons_and_number_keys_follow() -> void:
 	await wait_frames(2)
 	assert_eq(big.wheel_page, 1, "RB flips to page 2")
 	assert_eq(big.current_weapon_index, 0, "flipping pages does not cycle weapons")
-	big_pad.next.look = Vector2(0, 1)
+	big_pad.next.move = Vector2(0, 1)
 	await wait_frames(2)
 	assert_eq(big.wheel_highlight, 9, "down on a 2-slot page is its second slot")
-	big_pad.next.look = Vector2.ZERO
+	big_pad.next.move = Vector2.ZERO
 	big_pad.next.wheel_held = false
 	await wait_frames(2)
 	assert_eq(big.current_weapon_index, 9, "equipped from page 2")

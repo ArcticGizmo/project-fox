@@ -261,7 +261,8 @@ func _move(delta: float) -> void:
 		_air_jumps_left = 1
 		_air_dodge_used = false
 
-	var wish := camera_relative(input.move)
+	# The left stick drives the weapon wheel while it is open, so stand still.
+	var wish := Vector3.ZERO if wheel_open else camera_relative(input.move)
 
 	# Melee can be interrupted by dodge (always) or jump (after the hit lands).
 	if melee.is_busy() and melee.can_cancel():
@@ -504,8 +505,8 @@ func _handle_fire() -> void:
 	w.trigger(firing, current_aim())
 
 
-## Hold the wheel button: time slows, the right stick (or mouse) highlights a
-## slot, releasing equips it. Movement still works (slowed); camera, firing
+## Hold the wheel button: time slows, the left stick (or WASD/mouse) highlights a
+## slot, releasing equips it. Movement, camera, firing
 ## and melee are paused while it is open.
 func _update_wheel() -> void:
 	if input.wheel_held and not wheel_open and not weapons.is_empty():
@@ -528,8 +529,8 @@ func _update_wheel() -> void:
 		input.weapon_prev = false
 	var slots := wheel_page_slots(wheel_page)
 	_wheel_cursor = (_wheel_cursor + input.mouse_look).limit_length(tuning.wheel_mouse_threshold * 3.0)
-	if input.look.length() >= tuning.wheel_stick_threshold:
-		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(input.look, slots)
+	if input.move.length() >= tuning.wheel_stick_threshold:
+		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(input.move, slots)
 	elif _wheel_cursor.length() >= tuning.wheel_mouse_threshold:
 		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(_wheel_cursor, slots)
 
