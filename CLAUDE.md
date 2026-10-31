@@ -18,7 +18,7 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
-| `scripts/hazards/` | `Hazard` base + traps (fire trap, lightning barrier, ...) |
+| `scripts/hazards/` | `Hazard` base + traps (fire trap, lightning barrier, lava, ...) |
 | `scripts/world/` | `Arena`, `Block` (@tool coloured box with collision), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |

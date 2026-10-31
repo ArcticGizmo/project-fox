@@ -109,3 +109,59 @@ func test_lightning_staggers_enemies_and_phase_offset_delays_it() -> void:
 	assert_eq(b.state, LightningBarrier.ON, "then fires")
 	assert_true(bull.is_staggered(), "enemy caught in the arc is staggered")
 	assert_true(bull.health.current < bull.health.max_health, "and damaged")
+
+
+# --- Lava -----------------------------------------------------------------------
+
+func _spawn_player(at: Vector3) -> Player:
+	var player := Player.new()
+	player.input_provider = ScriptedInputProvider.new()
+	player.position = at
+	add_child(player)
+	return player
+
+
+## Highest point (feet) reached within `seconds`.
+func _apex_within(player: Player, seconds: float) -> float:
+	var apex := player.global_position.y
+	for _i: int in ceili(seconds / FRAME):
+		await get_tree().physics_frame
+		apex = maxf(apex, player.global_position.y)
+	return apex
+
+
+func test_lava_burns_and_launches_the_player_full_height() -> void:
+	var lava := _add_hazard(Lava.new(), Vector3(0, 0, -6)) as Lava
+	var player := _spawn_player(Vector3(0, 0.05, 0))
+	await wait_frames(5)
+	assert_eq(player.health.current, player.health.max_health, "safe off the lava")
+	player.global_position = Vector3(0, 0.05, -6)
+	var apex := await _apex_within(player, 0.8)
+	var g := player.tuning.gravity
+	var expected := lava.launch_speed * lava.launch_speed / (2.0 * g)
+	# Jump is not held: a launch must not be cut short like a released jump.
+	assert_near(apex, expected, 0.3, "launch apex")
+	assert_eq(player.health.max_health - player.health.current, lava.damage, "burnt once")
+
+
+func test_lava_bounces_even_during_iframes() -> void:
+	var lava := _add_hazard(Lava.new(), Vector3.ZERO) as Lava
+	var player := _spawn_player(Vector3(0, 0.05, 0))
+	player._hurt_iframes = 10.0
+	var launches := 0
+	var prev_vy := 0.0
+	for _i: int in ceili(2.2 / FRAME):
+		await get_tree().physics_frame
+		if prev_vy <= 0.0 and player.velocity.y > lava.launch_speed * 0.8:
+			launches += 1
+		prev_vy = player.velocity.y
+	assert_true(launches >= 2, "keeps bouncing while invulnerable, %d launches" % launches)
+	assert_eq(player.health.current, player.health.max_health, "no damage while invulnerable")
+
+
+func test_lava_burns_enemies() -> void:
+	_add_hazard(Lava.new(), Vector3.ZERO)
+	var bull := _parked_bull(Vector3.ZERO)
+	await wait_frames(3)
+	assert_true(bull.health.current < bull.health.max_health, "enemy burnt by lava")
+	assert_true(bull._burn_left > 0.0, "and set alight")

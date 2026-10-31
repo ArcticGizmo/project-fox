@@ -77,6 +77,8 @@ var _dodge_dir: Vector3 = Vector3.ZERO
 var _air_dodge_used: bool = false
 var _dodge_iframes: float = 0.0
 var _hurt_iframes: float = 0.0
+## Rising from launch_up(): releasing jump must not cut the arc short.
+var _launched: bool = false
 var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
@@ -309,7 +311,8 @@ func _move(delta: float) -> void:
 	h += _knockback
 
 	# Jump
-	if _jump_buffer > 0.0 and not melee.is_busy():
+	# (Not while rising from a hazard launch: any jump would be slower than it.)
+	if _jump_buffer > 0.0 and not melee.is_busy() and not _launched:
 		if on_floor or _coyote > 0.0:
 			velocity.y = tuning.jump_velocity()
 			_jump_buffer = 0.0
@@ -328,7 +331,8 @@ func _move(delta: float) -> void:
 		var g := tuning.gravity
 		if velocity.y < 0.0:
 			g *= tuning.fall_gravity_multiplier
-		elif not input.jump_held:
+			_launched = false
+		elif not input.jump_held and not _launched:
 			g *= tuning.jump_release_gravity_multiplier
 		velocity.y = maxf(velocity.y - g * delta, -tuning.max_fall_speed)
 
@@ -617,6 +621,19 @@ func _on_weapon_leveled(level: int, w: Weapon) -> void:
 
 # --- Damage -------------------------------------------------------------------
 
+## Hazard bounce (lava): straight up at `speed`, even during i-frames, so the
+## fox can never stand in it. Ends a dodge, restores the double jump so the
+## player can steer out, and the full arc plays whether or not jump is held.
+func launch_up(speed: float) -> void:
+	if is_dead:
+		return
+	velocity.y = maxf(velocity.y, speed)
+	_launched = true
+	_dodge_time = 0.0
+	_coyote = 0.0
+	_air_jumps_left = 1
+
+
 func get_aim_point() -> Vector3:
 	return global_position + Vector3.UP * HEIGHT * 0.55
 
@@ -654,6 +671,7 @@ func respawn() -> void:
 	global_position = spawn_point
 	velocity = Vector3.ZERO
 	_knockback = Vector3.ZERO
+	_launched = false
 	health.reset()
 	_hurt_iframes = tuning.hurt_iframes
 	visual.visible = true

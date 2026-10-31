@@ -53,7 +53,7 @@ func _ready() -> void:
 	await get_tree().create_timer(0.5).timeout
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
-	await _capture_hazards()
+	await _capture_hazards(arena.get("player") as Player)
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)
@@ -148,7 +148,7 @@ func _capture_flyers(player: Player, waves: WaveManager) -> void:
 
 
 ## One shot of each hazard type mid-telegraph and while dangerous.
-func _capture_hazards() -> void:
+func _capture_hazards(arena_player: Player) -> void:
 	var done: Dictionary = {}
 	for n: Node in get_tree().get_nodes_in_group(&"hazards"):
 		var kind := (n.get_script() as Script).get_global_name()
@@ -159,6 +159,8 @@ func _capture_hazards() -> void:
 			await _capture_fire_trap(n as FireTrap)
 		elif n is LightningBarrier:
 			await _capture_lightning(n as LightningBarrier)
+		elif n is Lava:
+			await _capture_lava(n as Lava, arena_player)
 
 
 func _capture_fire_trap(trap: FireTrap) -> void:
@@ -168,6 +170,23 @@ func _capture_fire_trap(trap: FireTrap) -> void:
 	await _capture("hazard_fire_armed.png")
 	await get_tree().create_timer(trap.arm_time * 0.2 + 0.3).timeout
 	await _capture("hazard_fire_burning.png")
+	cam.queue_free()
+
+
+## Drop the fox onto the lava and catch it mid-bounce.
+func _capture_lava(lava: Lava, player: Player) -> void:
+	var cam := _hazard_camera(lava, Vector3(0, 4.0, 9.0), 1.0)
+	await get_tree().create_timer(0.3).timeout
+	await _capture("hazard_lava.png")
+	player.global_position = lava.global_position + Vector3(1.0, 0.05, 0.5)
+	player.velocity = Vector3.ZERO
+	await get_tree().create_timer(0.2).timeout
+	# The fox blinks during hurt i-frames; wait for a visible frame.
+	for _i: int in 10:
+		if player.visual.visible:
+			break
+		await get_tree().physics_frame
+	await _capture("hazard_lava_launch.png")
 	cam.queue_free()
 
 
