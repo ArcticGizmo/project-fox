@@ -103,30 +103,88 @@ Done notes / deviations:
   camera all assume world-up (`velocity.y`, `is_on_floor`, CameraRig pitch). Real support means
   moving the player onto an `up_direction` basis; schedule it as its own task if wanted.
 
-## Task 4: Greybox slice `scenes/levels/slice_01.tscn`
+## Task 4: Greybox slice `scenes/levels/slice_01.tscn` (done)
 
-Scale from `PlayerTuning` (run 8.5 m/s, gravity 30, jump 2.2 m, double jump 1.6 m).
-Verify the jump limits with a small test course (a test that runs real jumps) before
-blocking out.
+Scale from `PlayerTuning` (run 8.5 m/s, gravity 30, jump 2.2 m, double jump 1.6 m), verified
+by `tests/unit/test_jump_metrics.gd`: ~65 Player lanes side by side, standing jumps against a
+wall for ledges and full-speed running jumps (pressed as the fox's centre passes the edge) for
+gaps, double jump at the apex or after falling 1.9 m. Design limits are `LevelMetrics`; the
+test fails if a path limit stops being reachable or a gate minimum becomes reachable.
 
-| Measure | Calculated limit | Use |
-|---|---|---|
-| Single-jump ledge | 2.2 m | 1.5 m steps, never above 1.8 m |
-| Double-jump ledge | 3.8 m | 3.0 m skill ledges |
-| Single-jump gap | ~6.5 m | 3–4 m |
-| Double-jump gap | ~10 m | 6–8 m; over 10 m = gadget gate |
-| Gadget-gated ledge | over 4 m | 6 m+ |
-| Corridor | — | 4–6 m wide |
-| Combat pocket | — | 15–25 m, two cover pieces, exit visible |
-| Sight line to next pocket | — | 25–35 m |
+| Measure | Calculated | Measured | Use (`LevelMetrics`) |
+|---|---|---|---|
+| Single-jump ledge | 2.2 m | 2.2 m | 1.5 m steps (`STEP_MAX`) |
+| Double-jump ledge | 3.8 m | 3.7 m | 3.0 m ledges (`LEDGE_MAX`); walls that must stop you 4.5 m |
+| Single-jump gap | ~6.5 m | 6.0 m | 3.5–4 m (`SINGLE_GAP_MAX` 4) |
+| Double-jump gap | ~10 m | 9.5 m at the apex, 11.0 m with a late double jump | 6–7.5 m (`GAP_MAX` 7.5) |
+| Gadget-gated ledge | over 4 m | — | ≥ 5.5 m above any path block in reach (`GATE_LEDGE_MIN`); slice uses 6.5 m |
+| Gadget-gated gap | over 10 m | — | ≥ 13 m (`GATE_GAP_MIN`); slice uses 19 m |
+| Corridor | — | — | 4–6 m wide |
+| Combat pocket | — | — | 15–25 m, two cover pieces, exit visible |
+| Sight line to next pocket | — | — | 25–35 m |
 
-Beats: (1) landing pad + safe zone with a view of resting enemies; (2) pocket A,
-stumble-in: wandering rats + resting bull; (3) traversal run, with a visible side ledge =
-grapple gate; (4) hazard yard (fire trap, sweeper, steam hammer, pressure plate), patrols
-walking through it; (5) pocket B, vertical: toads on platforms, gulls overhead; (6) locked
-shortcut back to the pad (conduit or burrow gate); (7) falcon ridge + finale with every type,
-a glide gate leading on. Checkpoints after beats 2, 4 and 5. Screenshot step
-`_capture_slice_overview()`.
+Layout (x east, -z north; the route loops pad → north → east → south → west → south):
+
+1. **Landing pad** (x -6..6, z -6..6, raised 3 m, low rails). Spawn faces north over a stepped
+   forecourt and a 1.2 m fence into pocket A (spawn → pocket centre ~31 m). Ammo + health
+   crates. Nothing can see the pad (test).
+2. **Pocket A** (22 x 22, x -11..11, z -18..-40, 4.5 m walls, fence on the pad side): three
+   wandering rats (radius 3, homes ≥ 20 m from the pad edge) and a bull resting with its back
+   to you; two cover pieces + a pillar. Exit east (5 m opening). **Checkpoint 1** just outside.
+3. **Traversal** east then south over the void, 5 m wide: 3.5 m gap, 1.5 m step, 4 m gap,
+   corner, 7 m double-jump gap, 3 m ledge up to an overlook above the yard. Side ledge
+   `Level/Traversal/GrappleLedge` (grapple gate, top 6.5 m above the run, ammo crate on it).
+4. **Hazard yard** (22 x 22, x 36..58, z -10..12). Drop in at the NW corner; a 2.5 m divider
+   forces north lane → NE turn → south lane → west door. North lane: four fire plates across it
+   (1.5 m slip gap by the divider) with two rats patrolling over them (the plates erupt behind
+   them; hazards don't wake enemies). NE turn: clockwork sweeper. South lane: steam hammer
+   rail. Door corridor (x 30..36): lightning barrier across its mouth, **Checkpoint 2**,
+   health crate. Burrow patches `Level/Yard/BurrowIn` / `BurrowOut` either side of the divider
+   skip the yard.
+5. **Pocket B** (22 x 22, x 8..30, z -4..18), vertical: two toads on 3 m parapeted platforms
+   (NE and SW, each with a 1.5 m step; `move_speed = 0` turret toads so they can't walk off),
+   two gulls overhead, two cover pieces, ammo crate on the SW platform. West wall 8 m (blocks
+   sight to the pad). Exit south: **Checkpoint 3**.
+6. **Shortcut**: `Level/Shortcut/ShortcutDoor` (conduit gate, copper, full wall height) in
+   pocket B's west wall, opening onto a 1.5 m step up to the pad. Visible from the pad.
+7. **Falcon ridge + finale**: 1.5 m step, 3 m ledge, 6 m double-jump gap to a 4 m-wide spine
+   with two falcons over it, 1.5 m step up to the finale plateau (24 x 24 at +6 m, 1 m rails,
+   two cover pieces, a 1.5 m dais). Finale has every type: bull, two rats, toad (on the dais),
+   gull, falcon; two health crates and an ammo crate. `Level/Finale/GlideVent` (glide gate) at
+   the far edge faces `BeyondPlatform` 19 m away and 4 m lower (the next area, with a beacon).
+
+Gates for tasks 5–8:
+- **Grapple** (`GrappleLedge`): reel to the brass ring on top of the pillar from the run below
+  (T2/T3, 4 m south of it), land on top for the crate.
+- **Glide** (`GlideVent`): from the finale's far edge glide 19 m to `BeyondPlatform`; the vent
+  is the updraft spot.
+- **Burrow** (`BurrowIn` → `BurrowOut`): dodge onto the soil north of the divider, pop out
+  south of it, past the plates, sweeper and hammer (still before the lightning door).
+- **Conduit** (`ShortcutDoor`): the door itself is the gate. Task 8 should add a dead copper
+  terminal beside it on the pocket B side (charge from the yard's lightning barrier) and make
+  the door open.
+
+Done notes / deviations:
+- Critical-path Blocks are in group `critical_path` with a `path_index` meta (walking order).
+  `tests/unit/test_slice.gd` checks every step against `LevelMetrics`, makes each jump for
+  real with the level's player and scripted input, checks gates really need their gadget,
+  beat contents (enemy types per `Enemies/<beat>` group, a gate per gadget, 3 checkpoints),
+  and that 20 s idling on the pad wakes nobody while every placed enemy stays home and alive.
+- Pits: the player's existing kill plane (y -20) respawns at the last checkpoint, and every pit
+  sits right after one, so no extra respawn volumes. Enemies now die below
+  `Enemy.KILL_PLANE_Y` (-20). A dark `AbyssFloor` at -30 is only there so pits read as deep.
+- Placed-enemy reset on respawn also frees enemy projectiles in flight (`LobProjectile.GROUP`).
+- Patrol markers are local to the enemy and rotate with its yaw (the first yard routes went
+  through the sweeper); patrollers use yaw 0.
+- Standing still (no fighting back) in a pocket the player survives pocket A's fence and the
+  yard for 30 s and dies in ~15–20 s in pocket A's centre or the finale, measured headless in
+  the real level; with dodging, crates and checkpoints the fights should be survivable, but
+  this wants a hands-on pass.
+- Estimated length: ~250 m of route (~30 s running) plus five fights → roughly 5–8 minutes.
+- Screenshots: `slice_pad_view`, `slice_traversal`, `slice_hazard_yard`, `slice_pocket_b`,
+  `slice_shortcut_from_pad`, `slice_ridge`, `slice_finale`, `slice_overview` (orthographic,
+  framed on the level's Blocks), `slice_overview_ai` (AI debug view on), `slice_overview_angle`.
+  `-- --slice` renders only these.
 
 ## Tasks 5–8: Starter gadgets
 

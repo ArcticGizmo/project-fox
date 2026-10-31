@@ -41,17 +41,19 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 ## Commands
 
 ```powershell
-.\tools\test.ps1                 # full headless suite (~1s); fails on test failure OR engine error
+.\tools\test.ps1                 # full headless suite (~10s); fails on test failure OR engine error
 .\tools\test.ps1 -Filter bull    # tests whose file/method name contains "bull"
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
+godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*.png)
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 
 Run the test suite after every change. Use the screenshot tool to check anything visual
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
-chill vs frozen enemies, the two flyers (cruising and diving), an overview and each level in
-`_capture_level`: slice_01 from the player and from above).
+chill vs frozen enemies, the two flyers (cruising and diving), an overview, and the slice in
+`_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
+framed on the level's Blocks).
 
 ## Controls (controller / keyboard+mouse)
 
@@ -130,6 +132,16 @@ D-pad up/F2 · next wave D-pad down/F3.
   (dead ones return, living ones go home unaware at full hp). Falling off (kill plane) and
   reaching a checkpoint reset nothing; wave-spawned enemies are never touched. Enemies ignore
   a dead player (`has_target()` false during the respawn delay).
+  Patrol Marker3Ds are local to the enemy, so they rotate with its yaw (give patrollers yaw 0
+  unless you mean it). Enemies have no pathfinding: keep homes, wander radii and routes in open
+  ground, and set `leash_radius` so chases stay in their pocket. Enemies below
+  `Enemy.KILL_PLANE_Y` die; the player's kill plane respawns at the last checkpoint.
+- **Level metrics**: blockout limits live in `LevelMetrics` (`scripts/world/level_metrics.gd`),
+  checked against real jumps by `test_jump_metrics`. Mark critical-path Blocks with group
+  `critical_path` and a `path_index` meta in walking order; `test_slice` checks every step
+  against the limits and makes each jump with real input. Gated spots must exceed
+  `GATE_LEDGE_MIN` / `GATE_GAP_MIN`. `scenes/levels/slice_01.tscn` is the greybox slice (see
+  the plan doc for its beats and gates).
 - **Gadgets**: ids `Gadgets.ALL` (&"grapple", &"glide", &"burrow", &"conduit") on
   `player.gadgets`; gates are `GadgetGate` blocks with `requires` (`is_open_for(player)`).
   Pause menu has "Unlock All Gadgets" for testing.
