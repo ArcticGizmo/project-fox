@@ -4,6 +4,33 @@ Third-person action-shooter prototype (Godot 4.7, typed GDScript). Magical-steam
 animal/fantasy creatures. Priorities: game feel, weapon variety, enemy attack-pattern
 variety, weapon levelling. Art is coloured primitives until real assets exist.
 
+## Where things live
+
+Almost everything is built in code; scenes are thin. `scenes/main.tscn` (the main scene) holds
+only level `Block`s, `Crate`s, the `PlayerSpawn` marker and the `WaveManager` with its spawn
+markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lighting at runtime.
+
+| Path | What |
+|---|---|
+| `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
+| `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
+| `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist` |
+| `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
+| `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
+| `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
+| `scripts/world/` | `Arena`, `Block` (@tool coloured box with collision), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
+| `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
+| `data/` | `player_tuning.tres`, `weapons/*.tres` |
+| `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
+| `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features) |
+
+Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
+from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
+(`is_dot`) skips all of that. `Enemy._on_damaged` does the equivalent, scaled by
+`knockback_resistance`. HitBoxes skip invulnerable hurtboxes, so a hit during i-frames does
+nothing at all.
+
 ## Commands
 
 ```powershell
