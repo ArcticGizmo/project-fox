@@ -69,6 +69,38 @@ func test_mouse_selects_and_camera_is_frozen() -> void:
 	assert_eq(player.current_weapon_index, 4, "equipped")
 
 
+func test_pages_flip_with_shoulder_buttons_and_number_keys_follow() -> void:
+	var big_pad := ScriptedInputProvider.new()
+	var big := Player.new()
+	var paths: Array[String] = []
+	paths.assign(Player.DEFAULT_WEAPONS)
+	while paths.size() < 10:
+		paths.append(Player.DEFAULT_WEAPONS[0])
+	big.weapon_paths = paths
+	big.input_provider = big_pad
+	big.position = Vector3(5, 0.05, 0)
+	add_child(big)
+	await wait_frames(3)
+	assert_eq(big.wheel_page_count(), 2, "10 weapons = 2 pages")
+	assert_eq(big.wheel_page_slots(1), 2, "second page holds the rest")
+	big_pad.next.wheel_held = true
+	await wait_frames(2)
+	big_pad.next.weapon_next = true
+	await wait_frames(2)
+	assert_eq(big.wheel_page, 1, "RB flips to page 2")
+	assert_eq(big.current_weapon_index, 0, "flipping pages does not cycle weapons")
+	big_pad.next.look = Vector2(0, 1)
+	await wait_frames(2)
+	assert_eq(big.wheel_highlight, 9, "down on a 2-slot page is its second slot")
+	big_pad.next.look = Vector2.ZERO
+	big_pad.next.wheel_held = false
+	await wait_frames(2)
+	assert_eq(big.current_weapon_index, 9, "equipped from page 2")
+	big_pad.next.weapon_slot = 0
+	await wait_frames(2)
+	assert_eq(big.current_weapon_index, 8, "number key 1 maps onto the current page")
+
+
 func test_cannot_fire_with_wheel_open_and_death_closes_it() -> void:
 	var w := player.current_weapon()
 	var ammo := w.ammo

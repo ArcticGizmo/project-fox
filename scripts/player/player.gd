@@ -30,6 +30,7 @@ const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5
 const KILL_PLANE_Y := -20.0
 const WHEEL_SLOWMO := &"weapon_wheel"
+const WHEEL_PAGE_SIZE := 8
 
 @export var tuning: PlayerTuning
 @export var weapon_paths: Array[String] = DEFAULT_WEAPONS
@@ -56,6 +57,8 @@ var facing_yaw: float = 0.0
 var is_dead: bool = false
 var wheel_open: bool = false
 var wheel_highlight: int = 0
+## Page of WHEEL_PAGE_SIZE weapons shown on the wheel; number keys use it too.
+var wheel_page: int = 0
 var _wheel_cursor: Vector2 = Vector2.ZERO
 
 var _coyote: float = 0.0
@@ -501,6 +504,7 @@ func _update_wheel() -> void:
 	if input.wheel_held and not wheel_open and not weapons.is_empty():
 		wheel_open = true
 		wheel_highlight = current_weapon_index
+		wheel_page = page_of(current_weapon_index)
 		_wheel_cursor = Vector2.ZERO
 		GameFeel.set_slowmo(WHEEL_SLOWMO, tuning.wheel_time_scale)
 		wheel_toggled.emit(true)
@@ -508,11 +512,31 @@ func _update_wheel() -> void:
 		close_wheel(true)
 	if not wheel_open:
 		return
+	# LB/RB flip pages while open (and must not also cycle weapons).
+	if input.weapon_next or input.weapon_prev:
+		var pages := wheel_page_count()
+		wheel_page = (wheel_page + (1 if input.weapon_next else pages - 1)) % pages
+		wheel_highlight = mini(wheel_page * WHEEL_PAGE_SIZE + (wheel_highlight % WHEEL_PAGE_SIZE), weapons.size() - 1)
+		input.weapon_next = false
+		input.weapon_prev = false
+	var slots := wheel_page_slots(wheel_page)
 	_wheel_cursor = (_wheel_cursor + input.mouse_look).limit_length(tuning.wheel_mouse_threshold * 3.0)
 	if input.look.length() >= tuning.wheel_stick_threshold:
-		wheel_highlight = WeaponWheel.index_for_direction(input.look, weapons.size())
+		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(input.look, slots)
 	elif _wheel_cursor.length() >= tuning.wheel_mouse_threshold:
-		wheel_highlight = WeaponWheel.index_for_direction(_wheel_cursor, weapons.size())
+		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(_wheel_cursor, slots)
+
+
+func wheel_page_count() -> int:
+	return maxi(1, ceili(float(weapons.size()) / WHEEL_PAGE_SIZE))
+
+
+func wheel_page_slots(page: int) -> int:
+	return clampi(weapons.size() - page * WHEEL_PAGE_SIZE, 0, WHEEL_PAGE_SIZE)
+
+
+func page_of(index: int) -> int:
+	return floori(float(index) / WHEEL_PAGE_SIZE)
 
 
 func close_wheel(equip: bool) -> void:
@@ -533,8 +557,10 @@ func _exit_tree() -> void:
 func _handle_weapon_switch() -> void:
 	if weapons.is_empty():
 		return
-	if input.weapon_slot >= 0 and input.weapon_slot < weapons.size():
-		_select_weapon(input.weapon_slot)
+	# Number keys pick from the wheel page last viewed.
+	var slot := wheel_page * WHEEL_PAGE_SIZE + input.weapon_slot
+	if input.weapon_slot >= 0 and slot < weapons.size():
+		_select_weapon(slot)
 	elif input.weapon_next:
 		_select_weapon((current_weapon_index + 1) % weapons.size())
 	elif input.weapon_prev:

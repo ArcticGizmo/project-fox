@@ -44,16 +44,24 @@ func _draw() -> void:
 		return
 	var font := ThemeDB.fallback_font
 	var c := size * 0.5
-	var n := player.weapons.size()
+	var page := player.wheel_page
+	var first := page * Player.WHEEL_PAGE_SIZE
+	var n := player.wheel_page_slots(page)
 	draw_circle(c, BACKDROP_RADIUS, Color(0.05, 0.04, 0.03, 0.6))
 	draw_arc(c, BACKDROP_RADIUS, 0.0, TAU, 96, Color(0.75, 0.6, 0.3, 0.8), 3.0, true)
+	var pages := player.wheel_page_count()
+	if pages > 1:
+		var dots := ""
+		for p: int in pages:
+			dots += "●" if p == page else "○"
+		draw_string(font, c + Vector2(-150, BACKDROP_RADIUS + 34), "LB  %s  RB" % dots, HORIZONTAL_ALIGNMENT_CENTER, 300, 22, Color(1, 0.85, 0.4))
 
 	var hl := player.wheel_highlight
 
 	for i: int in n:
-		var w := player.weapons[i]
+		var w := player.weapons[first + i]
 		var pos := c + slot_direction(i, n) * RADIUS
-		var selected := i == hl
+		var selected := first + i == hl
 		var r := SLOT_RADIUS * (1.2 if selected else 1.0)
 		var fill := w.data.color if selected else w.data.color.darkened(0.55)
 		draw_circle(pos, r, fill)
