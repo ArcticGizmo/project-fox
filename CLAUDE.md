@@ -116,9 +116,11 @@ D-pad up/F2 · next wave D-pad down/F3.
 - Area overlaps need a physics frame after spawning before they register.
 - Free any Node you instantiate outside the tree, or the leak check fails the run.
 - New `class_name` scripts are not always registered by `--import`; test.ps1 verifies the
-  class cache and falls back to headless editor scans run for 120 frames (`--quit` exits
+  class cache and falls back to headless editor scans run for 400 frames (`--quit` exits
   before the background scan finishes). If it still reports a class as unregistered, look
   for a parse error in that script (or a script it depends on).
+- `godot.exe` is a GUI-subsystem app: from PowerShell, `$null = & godot ...` or `*> $null`
+  returns immediately without waiting. Pipe it (`& godot ... 2>&1 | Out-Null`) to block.
 - Status timers accumulate floats: a 0.5s tick can land one frame late, so give tick-count
   assertions a little slack. Tests that kill small enemies with captured lambdas will hit
   freed objects; use the bull (160 hp) as a damage sponge.

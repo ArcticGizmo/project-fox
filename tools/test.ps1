@@ -18,10 +18,12 @@ function Get-MissingClasses {
     $cached = if (Test-Path $cache) { Get-Content $cache -Raw } else { "" }
     $classNames | Where-Object { $cached -notmatch "&`"$_`"" }
 }
-$null = & godot --headless --path $root --import 2>&1
+# godot.exe is a GUI-subsystem app: PowerShell only waits for it when its output is
+# piped (`$null = & godot ...` returns immediately and races the test run).
+& godot --headless --path $root --import 2>&1 | Out-Null
 for ($i = 0; $i -lt 5 -and (Get-MissingClasses); $i++) {
     # --quit exits before the background filesystem scan finishes; give it frames.
-    $null = & godot --headless --path $root --editor --quit-after 120 2>&1
+    & godot --headless --path $root --editor --quit-after 400 2>&1 | Out-Null
 }
 $missing = Get-MissingClasses
 if ($missing) {
