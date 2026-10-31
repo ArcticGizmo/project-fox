@@ -153,3 +153,11 @@ func _can_flinch() -> bool:
 
 func _state_after_flinch() -> StringName:
 	return &"circle"
+
+
+## Perched hover: a gentle bob while the head (whole body) glances left and right.
+func _idle_flavour(_delta: float) -> void:
+	var glances: Array[float] = [0.0, 0.6, 0.0, -0.5]
+	var i := floori(state_time / 1.1) % glances.size()
+	visual_yaw = glances[i]
+	visual_offset = Vector3(0.0, 0.1 * sin(state_time * 2.2), 0.0)

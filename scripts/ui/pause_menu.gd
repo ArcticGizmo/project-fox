@@ -10,6 +10,7 @@ var is_open: bool = false
 
 var _resume: Button
 var _boxes: Button
+var _ai: Button
 var _restart: Button
 var _quit: Button
 var _mouse_mode_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
@@ -51,8 +52,10 @@ func _ready() -> void:
 	_resume = _button(box, "Resume", close)
 	_restart = _button(box, "Restart Arena", _on_restart)
 	_boxes = _button(box, "", _on_toggle_boxes)
+	_ai = _button(box, "", _on_toggle_ai)
 	_quit = _button(box, "Quit to Desktop", func() -> void: get_tree().quit())
 	DebugSettings.show_boxes_changed.connect(func(_on: bool) -> void: _refresh())
+	DebugSettings.show_ai_changed.connect(func(_on: bool) -> void: _refresh())
 	_refresh()
 
 
@@ -101,8 +104,13 @@ func _on_toggle_boxes() -> void:
 	DebugSettings.show_boxes = not DebugSettings.show_boxes
 
 
+func _on_toggle_ai() -> void:
+	DebugSettings.show_ai = not DebugSettings.show_ai
+
+
 func _refresh() -> void:
 	_boxes.text = "Hitboxes: %s" % ("ON" if DebugSettings.show_boxes else "OFF")
+	_ai.text = "AI Debug: %s" % ("ON" if DebugSettings.show_ai else "OFF")
 
 
 func _button(parent: Control, text: String, action: Callable) -> Button:

@@ -131,3 +131,10 @@ func _can_flinch() -> bool:
 
 func _state_after_flinch() -> StringName:
 	return &"reposition"
+
+
+## Circles its roost: the body orbits a small loop around home, nose along the loop.
+func _idle_flavour(_delta: float) -> void:
+	var a := state_time * 0.9
+	visual_offset = Vector3(cos(a) - 1.0, 0.15 * sin(a * 2.0), sin(a)) * 0.9
+	visual_yaw = wrapf(PI - a, -PI, PI)

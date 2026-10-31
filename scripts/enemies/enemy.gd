@@ -140,6 +140,11 @@ var telegraph: float = 0.0
 var visual_scale: Vector3 = Vector3.ONE
 ## Nose-down tilt of the body in radians (dives). Resets on every state change.
 var visual_pitch: float = 0.0
+## Idle-flavour offsets on the Visual node (reset on every state change).
+var visual_yaw: float = 0.0
+var visual_offset: Vector3 = Vector3.ZERO
+var marker: AwarenessMarker
+var ai_view: AiDebugView
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var _age: float = 0.0
@@ -243,6 +248,9 @@ func _ready() -> void:
 	_label.visible = DebugSettings.show_boxes
 	add_child(_label)
 	DebugSettings.show_boxes_changed.connect(_on_show_boxes_changed)
+	marker = AwarenessMarker.attach(self)
+	DebugSettings.show_ai_changed.connect(_on_show_ai_changed)
+	_on_show_ai_changed(DebugSettings.show_ai)
 
 	home_position = global_position
 	home_yaw = rotation.y
@@ -476,6 +484,8 @@ func enter_state(new_state: StringName) -> void:
 	telegraph = 0.0
 	visual_scale = Vector3.ONE
 	visual_pitch = 0.0
+	visual_yaw = 0.0
+	visual_offset = Vector3.ZERO
 	state_log.append("%s@%.2f" % [new_state, _age])
 	_on_enter_awareness_state(new_state)
 	_on_enter_state(new_state)
@@ -768,6 +778,7 @@ func _tick_awareness(delta: float) -> void:
 	match state:
 		REST:
 			_stop()
+			_idle_flavour(delta)
 			if patrol_points.is_empty() and wander_radius <= 0.0:
 				rotation.y = rotate_toward(rotation.y, home_yaw, deg_to_rad(turn_speed_deg) * 0.5 * delta)
 			elif state_time >= _rest_duration:
@@ -983,6 +994,8 @@ func _interrupt() -> void:
 	telegraph = 0.0
 	visual_scale = Vector3.ONE
 	visual_pitch = 0.0
+	visual_yaw = 0.0
+	visual_offset = Vector3.ZERO
 
 
 func _update_statuses(delta: float) -> void:
@@ -1109,6 +1122,9 @@ func _update_visuals(delta: float) -> void:
 	_web.visible = is_rooted()
 	ice_block.visible = is_frozen() and not health.is_dead
 	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else visual_pitch
+	var settle := 1.0 - exp(-12.0 * delta)
+	visual.rotation.y = lerp_angle(visual.rotation.y, visual_yaw, settle)
+	visual.position = visual.position.lerp(visual_offset, settle)
 	if not health.is_dead:
 		visual.scale = visual.scale.lerp(visual_scale, 1.0 - exp(-20.0 * delta))
 	if _label.visible:
@@ -1117,6 +1133,19 @@ func _update_visuals(delta: float) -> void:
 
 func _on_show_boxes_changed(enabled: bool) -> void:
 	_label.visible = enabled and not health.is_dead
+
+
+func _on_show_ai_changed(enabled: bool) -> void:
+	if enabled and ai_view == null:
+		ai_view = AiDebugView.attach(self)
+	elif not enabled and ai_view != null:
+		ai_view.queue_free()
+		ai_view = null
+
+
+## Seconds since spawn (the clock state_log, alerted_at use).
+func age_seconds() -> float:
+	return _age
 
 
 # --- Virtuals -----------------------------------------------------------------
@@ -1147,4 +1176,12 @@ func _state_after_flinch() -> StringName:
 
 
 func _on_death() -> void:
+	pass
+
+
+## Called every AI frame while resting unaware. Pure visual fidget: drive
+## visual_pitch / visual_yaw / visual_scale / visual_offset (all reset when the
+## state changes). Never activate hitboxes, never use the telegraph glow or a
+## forward lunge squash (those mean "attack coming").
+func _idle_flavour(_delta: float) -> void:
 	pass

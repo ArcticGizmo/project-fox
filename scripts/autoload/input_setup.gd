@@ -35,6 +35,8 @@ func _enter_tree() -> void:
 
 	# Debug.
 	_add_button(&"debug_toggle_boxes", [JOY_BUTTON_BACK], [KEY_F1])
+	# Controllers reach the AI debug view through the pause menu.
+	_add_button(&"debug_toggle_ai", [], [KEY_F4])
 	_add_button(&"debug_give_xp", [JOY_BUTTON_DPAD_UP], [KEY_F2])
 	_add_button(&"debug_next_wave", [JOY_BUTTON_DPAD_DOWN], [KEY_F3])
 

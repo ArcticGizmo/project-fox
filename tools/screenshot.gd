@@ -54,6 +54,7 @@ func _ready() -> void:
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_hazards(arena.get("player") as Player)
+	await _capture_awareness(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)
@@ -244,3 +245,52 @@ func _capture(file_name: String) -> void:
 	var path := ProjectSettings.globalize_path(out_dir.path_join(file_name))
 	img.save_png(path)
 	print("saved ", path)
+
+
+## Unaware enemies with the AI debug view on: a resting bull with a patrol route,
+## a suspicious rat, an alerting toad passing the alert to a gull, plus a noise
+## pulse. Then the same moment with the view off (markers only).
+func _capture_awareness(player: Player, waves: WaveManager) -> void:
+	waves.set_physics_process(false)
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		n.queue_free()
+	await get_tree().physics_frame
+	DebugSettings.show_boxes = false
+	var p := player.global_position
+	var parent := waves.get_parent()
+	var bull := _place_unaware(parent, "res://scenes/enemies/brass_bull.tscn", p + Vector3(7, 0, -12), 0.6,
+			[Vector3(-3, 0, -3), Vector3(3, 0, -4)])
+	bull.rest_time_min = 60.0
+	bull.rest_time_max = 60.0
+	_place_unaware(parent, "res://scenes/enemies/clockwork_rat.tscn", p + Vector3(-4, 0, -11), PI - 0.3)
+	var toad := _place_unaware(parent, "res://scenes/enemies/spitter_toad.tscn", p + Vector3(2, 0, -22), 0.0)
+	_place_unaware(parent, "res://scenes/enemies/bombardier_gull.tscn", p + Vector3(5, 0, -24), 0.0)
+	DebugSettings.show_ai = true
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = p + Vector3(0, 9, -1)
+	cam.look_at(p + Vector3(0, 0, -14))
+	cam.make_current()
+	await get_tree().create_timer(0.3).timeout
+	# Away from the bull so it keeps resting; the rat may hear it and investigate.
+	NoiseEvent.emit(p + Vector3(-6, 0, -6), 3.0, player)
+	toad.call(&"_begin_alert", true)
+	await get_tree().create_timer(0.25).timeout
+	await _capture("awareness_debug.png")
+	DebugSettings.show_ai = false
+	await get_tree().process_frame
+	await _capture("awareness_markers.png")
+	cam.queue_free()
+	waves.set_physics_process(true)
+
+
+func _place_unaware(parent: Node, path: String, at: Vector3, yaw: float, route: Array[Vector3] = []) -> Enemy:
+	var e := (load(path) as PackedScene).instantiate() as Enemy
+	e.position = at
+	e.rotation.y = yaw
+	for offset: Vector3 in route:
+		var m := Marker3D.new()
+		m.position = offset
+		e.add_child(m)
+	parent.add_child(e)
+	return e

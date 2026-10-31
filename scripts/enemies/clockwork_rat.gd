@@ -101,3 +101,17 @@ func _can_flinch() -> bool:
 
 func _state_after_flinch() -> StringName:
 	return &"approach"
+
+
+## Twitchy: every so often a quick sideways scurry with a hop and a head flick.
+func _idle_flavour(_delta: float) -> void:
+	var cycle := 0.9
+	var n := floori(state_time / cycle)
+	var t := fmod(state_time, cycle)
+	var side := 1.0 if n % 2 == 0 else -1.0
+	if t < 0.22:
+		visual_offset = Vector3(side * 0.18, absf(sin(t / 0.22 * PI)) * 0.08, 0.0)
+		visual_yaw = side * 0.35
+	else:
+		visual_offset = Vector3(side * 0.18, 0.0, 0.0) if t < 0.6 else Vector3.ZERO
+		visual_yaw = side * 0.15 * sin(state_time * 40.0) if t > 0.75 else 0.0

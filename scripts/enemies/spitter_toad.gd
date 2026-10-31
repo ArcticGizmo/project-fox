@@ -109,3 +109,11 @@ func _can_flinch() -> bool:
 
 func _state_after_flinch() -> StringName:
 	return &"reposition"
+
+
+## Throat puff: a short, mostly sideways swell every couple of seconds (much
+## smaller than the spit wind-up, and wide rather than round).
+func _idle_flavour(_delta: float) -> void:
+	var t := fmod(state_time, 1.8)
+	var p := sin(clampf(t / 0.5, 0.0, 1.0) * PI)
+	visual_scale = Vector3(1.0 + 0.1 * p, 1.0 - 0.03 * p, 1.0 + 0.04 * p)

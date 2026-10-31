@@ -119,3 +119,10 @@ func _on_horn_hit(_hb: HurtBox, _info: DamageInfo) -> void:
 
 func _can_flinch() -> bool:
 	return false
+
+
+## Grazing: the head dips nose-down for a while, then comes back up to look around.
+func _idle_flavour(_delta: float) -> void:
+	var t := fmod(state_time, 3.2)
+	var dip := smoothstep(0.3, 0.8, t) * (1.0 - smoothstep(1.9, 2.4, t))
+	visual_pitch = -0.28 * dip

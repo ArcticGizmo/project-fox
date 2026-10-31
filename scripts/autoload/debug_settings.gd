@@ -18,6 +18,16 @@ var show_boxes: bool = false:
 		show_boxes = value
 		show_boxes_changed.emit(value)
 
+## AI awareness overlay (an AiDebugView on every enemy). F4 / pause menu.
+signal show_ai_changed(enabled: bool)
+
+var show_ai: bool = false:
+	set(value):
+		if value == show_ai:
+			return
+		show_ai = value
+		show_ai_changed.emit(value)
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -26,6 +36,8 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"debug_toggle_boxes"):
 		show_boxes = not show_boxes
+	elif event.is_action_pressed(&"debug_toggle_ai"):
+		show_ai = not show_ai
 
 
 ## Short-lived sphere outline for instant area queries (explosions).

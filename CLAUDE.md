@@ -22,6 +22,7 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 | `scripts/world/` | `Arena`, `Block` (@tool coloured box with collision), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
+| `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
 | `data/` | `player_tuning.tres`, `weapons/*.tres` |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
 | `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features) |
@@ -52,7 +53,7 @@ chill vs frozen enemies, the two flyers (cruising and diving) and an overview).
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
 jump A/Space · dodge B/Shift · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
-Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · level weapon
+Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
 ## Conventions
@@ -75,6 +76,9 @@ D-pad up/F2 · next wave D-pad down/F3.
   `_setup`, implement the pattern as states in `_tick_state`. Every transition is logged in
   `state_log` ("state@seconds") so tests can assert sequences and telegraph timings.
   Telegraphs use `telegraph` (glow) and `visual_scale` (squash).
+  Unaware enemies show an `AwarenessMarker` ("?" filling with suspicion, "!" on alert; pale, never
+  yellow). `_idle_flavour(delta)` runs while resting: visual-only fidgets via `visual_pitch` /
+  `visual_yaw` / `visual_scale` / `visual_offset`; no hitboxes, no telegraph glow, no lunge squash.
 - **Flyers** set `flying = true` (+ `hover_height`): gravity is off and `desired_velocity.y`
   steers vertically; use `hover_velocity(height)` to cruise. Frozen flyers fall and climb
   back after thawing. Lobbers share `LobProjectile.launch()` and `lead_target()`.
