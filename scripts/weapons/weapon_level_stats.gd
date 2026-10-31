@@ -25,3 +25,7 @@ extends Resource
 @export var duration: float = 0.0
 ## Interval for secondary actions (e.g. a sentry's own shots).
 @export var sub_interval: float = 0.0
+## Strength of the weapon's status effect (chill per hit, poison stacks, ...).
+@export var status_power: float = 0.0
+## Weapon-specific perk unlocked at this level; each weapon script documents it.
+@export var upgrade_flag: bool = false

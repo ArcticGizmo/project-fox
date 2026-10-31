@@ -17,6 +17,10 @@ var hit_mask: int = Layers.WORLD | Layers.ENEMY_HURTBOX
 var weapon: Weapon = null
 var color: Color = Color.WHITE
 var size: Vector3 = Vector3(0.15, 0.15, 0.45)
+## Optional func(hb: HurtBox) -> void after a hit lands (status effects).
+var on_hit: Callable = Callable()
+## Optional func(at: Vector3) -> void when the projectile ends on anything.
+var on_impact: Callable = Callable()
 
 var _age: float = 0.0
 var _hit_entities: Dictionary = {}
@@ -125,8 +129,12 @@ func _hit(hb: HurtBox) -> bool:
 		info = weapon.make_damage(damage, global_position - direction)
 	if not hb.receive(info):
 		return false
+	if on_hit.is_valid():
+		on_hit.call(hb)
 	GameFeel.impact(global_position, color, 0.5)
 	if pierce_left <= 0:
+		if on_impact.is_valid():
+			on_impact.call(global_position)
 		queue_free()
 		return true
 	pierce_left -= 1
@@ -134,6 +142,8 @@ func _hit(hb: HurtBox) -> bool:
 
 
 func _die(at: Vector3) -> void:
+	if on_impact.is_valid():
+		on_impact.call(at)
 	GameFeel.impact(at, color.darkened(0.3), 0.35)
 	queue_free()
 

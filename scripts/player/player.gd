@@ -25,6 +25,9 @@ const DEFAULT_WEAPONS: Array[String] = [
 	"res://data/weapons/pufferfish_mortar.tres",
 	"res://data/weapons/galvanic_eel.tres",
 	"res://data/weapons/tortoise_sentry.tres",
+	# Page 2: status-effect weapons
+	"res://data/weapons/frost_narwhal.tres",
+	"res://data/weapons/viper_spitter.tres",
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5

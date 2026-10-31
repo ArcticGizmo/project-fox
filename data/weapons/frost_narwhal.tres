@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/frost_narwhal.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 8.0
+fire_interval = 0.3
+max_ammo = 60
+projectile_speed = 35.0
+max_range = 35.0
+knockback = 1.0
+status_power = 0.2
+duration = 2.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 9.0
+fire_interval = 0.28
+max_ammo = 70
+projectile_speed = 37.0
+max_range = 35.0
+knockback = 1.0
+status_power = 0.25
+duration = 2.5
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 10.0
+fire_interval = 0.26
+max_ammo = 80
+pierce = 1
+projectile_speed = 40.0
+max_range = 40.0
+knockback = 1.0
+status_power = 0.3
+duration = 3.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 12.0
+fire_interval = 0.22
+max_ammo = 100
+pierce = 2
+projectile_speed = 42.0
+max_range = 45.0
+knockback = 1.0
+status_power = 0.35
+duration = 3.5
+
+[resource]
+script = ExtResource("1_data")
+id = &"frost_narwhal"
+display_name = "Frost Narwhal"
+description = "Icy lances that chill. Enough chill freezes an enemy solid; frozen enemies take extra damage from everything."
+color = Color(0.8, 0.95, 1, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(70, 160, 300)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

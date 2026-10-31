@@ -21,6 +21,8 @@ const BURN_COLOR := Color(1.0, 0.35, 0.0)
 const FLINCH := &"flinch"
 const BURN_TICK := 0.25
 const CHILL_DECAY_PER_SEC := 0.25
+## Chill only starts to decay this long after the last chilling hit.
+const CHILL_DECAY_DELAY := 1.0
 ## Full chill slows movement and the AI clock by this fraction.
 const CHILL_MAX_SLOW := 0.6
 const FROZEN_DAMAGE_MULTIPLIER := 1.5
@@ -87,6 +89,7 @@ var _burn_source: Weapon = null
 
 ## 0..1. Slows the enemy; reaching 1 freezes it.
 var chill: float = 0.0
+var _chill_hold: float = 0.0
 var frozen_left: float = 0.0
 var rooted_left: float = 0.0
 var staggered_left: float = 0.0
@@ -408,6 +411,23 @@ func _update_burn(delta: float) -> void:
 		_burn_dps = 0.0
 
 
+## The Enemy a hurtbox belongs to, or null (crates, the player, decoys).
+static func from_hurt_box(hb: HurtBox) -> Enemy:
+	if hb == null or hb.health == null:
+		return null
+	return hb.health.get_parent() as Enemy
+
+
+## Every living enemy within `radius` of `center`.
+static func in_radius(tree: SceneTree, center: Vector3, radius: float) -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	for n: Node in tree.get_nodes_in_group(&"enemies"):
+		var e := n as Enemy
+		if e != null and not e.health.is_dead and e.get_aim_point().distance_to(center) <= radius + maxf(e.extents().x, e.extents().z) * 0.5:
+			out.append(e)
+	return out
+
+
 # --- Targeting ----------------------------------------------------------------
 
 ## The closest lure (group "lures", property lure_radius) in range wins over
@@ -467,6 +487,7 @@ func add_chill(amount: float, freeze_duration: float) -> void:
 	if is_frozen() or status_resistance <= 0.0 or health.is_dead:
 		return
 	chill = minf(1.0, chill + amount * status_resistance)
+	_chill_hold = CHILL_DECAY_DELAY
 	if chill >= 1.0:
 		freeze(freeze_duration)
 
@@ -524,7 +545,9 @@ func _update_statuses(delta: float) -> void:
 		if frozen_left <= 0.0:
 			chill = 0.0
 	else:
-		chill = maxf(0.0, chill - CHILL_DECAY_PER_SEC * delta)
+		_chill_hold -= delta
+		if _chill_hold <= 0.0:
+			chill = maxf(0.0, chill - CHILL_DECAY_PER_SEC * delta)
 	rooted_left = maxf(0.0, rooted_left - delta)
 	staggered_left = maxf(0.0, staggered_left - delta)
 	exposed_left = maxf(0.0, exposed_left - delta)
