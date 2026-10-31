@@ -207,3 +207,53 @@ func test_sweeper_arms_pass_under_a_jump() -> void:
 	var dummy := add_dummy_target(Vector3(0, arm_top + 0.1, -s.radius * 0.7))
 	await wait_seconds(360.0 / s.spin_speed_deg)
 	assert_eq(dummy.damage_taken(), 0.0, "airborne above the arms is safe")
+
+
+# --- Steam hammer ---------------------------------------------------------------
+
+func _slam_cycle(h: SteamHammer) -> float:
+	return h.track_time + h.windup_time + (h.rest_height + SteamHammer.WINDUP_LIFT) / h.slam_speed
+
+
+func test_hammer_tracks_then_telegraphs_then_slams() -> void:
+	var h := _add_hazard(SteamHammer.new(), Vector3.ZERO) as SteamHammer
+	var dummy := add_dummy_target(Vector3(4.0, 0.05, 0.5))
+	await wait_seconds(h.track_time - 0.05)
+	assert_near(h.carriage_x, 4.0, 0.1, "slides over the target")
+	await wait_seconds(0.1)
+	assert_eq(h.state, SteamHammer.WINDUP, "winds up after track_time")
+	assert_eq(dummy.damage_taken(), 0.0, "no damage during the wind-up")
+	await wait_seconds(h.windup_time + 0.3)
+	var windup_at := state_time_in_log(h.state_log, "windup")
+	var slam_at := state_time_in_log(h.state_log, "slam")
+	assert_near(slam_at - windup_at, h.windup_time, 0.05, "wind-up duration")
+	assert_eq(h.state, SteamHammer.DOWN, "head is down after the slam")
+	assert_eq(dummy.damage_taken(), h.damage, "flattened")
+
+
+func test_hammer_misses_if_you_step_out_during_windup() -> void:
+	var h := _add_hazard(SteamHammer.new(), Vector3.ZERO) as SteamHammer
+	var dummy := add_dummy_target(Vector3(-3.0, 0.05, 0.0))
+	await wait_until(func() -> bool: return h.state == SteamHammer.WINDUP, h.track_time + 0.5)
+	dummy.global_position = Vector3(-3.0, 0.05, 2.5)
+	await wait_seconds(h.windup_time + 0.4)
+	assert_eq(state_time_in_log(h.state_log, "down") > 0.0, true, "it slammed")
+	assert_eq(dummy.damage_taken(), 0.0, "stepping aside dodges it")
+
+
+func test_hammer_ignores_creatures_away_from_the_rail() -> void:
+	var h := _add_hazard(SteamHammer.new(), Vector3.ZERO) as SteamHammer
+	add_dummy_target(Vector3(2.0, 0.05, h.track_reach + 2.0))
+	await wait_seconds(_slam_cycle(h) + 0.5)
+	assert_eq(h.state, SteamHammer.TRACK, "nothing to track")
+	assert_eq(h.carriage_x, 0.0, "carriage stays put")
+
+
+func test_hammer_can_be_baited_onto_enemies() -> void:
+	var h := _add_hazard(SteamHammer.new(), Vector3.ZERO) as SteamHammer
+	var dummy := add_dummy_target(Vector3(6.0, 0.05, 0.0))
+	var bull := _parked_bull(Vector3(-1.5, 0.0, 0.0))
+	await wait_seconds(_slam_cycle(h) + 0.2)
+	assert_eq(dummy.damage_taken(), 0.0, "the player is further away")
+	assert_true(bull.health.current < bull.health.max_health, "the nearer enemy gets flattened")
+	assert_true(bull.is_staggered(), "and staggered")

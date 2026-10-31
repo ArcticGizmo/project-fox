@@ -163,6 +163,22 @@ func _capture_hazards(arena_player: Player) -> void:
 			await _capture_lava(n as Lava, arena_player)
 		elif n is ClockworkSweeper:
 			await _capture_sweeper(n as ClockworkSweeper)
+		elif n is SteamHammer:
+			await _capture_hammer(n as SteamHammer)
+
+
+func _capture_hammer(hammer: SteamHammer) -> void:
+	var cam := _hazard_camera(hammer, Vector3(0, 5.0, 12.0), 3.0)
+	hammer.enter_state(SteamHammer.WINDUP)
+	hammer.state_time = hammer.windup_time * 0.8
+	await get_tree().create_timer(0.05).timeout
+	await _capture("hazard_hammer_windup.png")
+	for _i: int in 120:
+		if hammer.state == SteamHammer.DOWN:
+			break
+		await get_tree().physics_frame
+	await _capture("hazard_hammer_slam.png")
+	cam.queue_free()
 
 
 func _capture_sweeper(sweeper: ClockworkSweeper) -> void:
