@@ -25,6 +25,7 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 | `data/` | `player_tuning.tres`, `weapons/*.tres` |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
 | `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features) |
+| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`) |
 
 Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
 from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
