@@ -155,15 +155,32 @@ func _capture_hazards() -> void:
 		if done.has(kind):
 			continue
 		done[kind] = true
-		var cam := _hazard_camera(n as Hazard)
-		var trap := n as FireTrap
-		if trap != null:
-			trap.trigger_now()
-			await get_tree().create_timer(trap.arm_time * 0.8).timeout
-			await _capture("hazard_fire_armed.png")
-			await get_tree().create_timer(trap.arm_time * 0.2 + 0.3).timeout
-			await _capture("hazard_fire_burning.png")
-		cam.queue_free()
+		if n is FireTrap:
+			await _capture_fire_trap(n as FireTrap)
+		elif n is LightningBarrier:
+			await _capture_lightning(n as LightningBarrier)
+
+
+func _capture_fire_trap(trap: FireTrap) -> void:
+	var cam := _hazard_camera(trap)
+	trap.trigger_now()
+	await get_tree().create_timer(trap.arm_time * 0.8).timeout
+	await _capture("hazard_fire_armed.png")
+	await get_tree().create_timer(trap.arm_time * 0.2 + 0.3).timeout
+	await _capture("hazard_fire_burning.png")
+	cam.queue_free()
+
+
+## From the north (-Z) side so a second barrier behind it does not block the view.
+func _capture_lightning(barrier: LightningBarrier) -> void:
+	var cam := _hazard_camera(barrier, Vector3(0, 6.5, -8.0), 1.2)
+	barrier.enter_state(LightningBarrier.CHARGING)
+	barrier.state_time = barrier.charge_time * 0.8
+	await get_tree().create_timer(0.05).timeout
+	await _capture("hazard_lightning_charging.png")
+	await get_tree().create_timer(barrier.charge_time * 0.2 + 0.2).timeout
+	await _capture("hazard_lightning_on.png")
+	cam.queue_free()
 
 
 func _hazard_camera(h: Hazard, offset: Vector3 = Vector3(0, 3.5, 7), look_height: float = 1.0) -> Camera3D:
