@@ -11,6 +11,9 @@ signal hurt(info: DamageInfo)
 @export var is_weak_spot: bool = false
 
 var invulnerable: bool = false
+## Optional func(info: DamageInfo) -> void run on every accepted hit before
+## health is applied (owner-wide multipliers such as frozen or exposed).
+var incoming_modifier: Callable = Callable()
 var _outline: DebugOutline
 
 
@@ -33,6 +36,8 @@ func receive(info: DamageInfo) -> bool:
 	info.amount *= damage_multiplier
 	if is_weak_spot:
 		info.is_critical = true
+	if incoming_modifier.is_valid():
+		incoming_modifier.call(info)
 	if health != null:
 		health.apply_damage(info)
 	hurt.emit(info)

@@ -20,6 +20,19 @@ const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.15)
 const BURN_COLOR := Color(1.0, 0.35, 0.0)
 const FLINCH := &"flinch"
 const BURN_TICK := 0.25
+const CHILL_DECAY_PER_SEC := 0.25
+## Full chill slows movement and the AI clock by this fraction.
+const CHILL_MAX_SLOW := 0.6
+const FROZEN_DAMAGE_MULTIPLIER := 1.5
+const EXPOSED_DAMAGE_MULTIPLIER := 1.3
+const POISON_DPS_PER_STACK := 3.0
+const POISON_MAX_STACKS := 8
+const POISON_DURATION := 5.0
+const POISON_TICK := 0.5
+const CONTAGION_RADIUS := 4.5
+const FREEZE_COLOR := Color(0.6, 0.88, 1.0)
+const POISON_COLOR := Color(0.4, 1.0, 0.2)
+const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
 
 @export_group("Body")
 @export var display_name: String = "Enemy"
@@ -43,6 +56,10 @@ const BURN_TICK := 0.25
 @export var gravity: float = 30.0
 ## Fixed RNG seed for deterministic tests; -1 = random.
 @export var random_seed: int = -1
+
+@export_group("Status effects")
+## Scales chill, freeze, root and stagger strength/duration. 0 = immune.
+@export_range(0.0, 2.0) var status_resistance: float = 1.0
 
 var health: Health
 var hurt_box: HurtBox
@@ -68,6 +85,20 @@ var _burn_left: float = 0.0
 var _burn_tick: float = 0.0
 var _burn_source: Weapon = null
 
+## 0..1. Slows the enemy; reaching 1 freezes it.
+var chill: float = 0.0
+var frozen_left: float = 0.0
+var rooted_left: float = 0.0
+var staggered_left: float = 0.0
+var exposed_left: float = 0.0
+var poison_stacks: int = 0
+var _poison_left: float = 0.0
+var _poison_tick: float = 0.0
+var _poison_source: Weapon = null
+var _poison_contagious: bool = false
+var _was_disabled: bool = false
+var _web: Node3D
+
 
 func _ready() -> void:
 	add_to_group(&"enemies")
@@ -91,6 +122,7 @@ func _ready() -> void:
 	hurt_box.name = "HurtBox"
 	hurt_box.collision_layer = Layers.ENEMY_HURTBOX
 	hurt_box.health = health
+	hurt_box.incoming_modifier = _modify_incoming
 	var hcs := CollisionShape3D.new()
 	hcs.shape = make_shape(body_shape, body_size * hurtbox_scale)
 	hcs.position.y = extents().y * 0.5
@@ -191,6 +223,23 @@ func _build_body() -> void:
 	cs.position.y = e.y * 0.5
 	add_child(cs)
 
+	# Silk web around the feet, shown while rooted.
+	_web = Node3D.new()
+	_web.visible = false
+	visual.add_child(_web)
+	var silk := StandardMaterial3D.new()
+	silk.albedo_color = Color(1, 1, 1, 0.8)
+	silk.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	for i: int in 3:
+		var strand := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.05, 0.05, maxf(e.x, e.z) * 1.6)
+		strand.mesh = box
+		strand.material_override = silk
+		strand.position.y = 0.1
+		strand.rotation.y = PI * float(i) / 3.0
+		_web.add_child(strand)
+
 
 func add_visual_box(size: Vector3, pos: Vector3, c: Color) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -229,6 +278,7 @@ func make_weak_spot(size: Vector3, offset: Vector3, multiplier: float) -> HurtBo
 	hb.name = "WeakSpot"
 	hb.collision_layer = Layers.ENEMY_HURTBOX
 	hb.health = health
+	hb.incoming_modifier = _modify_incoming
 	hb.damage_multiplier = multiplier
 	hb.is_weak_spot = true
 	var cs := CollisionShape3D.new()
@@ -246,22 +296,33 @@ func _physics_process(delta: float) -> void:
 	_update_visuals(delta)
 	if health.is_dead:
 		return
-	state_time += delta
 	_update_burn(delta)
-	if target == null or not is_instance_valid(target):
-		target = get_tree().get_first_node_in_group(&"player") as Node3D
+	_update_statuses(delta)
+	target = _resolve_target()
 
-	if state == FLINCH:
+	# The AI runs on its own clock: chill slows telegraphs and turning as well
+	# as movement; freeze and stagger stop it entirely.
+	var ai_delta := delta * ai_speed()
+	state_time += ai_delta
+	if is_disabled():
+		desired_velocity = Vector3.ZERO
+		_was_disabled = true
+	elif _was_disabled:
+		_was_disabled = false
+		enter_state(_state_after_flinch())
+	elif state == FLINCH:
 		desired_velocity = Vector3.ZERO
 		if state_time >= flinch_time:
 			enter_state(_state_after_flinch())
 	else:
-		_tick_state(delta)
+		_tick_state(ai_delta)
 
 	_move_velocity = _move_velocity.move_toward(desired_velocity, acceleration * delta)
 	_knockback = _knockback.move_toward(Vector3.ZERO, 25.0 * delta)
-	velocity.x = _move_velocity.x + _knockback.x
-	velocity.z = _move_velocity.z + _knockback.z
+	var m := move_multiplier()
+	var kb := 0.0 if is_frozen() or is_rooted() else 1.0
+	velocity.x = _move_velocity.x * m + _knockback.x * kb
+	velocity.z = _move_velocity.z * m + _knockback.z * kb
 	velocity.y -= gravity * delta
 	move_and_slide()
 	_after_move(delta)
@@ -347,6 +408,177 @@ func _update_burn(delta: float) -> void:
 		_burn_dps = 0.0
 
 
+# --- Targeting ----------------------------------------------------------------
+
+## The closest lure (group "lures", property lure_radius) in range wins over
+## the player.
+func _resolve_target() -> Node3D:
+	var best: Node3D = null
+	var best_dist := INF
+	for n: Node in get_tree().get_nodes_in_group(&"lures"):
+		var lure := n as Node3D
+		if lure == null or not (lure.get(&"lure_radius") is float):
+			continue
+		var d := lure.global_position.distance_to(global_position)
+		if d <= float(lure.get(&"lure_radius")) and d < best_dist:
+			best = lure
+			best_dist = d
+	if best != null:
+		return best
+	if target != null and is_instance_valid(target) and target.is_in_group(&"player"):
+		return target
+	return get_tree().get_first_node_in_group(&"player") as Node3D
+
+
+# --- Status effects -------------------------------------------------------------
+
+func is_frozen() -> bool:
+	return frozen_left > 0.0
+
+
+func is_rooted() -> bool:
+	return rooted_left > 0.0
+
+
+func is_staggered() -> bool:
+	return staggered_left > 0.0
+
+
+func is_exposed() -> bool:
+	return exposed_left > 0.0
+
+
+## Frozen or staggered: the AI is paused and attacks are cancelled.
+func is_disabled() -> bool:
+	return is_frozen() or is_staggered()
+
+
+## Speed of the AI clock (telegraphs, turning, state timers).
+func ai_speed() -> float:
+	return 0.0 if is_disabled() else 1.0 - chill * CHILL_MAX_SLOW
+
+
+func move_multiplier() -> float:
+	return 0.0 if is_disabled() or is_rooted() else ai_speed()
+
+
+## Adds chill (0..1). At 1 the enemy freezes for `freeze_duration`.
+func add_chill(amount: float, freeze_duration: float) -> void:
+	if is_frozen() or status_resistance <= 0.0 or health.is_dead:
+		return
+	chill = minf(1.0, chill + amount * status_resistance)
+	if chill >= 1.0:
+		freeze(freeze_duration)
+
+
+func freeze(duration: float) -> void:
+	if status_resistance <= 0.0 or health.is_dead:
+		return
+	chill = 1.0
+	frozen_left = maxf(frozen_left, duration * status_resistance)
+	_interrupt()
+	GameFeel.impact(get_aim_point(), FREEZE_COLOR, extents().length() * 1.3, 0.25)
+
+
+func root(duration: float) -> void:
+	if status_resistance <= 0.0 or health.is_dead:
+		return
+	rooted_left = maxf(rooted_left, duration * status_resistance)
+
+
+## Interrupts the current attack. Resistance shortens it.
+func stagger(duration: float) -> void:
+	if status_resistance <= 0.0 or health.is_dead:
+		return
+	staggered_left = maxf(staggered_left, duration * status_resistance)
+	_interrupt()
+
+
+## Takes EXPOSED_DAMAGE_MULTIPLIER damage for a while. Not affected by resistance.
+func expose(duration: float) -> void:
+	exposed_left = maxf(exposed_left, duration)
+
+
+## Stacking damage over time. Contagious poison spreads to nearby enemies on death.
+func add_poison(stacks: int, source: Weapon, contagious: bool = false) -> void:
+	if health.is_dead or stacks <= 0:
+		return
+	poison_stacks = mini(POISON_MAX_STACKS, poison_stacks + stacks)
+	_poison_left = POISON_DURATION
+	_poison_source = source
+	_poison_contagious = _poison_contagious or contagious
+
+
+func _interrupt() -> void:
+	for child: Node in get_children():
+		if child is HitBox:
+			(child as HitBox).active = false
+	snap_velocity(Vector3.ZERO)
+	telegraph = 0.0
+	visual_scale = Vector3.ONE
+
+
+func _update_statuses(delta: float) -> void:
+	if frozen_left > 0.0:
+		frozen_left -= delta
+		if frozen_left <= 0.0:
+			chill = 0.0
+	else:
+		chill = maxf(0.0, chill - CHILL_DECAY_PER_SEC * delta)
+	rooted_left = maxf(0.0, rooted_left - delta)
+	staggered_left = maxf(0.0, staggered_left - delta)
+	exposed_left = maxf(0.0, exposed_left - delta)
+	if poison_stacks > 0:
+		_poison_left -= delta
+		_poison_tick += delta
+		if _poison_tick >= POISON_TICK:
+			_poison_tick -= POISON_TICK
+			var info := DamageInfo.create(poison_stacks * POISON_DPS_PER_STACK * POISON_TICK, global_position)
+			info.is_dot = true
+			if is_instance_valid(_poison_source):
+				info.source_weapon = _poison_source
+			health.apply_damage(info)
+		if _poison_left <= 0.0:
+			poison_stacks = 0
+			_poison_contagious = false
+
+
+## Frozen and exposed enemies take extra damage from every source.
+func _modify_incoming(info: DamageInfo) -> void:
+	if is_frozen():
+		info.amount *= FROZEN_DAMAGE_MULTIPLIER
+	if is_exposed():
+		info.amount *= EXPOSED_DAMAGE_MULTIPLIER
+
+
+func _spread_poison() -> void:
+	if poison_stacks <= 0 or not _poison_contagious:
+		return
+	var spread := maxi(1, floori(poison_stacks * 0.5))
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var e := n as Enemy
+		if e != null and e != self and e.global_position.distance_to(global_position) <= CONTAGION_RADIUS:
+			e.add_poison(spread, _poison_source, true)
+	GameFeel.impact(get_aim_point(), POISON_COLOR, CONTAGION_RADIUS * 2.0, 0.35)
+
+
+func status_summary() -> String:
+	var parts := PackedStringArray()
+	if is_frozen():
+		parts.append("FROZEN %.1f" % frozen_left)
+	elif chill > 0.01:
+		parts.append("chill %d%%" % roundi(chill * 100.0))
+	if is_rooted():
+		parts.append("rooted %.1f" % rooted_left)
+	if is_staggered():
+		parts.append("stagger %.1f" % staggered_left)
+	if is_exposed():
+		parts.append("exposed %.1f" % exposed_left)
+	if poison_stacks > 0:
+		parts.append("poison x%d" % poison_stacks)
+	return " ".join(parts)
+
+
 func _on_damaged(amount: float, info: DamageInfo) -> void:
 	if info.is_dot:
 		return
@@ -358,11 +590,12 @@ func _on_damaged(amount: float, info: DamageInfo) -> void:
 	if info.knockback_up > 0.0 and is_on_floor():
 		velocity.y = info.knockback_up * (1.0 - knockback_resistance)
 	GameFeel.damage_number(get_aim_point() + Vector3.UP * extents().y * 0.5, amount, info.is_critical)
-	if flinch_on_hit and not health.is_dead and _can_flinch():
+	if flinch_on_hit and not health.is_dead and not is_disabled() and _can_flinch():
 		enter_state(FLINCH)
 
 
 func _on_died(info: DamageInfo) -> void:
+	_spread_poison()
 	if info != null and is_instance_valid(info.source_weapon):
 		info.source_weapon.add_xp(xp_value)
 	remove_from_group(&"aim_targets")
@@ -390,11 +623,20 @@ func _update_visuals(delta: float) -> void:
 	var glow := TELEGRAPH_COLOR * telegraph + Color.WHITE * _flash
 	if _burn_left > 0.0:
 		glow += BURN_COLOR * (0.5 + 0.3 * sin(_age * 20.0))
+	if poison_stacks > 0:
+		glow += POISON_COLOR * (0.25 + 0.04 * poison_stacks + 0.15 * sin(_age * 6.0))
+	if is_exposed():
+		glow += EXPOSED_COLOR * (0.3 + 0.2 * sin(_age * 10.0))
+	if is_frozen():
+		glow += FREEZE_COLOR * 0.5
 	_material.emission = glow
+	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.6)
+	_web.visible = is_rooted()
+	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else 0.0
 	if not health.is_dead:
 		visual.scale = visual.scale.lerp(visual_scale, 1.0 - exp(-20.0 * delta))
 	if _label.visible:
-		_label.text = "%s\n%s %.1fs\n%d/%d hp" % [display_name, state, state_time, ceili(health.current), ceili(health.max_health)]
+		_label.text = "%s\n%s %.1fs\n%d/%d hp\n%s" % [display_name, state, state_time, ceili(health.current), ceili(health.max_health), status_summary()]
 
 
 func _on_show_boxes_changed(enabled: bool) -> void:

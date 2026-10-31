@@ -35,6 +35,7 @@ func _init() -> void:
 	turn_speed_deg = 180.0
 	xp_value = 40
 	knockback_resistance = 0.85
+	status_resistance = 0.5
 
 
 func _setup() -> void:
