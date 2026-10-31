@@ -32,7 +32,7 @@ func _horizontal_speed() -> float:
 	return Vector3(player.velocity.x, 0, player.velocity.z).length()
 
 
-func test_strafe_is_slower_and_slowest_backwards() -> void:
+func test_strafe_speed_follows_tuning() -> void:
 	pad.next.strafe_held = true
 	pad.next.move = Vector2(1, 0)
 	await wait_seconds(0.6)

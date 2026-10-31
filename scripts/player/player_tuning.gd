@@ -7,9 +7,10 @@ extends Resource
 @export var run_speed: float = 8.5
 @export var ground_acceleration: float = 70.0
 @export var ground_deceleration: float = 90.0
-@export var strafe_speed_multiplier: float = 0.6
+## 1 = full run speed (matching R&C feel until we know better).
+@export var strafe_speed_multiplier: float = 1.0
 ## Extra multiplier when moving directly backwards while strafing (1 = none).
-@export var strafe_backpedal_multiplier: float = 0.75
+@export var strafe_backpedal_multiplier: float = 1.0
 ## How fast the fox turns to face its movement direction.
 @export var turn_speed_deg: float = 900.0
 ## Faster turn used when snapping to the aim direction while firing.

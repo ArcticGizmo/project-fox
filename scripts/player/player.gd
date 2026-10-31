@@ -380,7 +380,7 @@ func _snap_facing_for_swing(stick: Vector3) -> void:
 	visual.rotation.y = facing_yaw
 
 
-## Top speed for a wish direction: full run, strafe (slower, slowest backwards) or scoped.
+## Top speed for a wish direction: full run, strafe (tuning multipliers) or scoped.
 func move_speed_for(wish: Vector3) -> float:
 	if is_zoomed():
 		return tuning.run_speed * tuning.zoom_move_multiplier
