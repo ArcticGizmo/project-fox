@@ -112,3 +112,16 @@ func _trigger_update(_held: bool, _aim: AimInfo) -> void:
 
 func _on_level_changed() -> void:
 	pass
+
+
+## Ground point `distance` metres in front of the wielder along the aim (for
+## deployables: sentries, decoys, walls).
+func deploy_point(aim: AimInfo, distance: float) -> Vector3:
+	var base := wielder.global_position if wielder != null else aim.origin
+	var flat := aim.direction
+	flat.y = 0.0
+	flat = flat.normalized() if flat.length_squared() > 0.0001 else Vector3.FORWARD
+	var p := base + flat * distance
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 2.0, p + Vector3.DOWN * 6.0, Layers.WORLD)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return p if hit.is_empty() else (hit["position"] as Vector3)

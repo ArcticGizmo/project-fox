@@ -29,3 +29,5 @@ extends Resource
 @export var status_power: float = 0.0
 ## Weapon-specific perk unlocked at this level; each weapon script documents it.
 @export var upgrade_flag: bool = false
+## Health of things the weapon deploys (decoys).
+@export var deploy_health: float = 0.0

@@ -30,6 +30,8 @@ const DEFAULT_WEAPONS: Array[String] = [
 	"res://data/weapons/viper_spitter.tres",
 	"res://data/weapons/silk_launcher.tres",
 	"res://data/weapons/echo_horn.tres",
+	"res://data/weapons/moth_lantern.tres",
+	"res://data/weapons/hermit_bulwark.tres",
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5
@@ -570,6 +572,10 @@ func _handle_weapon_switch() -> void:
 		_select_weapon((current_weapon_index + 1) % weapons.size())
 	elif input.weapon_prev:
 		_select_weapon((current_weapon_index - 1 + weapons.size()) % weapons.size())
+
+
+func select_weapon(index: int) -> void:
+	_select_weapon(index)
 
 
 func _select_weapon(index: int, force: bool = false) -> void:

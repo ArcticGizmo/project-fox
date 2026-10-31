@@ -65,11 +65,8 @@ func _ready() -> void:
 ## Fire each weapon for a moment and capture weapon_<id>.png (pass --weapons).
 func _capture_each_weapon(player: Player) -> void:
 	for i: int in player.weapons.size():
-		var key := StringName("weapon_slot_%d" % (i + 1))
-		Input.action_press(key)
+		player.select_weapon(i)
 		await get_tree().physics_frame
-		await get_tree().physics_frame
-		Input.action_release(key)
 		Input.action_press(&"fire")
 		await get_tree().create_timer(0.35).timeout
 		await _capture("weapon_%s.png" % player.weapons[i].data.id)

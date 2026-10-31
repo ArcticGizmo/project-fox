@@ -20,7 +20,8 @@ function Get-MissingClasses {
 }
 $null = & godot --headless --path $root --import 2>&1
 for ($i = 0; $i -lt 5 -and (Get-MissingClasses); $i++) {
-    $null = & godot --headless --path $root --editor --quit 2>&1
+    # --quit exits before the background filesystem scan finishes; give it frames.
+    $null = & godot --headless --path $root --editor --quit-after 120 2>&1
 }
 $missing = Get-MissingClasses
 if ($missing) {

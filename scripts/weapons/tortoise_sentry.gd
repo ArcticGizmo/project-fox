@@ -18,16 +18,5 @@ func _fire(aim: AimInfo) -> void:
 	sentry.weapon = self
 	sentry.lifetime = s.duration
 	spawn_parent().add_child(sentry)
-	sentry.global_position = _deploy_point(aim)
+	sentry.global_position = deploy_point(aim, DEPLOY_DISTANCE)
 	sentries.append(sentry)
-
-
-func _deploy_point(aim: AimInfo) -> Vector3:
-	var base := wielder.global_position if wielder != null else aim.origin
-	var flat := aim.direction
-	flat.y = 0.0
-	flat = flat.normalized() if flat.length_squared() > 0.0001 else Vector3.FORWARD
-	var p := base + flat * DEPLOY_DISTANCE
-	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 2.0, p + Vector3.DOWN * 6.0, Layers.WORLD)
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	return p if hit.is_empty() else (hit["position"] as Vector3)

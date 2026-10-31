@@ -11,3 +11,5 @@ const PLAYER := 2
 const ENEMY := 4
 const PLAYER_HURTBOX := 8
 const ENEMY_HURTBOX := 16
+## Areas that bounce enemy projectiles back (Hermit Bulwark).
+const REFLECTOR := 32

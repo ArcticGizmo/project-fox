@@ -111,6 +111,7 @@ func _attack() -> void:
 		lob.flight_time = lob_flight_time
 		lob.damage = lob_damage
 		lob.radius = lob_radius
+		lob.source = self
 		get_parent().add_child(lob)
 	visual_scale = Vector3(0.8, 0.8, 0.8)
 

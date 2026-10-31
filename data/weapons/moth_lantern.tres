@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/moth_lantern.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 30.0
+fire_interval = 1.0
+max_ammo = 3
+projectile_count = 1
+area_radius = 14.0
+duration = 8.0
+deploy_health = 40.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 40.0
+fire_interval = 1.0
+max_ammo = 4
+projectile_count = 1
+area_radius = 16.0
+duration = 9.0
+deploy_health = 60.0
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 50.0
+fire_interval = 0.9
+max_ammo = 5
+projectile_count = 2
+area_radius = 18.0
+duration = 10.0
+deploy_health = 80.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 70.0
+fire_interval = 0.8
+max_ammo = 6
+projectile_count = 2
+area_radius = 20.0
+duration = 12.0
+deploy_health = 120.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"moth_lantern"
+display_name = "Moth Lantern"
+description = "Plants a glowing decoy that draws nearby enemies away from you. Bursts when broken or when its light runs out."
+color = Color(1, 0.85, 0.5, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(50, 120, 240)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])
