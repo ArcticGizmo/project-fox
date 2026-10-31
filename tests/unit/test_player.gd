@@ -129,7 +129,8 @@ func test_hurt_iframes_prevent_double_hits() -> void:
 
 
 func test_weapon_switching() -> void:
-	assert_eq(player.weapons.size(), 3, "three weapons")
+	var count := Player.DEFAULT_WEAPONS.size()
+	assert_eq(player.weapons.size(), count, "full loadout")
 	pad.next.weapon_next = true
 	await wait_frames(1)
 	assert_eq(player.current_weapon_index, 1, "next")
@@ -137,7 +138,7 @@ func test_weapon_switching() -> void:
 	await wait_frames(1)
 	pad.next.weapon_prev = true
 	await wait_frames(1)
-	assert_eq(player.current_weapon_index, 2, "prev wraps")
+	assert_eq(player.current_weapon_index, count - 1, "prev wraps")
 	pad.next.weapon_slot = 0
 	await wait_frames(1)
 	assert_eq(player.current_weapon_index, 0, "direct slot")
@@ -146,7 +147,7 @@ func test_weapon_switching() -> void:
 func test_aim_assist_and_fire_hits_enemy_ahead() -> void:
 	var rat := spawn_enemy("res://scenes/enemies/clockwork_rat.tscn", Vector3(1.0, 0, -10))
 	rat.set_physics_process(false)  # hold still (PROCESS_MODE_DISABLED would also remove its collision)
-	pad.next.weapon_slot = 2  # rifle
+	pad.next.weapon_slot = player.weapon_paths.find("res://data/weapons/owl_lens_rifle.tres")
 	await wait_frames(2)
 	assert_eq(player.aim_target, rat, "aim assist locks the rat")
 	pad.next.fire_held = true

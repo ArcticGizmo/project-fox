@@ -14,10 +14,16 @@ signal respawned
 
 const RADIUS := 0.45
 const HEIGHT := 1.8
+## Loadout order = weapon wheel order (clockwise from the top) = number keys 1-8.
 const DEFAULT_WEAPONS: Array[String] = [
+	"res://data/weapons/woodpecker_repeater.tres",
 	"res://data/weapons/hornet_swarm.tres",
 	"res://data/weapons/salamander_breath.tres",
 	"res://data/weapons/owl_lens_rifle.tres",
+	"res://data/weapons/kraken_lash.tres",
+	"res://data/weapons/pufferfish_mortar.tres",
+	"res://data/weapons/galvanic_eel.tres",
+	"res://data/weapons/tortoise_sentry.tres",
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5

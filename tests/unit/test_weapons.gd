@@ -20,7 +20,7 @@ func _equip(data_path: String) -> Weapon:
 
 
 func test_all_weapon_data_valid() -> void:
-	for path: String in [HORNET, SALAMANDER, RIFLE]:
+	for path: String in Player.DEFAULT_WEAPONS:
 		var data := load(path) as WeaponData
 		assert_true(data != null, "%s loads as WeaponData" % path)
 		if data == null:

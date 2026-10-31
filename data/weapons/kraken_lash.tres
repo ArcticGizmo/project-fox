@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/kraken_lash.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 22.0
+fire_interval = 0.55
+max_ammo = 40
+max_range = 7.0
+area_radius = 0.8
+knockback = 5.0
+crit_multiplier = 1.5
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 28.0
+fire_interval = 0.5
+max_ammo = 45
+max_range = 7.5
+area_radius = 0.8
+knockback = 5.0
+crit_multiplier = 1.6
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 34.0
+fire_interval = 0.5
+max_ammo = 50
+max_range = 8.0
+area_radius = 1.0
+knockback = -9.0
+crit_multiplier = 1.75
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 42.0
+fire_interval = 0.45
+max_ammo = 60
+max_range = 9.0
+area_radius = 1.2
+knockback = -11.0
+crit_multiplier = 2.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"kraken_lash"
+display_name = "Kraken Lash"
+description = "A brass tentacle whip. Hits everything along the line; the tip hits hardest. Pulls enemies in from level 3."
+color = Color(0.6, 0.35, 0.75, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(60, 150, 280)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

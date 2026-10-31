@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/woodpecker_repeater.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 6.0
+fire_interval = 0.11
+max_ammo = 120
+projectile_speed = 50.0
+spread_deg = 3.0
+max_range = 50.0
+knockback = 0.8
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 7.0
+fire_interval = 0.1
+max_ammo = 150
+projectile_speed = 52.0
+spread_deg = 2.6
+max_range = 50.0
+knockback = 0.8
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 8.0
+fire_interval = 0.09
+max_ammo = 180
+projectile_speed = 55.0
+spread_deg = 2.2
+max_range = 55.0
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 8.0
+fire_interval = 0.09
+max_ammo = 220
+projectile_count = 2
+projectile_speed = 58.0
+spread_deg = 2.0
+max_range = 60.0
+knockback = 1.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"woodpecker_repeater"
+display_name = "Woodpecker Repeater"
+description = "A clockwork woodpecker that hammers out rivets. Fires exactly where you aim; spread grows while you hold the trigger."
+color = Color(0.9, 0.25, 0.2, 1)
+weapon_script = ExtResource("3_behaviour")
+uses_aim_assist = false
+xp_to_next_level = PackedInt32Array(80, 180, 320)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

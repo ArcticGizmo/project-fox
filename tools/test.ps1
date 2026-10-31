@@ -7,20 +7,24 @@ param([string]$Filter = "")
 $root = Split-Path -Parent $PSScriptRoot
 
 # Refresh the import cache / global class registry (needed after adding class_name scripts).
-# A brand-new script sometimes needs a second import pass before its class_name is
-# registered, so verify every class_name made it into the cache.
+# `--import` does not reliably register brand-new class_name scripts, so verify the
+# cache and fall back to a full headless editor scan, which always does.
 $classNames = Get-ChildItem -Path $root -Recurse -Filter *.gd |
     Where-Object { $_.FullName -notmatch '\\\.godot\\' } |
     Select-String -Pattern '^class_name\s+(\w+)' |
     ForEach-Object { $_.Matches[0].Groups[1].Value }
 $cache = Join-Path $root ".godot\global_script_class_cache.cfg"
-for ($i = 0; $i -lt 6; $i++) {
-    $null = & godot --headless --path $root --import 2>&1
+function Get-MissingClasses {
     $cached = if (Test-Path $cache) { Get-Content $cache -Raw } else { "" }
-    $missing = $classNames | Where-Object { $cached -notmatch "&`"$_`"" }
-    if (-not $missing) { break }
+    $classNames | Where-Object { $cached -notmatch "&`"$_`"" }
 }
-if ($missing) { Write-Host "Classes not registered after import: $($missing -join ', ')" -ForegroundColor Red; exit 1 }
+$null = & godot --headless --path $root --import 2>&1
+if (Get-MissingClasses) { $null = & godot --headless --path $root --editor --quit 2>&1 }
+$missing = Get-MissingClasses
+if ($missing) {
+    Write-Host "Classes not registered (parse error?): $($missing -join ', ')" -ForegroundColor Red
+    exit 1
+}
 
 $godotArgs = @("--headless", "--fixed-fps", "60", "--path", $root, "res://tests/test_runner.tscn")
 if ($Filter) { $godotArgs += @("--", "--filter=$Filter") }

@@ -28,9 +28,8 @@ func _enter_tree() -> void:
 	_add_button(&"melee", [JOY_BUTTON_X], [KEY_F], [MOUSE_BUTTON_XBUTTON1])
 	_add_button(&"weapon_next", [JOY_BUTTON_RIGHT_SHOULDER], [KEY_E])
 	_add_button(&"weapon_prev", [JOY_BUTTON_LEFT_SHOULDER], [KEY_Q])
-	_add_button(&"weapon_slot_1", [], [KEY_1])
-	_add_button(&"weapon_slot_2", [], [KEY_2])
-	_add_button(&"weapon_slot_3", [], [KEY_3])
+	for i: int in 8:
+		_add_button(StringName("weapon_slot_%d" % (i + 1)), [], [KEY_1 + i])
 	_add_button(&"release_mouse", [], [KEY_ESCAPE])
 
 	# Debug.

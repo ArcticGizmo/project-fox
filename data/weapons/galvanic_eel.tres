@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/galvanic_eel.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 12.0
+fire_interval = 0.4
+max_ammo = 60
+pierce = 2
+max_range = 14.0
+area_radius = 6.0
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 14.0
+fire_interval = 0.38
+max_ammo = 70
+pierce = 3
+max_range = 14.0
+area_radius = 6.5
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 16.0
+fire_interval = 0.35
+max_ammo = 80
+pierce = 4
+max_range = 16.0
+area_radius = 7.0
+knockback = 1.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 20.0
+fire_interval = 0.3
+max_ammo = 100
+pierce = 6
+max_range = 18.0
+area_radius = 8.0
+knockback = 1.5
+
+[resource]
+script = ExtResource("1_data")
+id = &"galvanic_eel"
+display_name = "Galvanic Eel"
+description = "An electric eel in a brass coil. Its bolt jumps between nearby enemies, losing a little power each jump."
+color = Color(0.3, 1, 0.85, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(70, 160, 300)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

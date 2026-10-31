@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
+[ext_resource type="Script" path="res://scripts/weapons/pufferfish_mortar.gd" id="3_behaviour"]
+
+[sub_resource type="Resource" id="Lv1"]
+script = ExtResource("2_stats")
+damage = 40.0
+fire_interval = 0.9
+max_ammo = 8
+max_range = 22.0
+area_radius = 3.2
+knockback = 9.0
+duration = 5.0
+
+[sub_resource type="Resource" id="Lv2"]
+script = ExtResource("2_stats")
+damage = 50.0
+fire_interval = 0.85
+max_ammo = 10
+max_range = 22.0
+area_radius = 3.6
+knockback = 9.0
+duration = 6.0
+
+[sub_resource type="Resource" id="Lv3"]
+script = ExtResource("2_stats")
+damage = 50.0
+fire_interval = 0.85
+max_ammo = 12
+projectile_count = 2
+max_range = 24.0
+area_radius = 3.6
+knockback = 10.0
+duration = 6.0
+
+[sub_resource type="Resource" id="Lv4"]
+script = ExtResource("2_stats")
+damage = 65.0
+fire_interval = 0.8
+max_ammo = 14
+projectile_count = 3
+max_range = 26.0
+area_radius = 4.2
+knockback = 11.0
+duration = 7.0
+
+[resource]
+script = ExtResource("1_data")
+id = &"pufferfish_mortar"
+display_name = "Pufferfish Mortar"
+description = "Lobs grumpy pufferfish that burst on contact or wait as proximity mines. Throws more per shot at higher levels."
+color = Color(0.95, 0.55, 0.7, 1)
+weapon_script = ExtResource("3_behaviour")
+xp_to_next_level = PackedInt32Array(60, 150, 280)
+levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])

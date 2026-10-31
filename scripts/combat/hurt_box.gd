@@ -44,6 +44,16 @@ func entity_id() -> int:
 	return health.get_instance_id() if health != null else get_instance_id()
 
 
+## World-space centre of the hurtbox's first shape (the Area origin is usually
+## at the entity's feet).
+func center() -> Vector3:
+	for child: Node in get_children():
+		var cs := child as CollisionShape3D
+		if cs != null:
+			return cs.global_position
+	return global_position
+
+
 func refresh_outline() -> void:
 	if _outline != null:
 		_outline.rebuild()

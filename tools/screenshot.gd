@@ -26,6 +26,8 @@ func _ready() -> void:
 	await get_tree().create_timer(0.2).timeout
 	await _capture("firing.png")
 	Input.action_release(&"fire")
+	if "--weapons" in OS.get_cmdline_user_args():
+		await _capture_each_weapon(arena.get("player") as Player)
 	DebugSettings.show_boxes = true
 	await get_tree().create_timer(0.1).timeout
 	await _capture("debug_boxes.png")
@@ -43,6 +45,21 @@ func _ready() -> void:
 	await get_tree().create_timer(0.1).timeout
 	await _capture("overview.png")
 	get_tree().quit()
+
+
+## Fire each weapon for a moment and capture weapon_<id>.png (pass --weapons).
+func _capture_each_weapon(player: Player) -> void:
+	for i: int in player.weapons.size():
+		var key := StringName("weapon_slot_%d" % (i + 1))
+		Input.action_press(key)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		Input.action_release(key)
+		Input.action_press(&"fire")
+		await get_tree().create_timer(0.35).timeout
+		await _capture("weapon_%s.png" % player.weapons[i].data.id)
+		Input.action_release(&"fire")
+		await get_tree().create_timer(0.3).timeout
 
 
 ## Equip the scoped rifle via its number key, hold strafe, capture, restore.

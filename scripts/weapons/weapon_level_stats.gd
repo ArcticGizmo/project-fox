@@ -21,3 +21,7 @@ extends Resource
 ## Extra multiplier on weak-spot hits.
 @export var crit_multiplier: float = 1.0
 @export var hit_stop: float = 0.0
+## Lifetime of things the weapon leaves behind (mine fuse, sentry lifetime).
+@export var duration: float = 0.0
+## Interval for secondary actions (e.g. a sentry's own shots).
+@export var sub_interval: float = 0.0

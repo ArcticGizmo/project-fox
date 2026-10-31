@@ -20,6 +20,9 @@ var active: bool = false:
 			_hit_times.clear()
 		active = value
 var source_weapon: Weapon = null
+## Optional func(hurt_box: HurtBox, info: DamageInfo) -> void, called before each
+## hit lands so the owner can scale damage by position (e.g. a whip's tip).
+var damage_modifier: Callable = Callable()
 
 var _hit_times: Dictionary = {}
 var _time: float = 0.0
@@ -49,6 +52,8 @@ func _physics_process(delta: float) -> void:
 		var info := DamageInfo.create(damage, global_position, knockback)
 		info.knockback_up = knockback_up
 		info.source_weapon = source_weapon
+		if damage_modifier.is_valid():
+			damage_modifier.call(hb, info)
 		if hb.receive(info):
 			if hit_stop > 0.0:
 				GameFeel.hit_stop(hit_stop)

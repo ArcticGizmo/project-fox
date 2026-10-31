@@ -65,23 +65,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _explode() -> void:
-	var shape := SphereShape3D.new()
-	shape.radius = radius
-	var params := PhysicsShapeQueryParameters3D.new()
-	params.shape = shape
-	params.transform = Transform3D(Basis.IDENTITY, end + Vector3.UP * 0.5)
-	params.collision_mask = hit_mask
-	params.collide_with_areas = true
-	params.collide_with_bodies = false
-	var hit_entities: Dictionary = {}
-	for result: Dictionary in get_world_3d().direct_space_state.intersect_shape(params, 16):
-		var hb := result["collider"] as HurtBox
-		if hb == null or hit_entities.has(hb.entity_id()):
-			continue
-		hit_entities[hb.entity_id()] = true
-		var info := DamageInfo.create(damage, end, knockback)
-		info.knockback_up = 5.0
-		hb.receive(info)
-	DebugSettings.flash_sphere(end + Vector3.UP * 0.5, radius, Color(1, 0.2, 0.1), 0.35)
+	Explosion.detonate(self, end + Vector3.UP * 0.5, radius, hit_mask, _make_damage)
 	GameFeel.impact(end + Vector3.UP * 0.3, color, radius * 2.0, 0.3)
 	queue_free()
+
+
+func _make_damage() -> DamageInfo:
+	var info := DamageInfo.create(damage, end, knockback)
+	info.knockback_up = 5.0
+	return info
