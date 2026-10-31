@@ -89,10 +89,10 @@ func _capture_slice(arena: Node, path: String) -> void:
 	await get_tree().create_timer(1.5).timeout
 	await _capture("slice_pad_view.png")
 	var shots: Array[Array] = [
-		["slice_traversal.png", Vector3(12.5, 2.4, -32), Vector3(32, 1.5, -36)],
+		["slice_traversal.png", Vector3(16.5, 2.4, -32), Vector3(34, 1.5, -36)],
 		["slice_hazard_yard.png", Vector3(41.5, 7.5, -13), Vector3(46, 0, 3)],
 		["slice_pocket_b.png", Vector3(31, 2.2, 4.2), Vector3(18, 3.0, 7)],
-		["slice_shortcut_from_pad.png", Vector3(-2, 5.0, 1), Vector3(9, 2.5, 1)],
+		["slice_shortcut_from_pad.png", Vector3(-3, 5.5, -3), Vector3(9, 4, 1)],
 		["slice_ridge.png", Vector3(21.5, 2.6, 18.5), Vector3(19.5, 5, 40)],
 		["slice_finale.png", Vector3(19.5, 8.2, 47.5), Vector3(19.5, 6, 66)],
 	]

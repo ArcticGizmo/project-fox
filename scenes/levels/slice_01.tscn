@@ -154,7 +154,7 @@ metadata/path_index = 4
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.75, -1.5, -33.5)
 script = ExtResource("2_block")
 size = Vector3(4.5, 3, 5)
-color = Color(0.66, 0.54, 0.3, 1)
+color = Color(0.56, 0.44, 0.26, 1)
 metadata/path_index = 5
 
 [node name="T2Step" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
@@ -168,7 +168,7 @@ metadata/path_index = 6
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.5, -0.75, -33.5)
 script = ExtResource("2_block")
 size = Vector3(9, 4.5, 5)
-color = Color(0.66, 0.54, 0.3, 1)
+color = Color(0.56, 0.44, 0.26, 1)
 metadata/path_index = 7
 
 [node name="T4" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
@@ -405,9 +405,9 @@ size = Vector3(2, 4.5, 4)
 color = Color(0.46, 0.44, 0.52, 1)
 
 [node name="ShortcutDoor" type="StaticBody3D" parent="Level/Shortcut" groups=["gadget_gates"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 2.25, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 4, 1)
 script = ExtResource("4_gate")
-size = Vector3(1, 4.5, 4)
+size = Vector3(1, 8, 4)
 requires = &"conduit"
 
 [node name="Ridge" type="Node3D" parent="Level"]
@@ -423,7 +423,7 @@ metadata/path_index = 13
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -2.25, 24)
 script = ExtResource("2_block")
 size = Vector3(5, 7.5, 4)
-color = Color(0.56, 0.5, 0.44, 1)
+color = Color(0.47, 0.42, 0.38, 1)
 metadata/path_index = 14
 
 [node name="R2Ledge" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
@@ -437,7 +437,7 @@ metadata/path_index = 15
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -0.75, 41)
 script = ExtResource("2_block")
 size = Vector3(4, 10.5, 10)
-color = Color(0.56, 0.5, 0.44, 1)
+color = Color(0.47, 0.42, 0.38, 1)
 metadata/path_index = 16
 
 [node name="R4Step" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
@@ -546,11 +546,11 @@ script = ExtResource("3_checkpoint")
 [node name="Crates" type="Node3D" parent="."]
 
 [node name="PadAmmo" type="StaticBody3D" parent="Crates"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 3, -4.5)
 script = ExtResource("5_crate")
 
 [node name="PadHealth" type="StaticBody3D" parent="Crates"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, 4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 3, -4.5)
 script = ExtResource("5_crate")
 kind = 1
 
@@ -662,7 +662,7 @@ leash_radius = 18.0
 [node name="Yard" type="Node3D" parent="Enemies"]
 
 [node name="PatrolRat1" parent="Enemies/Yard" instance=ExtResource("10_rat")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 39, 0, -8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39, 0, -8)
 random_seed = 21
 leash_radius = 14.0
 
@@ -673,7 +673,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="PatrolRat2" parent="Enemies/Yard" instance=ExtResource("10_rat")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 52, 0, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 52, 0, -5)
 random_seed = 22
 leash_radius = 14.0
 
@@ -686,24 +686,24 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 [node name="PocketB" type="Node3D" parent="Enemies"]
 
 [node name="ToadNE" parent="Enemies/PocketB" instance=ExtResource("12_toad")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 26, 3, 0)
+transform = Transform3D(-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071, 26, 3, 0)
 random_seed = 31
 move_speed = 0.0
 leash_radius = 0.0
 
 [node name="ToadSW" parent="Enemies/PocketB" instance=ExtResource("12_toad")]
-transform = Transform3D(-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071, 12, 3, 14)
+transform = Transform3D(0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, 0.7071, 12, 3, 14)
 random_seed = 32
 move_speed = 0.0
 leash_radius = 0.0
 
 [node name="Gull1" parent="Enemies/PocketB" instance=ExtResource("13_gull")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 6.5, 6)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 17, 6.5, 6)
 random_seed = 33
 leash_radius = 14.0
 
 [node name="Gull2" parent="Enemies/PocketB" instance=ExtResource("13_gull")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 6.5, 12)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 24, 6.5, 12)
 random_seed = 34
 leash_radius = 14.0
 

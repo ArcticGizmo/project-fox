@@ -87,16 +87,6 @@ func test_slice_beats_gates_and_checkpoints() -> void:
 		assert_true(_has_type(finale, s), "finale has a %s" % s.get_global_name())
 
 
-## Nothing notices a player idling on the landing pad.
-func test_landing_pad_is_safe() -> void:
-	var level := _load_level()
-	level.player.input_provider = ScriptedInputProvider.new()
-	await wait_seconds(8.0)
-	for e: Enemy in level.placed_enemies():
-		assert_false(e.aware or e.state == Enemy.SUSPICIOUS or e.state == Enemy.ALERT, "%s ignores the pad (%s)" % [e.name, e.state])
-	assert_true(level.player.health.current >= level.player.health.max_health, "untouched on the pad")
-
-
 func test_critical_path_within_jump_limits() -> void:
 	var level := _load_level()
 	await wait_frames(1)
@@ -204,3 +194,23 @@ func _jump_trial(player: Player, pad: ScriptedInputProvider, a: Block, b: Block,
 			return true
 	pad.next = PlayerInputState.new()
 	return false
+
+
+## With the player idling on the landing pad (the safe zone) nobody notices, and
+## placed enemies keep to their homes: patrols survive the hazard yard,
+## wanderers don't stray, nobody falls off a platform.
+func test_pad_is_safe_and_enemies_keep_home() -> void:
+	var level := _load_level()
+	level.player.input_provider = ScriptedInputProvider.new()
+	await wait_seconds(20.0)
+	for e: Enemy in level.placed_enemies():
+		assert_false(e.health.is_dead, "%s alive" % e.name)
+		assert_near(e.health.current, e.health.max_health, 0.01, "%s unhurt" % e.name)
+		var reach := e.wander_radius + 1.5
+		for p: Vector3 in e.patrol_points:
+			reach = maxf(reach, Vector2(p.x - e.home_position.x, p.z - e.home_position.z).length() + 1.5)
+		var off := Vector2(e.global_position.x - e.home_position.x, e.global_position.z - e.home_position.z).length()
+		assert_true(off <= reach, "%s within %.1f m of home (%.1f)" % [e.name, reach, off])
+		assert_true(e.global_position.y > e.home_position.y - 0.5, "%s still on its floor" % e.name)
+		assert_false(e.aware or e.state == Enemy.SUSPICIOUS or e.state == Enemy.ALERT, "%s ignores the pad (%s)" % [e.name, e.state])
+	assert_true(level.player.health.current >= level.player.health.max_health, "untouched on the pad")
