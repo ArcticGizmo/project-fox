@@ -14,7 +14,7 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 |---|---|
 | `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
-| `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist` |
+| `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
@@ -90,6 +90,14 @@ D-pad up/F2 · next wave D-pad down/F3.
   pause it and cancel hitboxes, then resume via `_state_after_flinch()`). `status_resistance`
   scales everything except expose/poison (0 = immune). New enemies get this for free; new
   attack hitboxes must be HitBox children so `_interrupt()` can switch them off.
+- **Awareness** wraps every enemy pattern (`Enemy` "Awareness" exports). Unaware enemies run
+  base states (`rest`, `wander`/`patrol`, `suspicious`, `investigate`, `alert`,
+  `return_home`) and skip `_tick_state`; noticing ends in `idle`. Sight = range + cone +
+  WORLD ray; `suspicion` fills at `notice_rate(distance)`. Damage (not `from_hazard`) or
+  point-blank: aware at once. `starts_aware` is false for placed enemies; `WaveManager` and
+  `TestCase.spawn_enemy` call `make_always_aware()` (no leash, never forgets). Sounds go
+  through `NoiseEvent.emit(pos, radius, source)` (not `Noise`: that name is a built-in class);
+  weapons use `WeaponData.noise_radius`. Per-enemy overrides go in `_init`.
 - **Lures**: any node in group `"lures"` with a `lure_radius: float` property is targeted
   over the player by enemies in range. Give it a PLAYER_HURTBOX hurtbox so attacks land.
 - **Reflect**: areas on `Layers.REFLECTOR` whose parent has `reflect_damage` and `weapon`
@@ -111,7 +119,8 @@ D-pad up/F2 · next wave D-pad down/F3.
 
 - Tests run with `--fixed-fps 60`: one awaited physics frame = 1/60 s, deterministic.
 - `TestCase` instances are the 3D world root for each test; use `add_floor`,
-  `add_dummy_target`, `spawn_enemy(path, pos, yaw, seed)`.
+  `add_dummy_target`, `spawn_enemy(path, pos, yaw, seed, aware = true)`;
+  pass `aware = false` for a placed (unaware, at home) enemy.
 - `PROCESS_MODE_DISABLED` removes a CollisionObject from physics. To freeze an
   enemy in a test use `set_physics_process(false)`.
 - Area overlaps need a physics frame after spawning before they register.

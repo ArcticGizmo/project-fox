@@ -53,6 +53,7 @@ upgrade_flag = true
 [resource]
 script = ExtResource("1_data")
 id = &"viper_spitter"
+noise_radius = 10.0
 display_name = "Viper Spitter"
 description = "Lobs venom that leaves a poison puddle. Poison stacks the longer enemies stand in it, and spreads on death from level 3."
 color = Color(0.55, 0.85, 0.2, 1)

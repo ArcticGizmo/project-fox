@@ -79,6 +79,7 @@ func spawn_enemy(kind: StringName, at: Vector3) -> Enemy:
 	var enemy := scene.instantiate() as Enemy
 	enemy.position = at
 	enemy.rotation.y = Player.yaw_of(-at)
+	enemy.make_always_aware()
 	get_parent().add_child(enemy)
 	alive.append(enemy)
 	return enemy

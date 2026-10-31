@@ -56,6 +56,7 @@ knockback = 3.0
 [resource]
 script = ExtResource("1_data")
 id = &"hornet_swarm"
+noise_radius = 12.0
 display_name = "Hornet Swarm"
 description = "A fan of clockwork hornets that curve into your target."
 color = Color(1, 0.75, 0.1, 1)

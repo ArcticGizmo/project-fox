@@ -49,6 +49,7 @@ duration = 7.0
 [resource]
 script = ExtResource("1_data")
 id = &"pufferfish_mortar"
+noise_radius = 22.0
 display_name = "Pufferfish Mortar"
 description = "Lobs grumpy pufferfish that burst on contact or wait as proximity mines. Throws more per shot at higher levels."
 color = Color(0.95, 0.55, 0.7, 1)

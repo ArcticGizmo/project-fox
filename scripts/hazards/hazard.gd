@@ -43,6 +43,7 @@ func make_hit_box(box_name: String, size: Vector3, offset: Vector3, damage: floa
 	var hb := HitBox.new()
 	hb.name = box_name
 	hb.collision_mask = HIT_MASK
+	hb.from_hazard = true
 	hb.damage = damage
 	hb.knockback = knockback
 	hb.knockback_up = knockback_up

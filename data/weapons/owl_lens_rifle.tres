@@ -49,6 +49,7 @@ hit_stop = 0.06
 [resource]
 script = ExtResource("1_data")
 id = &"owl_lens_rifle"
+noise_radius = 30.0
 display_name = "Owl-Lens Rifle"
 description = "A brass owl's eye focused into a piercing beam. Weak-spot hits crit."
 color = Color(0.55, 0.85, 1, 1)

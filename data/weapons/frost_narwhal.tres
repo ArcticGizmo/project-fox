@@ -53,6 +53,7 @@ duration = 3.5
 [resource]
 script = ExtResource("1_data")
 id = &"frost_narwhal"
+noise_radius = 14.0
 display_name = "Frost Narwhal"
 description = "Icy lances that chill. Enough chill freezes an enemy solid; frozen enemies take extra damage from everything."
 color = Color(0.8, 0.95, 1, 1)

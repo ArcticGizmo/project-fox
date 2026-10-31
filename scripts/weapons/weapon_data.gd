@@ -15,6 +15,8 @@ extends Resource
 @export var uses_aim_assist: bool = true
 ## > 0 makes the strafe trigger a scope with this camera FOV.
 @export var zoom_fov: float = 0.0
+## How far each shot is heard by unaware enemies (NoiseEvent.emit). 0 = silent.
+@export var noise_radius: float = 16.0
 @export var xp_to_next_level: PackedInt32Array = PackedInt32Array()
 @export var levels: Array[WeaponLevelStats] = []
 

@@ -35,6 +35,9 @@ func _init() -> void:
 	knockback_resistance = 0.0
 	flinch_on_hit = true
 	hurtbox_scale = 1.15
+	# Sharp ears; pack rats scurry about between rests.
+	hearing_range = 10.0
+	wander_radius = 4.0
 
 
 func _setup() -> void:

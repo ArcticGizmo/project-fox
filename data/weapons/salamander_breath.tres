@@ -47,6 +47,7 @@ burn_duration = 4.0
 [resource]
 script = ExtResource("1_data")
 id = &"salamander_breath"
+noise_radius = 12.0
 display_name = "Salamander Breath"
 description = "A brass salamander that breathes a short cone of fire. Sets enemies alight at level 3."
 color = Color(1, 0.45, 0.1, 1)

@@ -50,6 +50,9 @@ func _init() -> void:
 	flying = true
 	hover_height = 6.0
 	climb_speed = 5.0
+	# Wide raptor cone from up high.
+	sight_fov_deg = 200.0
+	sight_range = 22.0
 
 
 func _setup() -> void:

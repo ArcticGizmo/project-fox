@@ -20,6 +20,8 @@ var active: bool = false:
 			_hit_times.clear()
 		active = value
 var source_weapon: Weapon = null
+## Copied into DamageInfo.from_hazard (set by Hazard.make_hit_box).
+var from_hazard: bool = false
 ## Optional func(hurt_box: HurtBox, info: DamageInfo) -> void, called before each
 ## hit lands so the owner can scale damage by position (e.g. a whip's tip).
 var damage_modifier: Callable = Callable()
@@ -52,6 +54,7 @@ func _physics_process(delta: float) -> void:
 		var info := DamageInfo.create(damage, global_position, knockback)
 		info.knockback_up = knockback_up
 		info.source_weapon = source_weapon
+		info.from_hazard = from_hazard
 		if damage_modifier.is_valid():
 			damage_modifier.call(hb, info)
 		if hb.receive(info):

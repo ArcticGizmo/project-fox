@@ -135,6 +135,7 @@ func land(at: Vector3) -> void:
 	GameFeel.shake(0.45)
 	GameFeel.impact(at + Vector3.UP * 0.2, Color(0.9, 0.75, 0.5, 0.6), tuning.slam_radius * 2.0, 0.25)
 	DebugSettings.flash_sphere(at + Vector3.UP * 0.5, tuning.slam_radius, Color(1, 0.2, 0.1), 0.3)
+	NoiseEvent.emit(at, tuning.slam_noise_radius, self)
 	slammed.emit(at)
 
 

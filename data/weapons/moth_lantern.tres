@@ -47,6 +47,7 @@ deploy_health = 120.0
 [resource]
 script = ExtResource("1_data")
 id = &"moth_lantern"
+noise_radius = 6.0
 display_name = "Moth Lantern"
 description = "Plants a glowing decoy that draws nearby enemies away from you. Bursts when broken or when its light runs out."
 color = Color(1, 0.85, 0.5, 1)

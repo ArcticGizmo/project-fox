@@ -51,6 +51,7 @@ knockback = 10.0
 [resource]
 script = ExtResource("1_data")
 id = &"echo_horn"
+noise_radius = 28.0
 display_name = "Echo Bat Horn"
 description = "A sonic blast that staggers everything in front of you, interrupting attacks, and leaves them exposed to extra damage."
 color = Color(0.35, 0.45, 0.95, 1)

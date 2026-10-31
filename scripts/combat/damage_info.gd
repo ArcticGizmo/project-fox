@@ -13,6 +13,8 @@ var source_weapon: Weapon = null
 var is_critical: bool = false
 ## Damage-over-time ticks skip flinch, knockback and damage numbers.
 var is_dot: bool = false
+## Neutral hazard damage (fire traps, lava...). Does not make enemies aware.
+var from_hazard: bool = false
 
 
 static func create(p_amount: float, p_source_position: Vector3, p_knockback: float = 0.0) -> DamageInfo:

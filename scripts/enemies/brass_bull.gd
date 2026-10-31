@@ -36,6 +36,9 @@ func _init() -> void:
 	xp_value = 40
 	knockback_resistance = 0.85
 	status_resistance = 0.5
+	# Spots you from far off but takes its time to notice.
+	sight_range = 24.0
+	notice_time = 1.8
 
 
 func _setup() -> void:

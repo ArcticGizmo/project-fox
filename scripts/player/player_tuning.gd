@@ -97,6 +97,8 @@ extends Resource
 @export var slam_knockback: float = 10.0
 @export var slam_knockback_up: float = 7.0
 @export var slam_recovery: float = 0.3
+## How far the slam landing is heard by unaware enemies.
+@export var slam_noise_radius: float = 12.0
 ## Melee in the air with the stick pushed: long-jump arc that slams on landing.
 ## Off for now so the slam never carries you forward.
 @export var pounce_enabled: bool = false

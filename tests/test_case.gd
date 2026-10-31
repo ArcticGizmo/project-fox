@@ -81,11 +81,15 @@ func add_dummy_target(at: Vector3) -> TestDummy:
 	return dummy
 
 
-func spawn_enemy(scene_path: String, at: Vector3, yaw: float = 0.0, seed_value: int = 1) -> Enemy:
+## Enemies spawn aware (like wave enemies) unless `aware` is false, which
+## leaves them unaware at home as if placed in a level.
+func spawn_enemy(scene_path: String, at: Vector3, yaw: float = 0.0, seed_value: int = 1, aware: bool = true) -> Enemy:
 	var enemy := (load(scene_path) as PackedScene).instantiate() as Enemy
 	enemy.position = at
 	enemy.rotation.y = yaw
 	enemy.random_seed = seed_value
+	if aware:
+		enemy.make_always_aware()
 	add_child(enemy)
 	return enemy
 

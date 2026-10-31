@@ -47,6 +47,7 @@ crit_multiplier = 2.0
 [resource]
 script = ExtResource("1_data")
 id = &"kraken_lash"
+noise_radius = 10.0
 display_name = "Kraken Lash"
 description = "A brass tentacle whip. Hits everything along the line; the tip hits hardest. Pulls enemies in from level 3."
 color = Color(0.6, 0.35, 0.75, 1)

@@ -80,6 +80,7 @@ func trigger(held: bool, aim: AimInfo) -> void:
 		ammo -= data.ammo_per_shot
 		_cooldown = stats().fire_interval
 		_fire(aim)
+		NoiseEvent.emit(global_position, data.noise_radius, self)
 		fired.emit()
 		ammo_changed.emit(ammo, max_ammo())
 	_trigger_update(held, aim)

@@ -38,6 +38,26 @@ const CHILL_GLOW := Color(0.15, 0.45, 1.0)
 const POISON_COLOR := Color(0.4, 1.0, 0.2)
 const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
 
+# Awareness states (aware == false). Noticing ends in `alert`, then `idle`.
+const REST := &"rest"
+const WANDER := &"wander"
+const PATROL := &"patrol"
+const SUSPICIOUS := &"suspicious"
+const INVESTIGATE := &"investigate"
+const ALERT := &"alert"
+const RETURN_HOME := &"return_home"
+const NEAR_NOTICE_BOOST := 1.5
+const FAR_NOTICE_FACTOR := 0.5
+## Aware enemies keep sight of their target out to sight_range * this, any direction.
+const AWARE_SIGHT_FACTOR := 1.5
+const GROUP_ALERT_DELAY_MIN := 0.15
+const GROUP_ALERT_DELAY_MAX := 0.4
+const ARRIVE_DISTANCE := 0.7
+## Leashed enemies walk home at this fraction of move_speed.
+const RETURN_SPEED_FACTOR := 0.75
+## Upward stretch of the alert pop (wind-ups squash, so this reads differently).
+const ALERT_POP_SCALE := Vector3(0.8, 1.4, 0.8)
+
 @export_group("Body")
 @export var display_name: String = "Enemy"
 @export var body_shape: BodyShape = BodyShape.BOX
@@ -72,6 +92,40 @@ const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
 @export_group("Status effects")
 ## Scales chill, freeze, root and stagger strength/duration. 0 = immune.
 @export_range(0.0, 2.0) var status_resistance: float = 1.0
+
+@export_group("Awareness")
+## False = starts unaware at its home (placed enemies). WaveManager and
+## TestCase.spawn_enemy use make_always_aware() instead.
+@export var starts_aware: bool = false
+@export var sight_range: float = 18.0
+## Full width of the sight cone. Point-blank range ignores the cone.
+@export var sight_fov_deg: float = 110.0
+## Hears a NoiseEvent when distance <= noise radius + hearing_range.
+@export var hearing_range: float = 6.0
+## Seconds of continuous sight to fill suspicion at half sight_range. Up close
+## it fills NEAR_NOTICE_BOOST times faster, at the edge FAR_NOTICE_FACTOR times.
+@export var notice_time: float = 1.2
+## Suspicion lost per second while nothing is seen.
+@export var suspicion_decay: float = 0.35
+## Length of the "noticed you" pop before combat starts.
+@export var alert_time: float = 0.5
+## Entering alert wakes unaware enemies this close with line of sight to it.
+@export var alert_radius: float = 10.0
+## Aware enemies further than this from home walk back. 0 = never.
+@export var leash_radius: float = 25.0
+## Aware enemies that have not seen their target for this long walk home. 0 = never.
+@export var forget_time: float = 6.0
+## Anyone this close with line of sight is noticed at once (no cone, no alert pop).
+@export var point_blank_range: float = 3.0
+## Random wander points this far from home between rests. 0 = rest in place.
+## Marker3D children override this with a patrol route (visited in order).
+@export var wander_radius: float = 0.0
+@export var rest_time_min: float = 2.0
+@export var rest_time_max: float = 4.0
+## Walking speed while unaware (wander, patrol, investigate, return home).
+@export var unaware_speed_factor: float = 0.45
+## Seconds spent looking around at an investigated point before heading home.
+@export var investigate_time: float = 2.5
 
 var health: Health
 var hurt_box: HurtBox
@@ -116,6 +170,39 @@ var _web: Node3D
 ## Transparent ice block shown around the body while frozen.
 var ice_block: MeshInstance3D
 
+## True once the enemy has noticed someone; combat states (_tick_state) only
+## run while aware. Unaware enemies run the AWARENESS_STATES below.
+var aware: bool = false
+## 0..1 while unaware; 1 means noticed.
+var suspicion: float = 0.0
+var home_position: Vector3 = Vector3.ZERO
+var home_yaw: float = 0.0
+## Global positions of the Marker3D children at _ready (patrol route).
+var patrol_points: Array[Vector3] = []
+## Perception results from the last check (read by the AI debug view).
+var sees_target: bool = false
+## True when the last line-of-sight ray to the target hit WORLD geometry.
+var los_blocked: bool = false
+## Whether a line-of-sight ray was cast on the last check (in range).
+var los_checked: bool = false
+var last_seen_position: Vector3 = Vector3.ZERO
+var investigate_point: Vector3 = Vector3.ZERO
+## Seconds since an aware enemy last saw its target (forget_time).
+var unseen_time: float = 0.0
+## The enemy whose alert woke this one (debug view link), or null.
+var alerted_by: Enemy = null
+## Age (seconds) when alerted_by reached this enemy.
+var alerted_at: float = -1.0
+var _alert_spreads: bool = true
+var _alert_delay: float = -1.0
+var _rest_duration: float = 0.0
+var _walk_goal: Vector3 = Vector3.ZERO
+var _walk_limit: float = 0.0
+var _look_left: float = -1.0
+var _patrol_index: int = 0
+## Distance from the eye to the target on the last perception check.
+var perceived_distance: float = INF
+
 
 func _ready() -> void:
 	add_to_group(&"enemies")
@@ -157,8 +244,19 @@ func _ready() -> void:
 	add_child(_label)
 	DebugSettings.show_boxes_changed.connect(_on_show_boxes_changed)
 
+	home_position = global_position
+	home_yaw = rotation.y
+	for c: Node in get_children():
+		if c is Marker3D:
+			patrol_points.append((c as Marker3D).global_position)
+
 	_setup()
-	enter_state(&"idle")
+	if starts_aware:
+		aware = true
+		suspicion = 1.0
+		enter_state(&"idle")
+	else:
+		enter_state(REST)
 
 
 ## Actual extents of the body after shape rules (see class docs).
@@ -346,11 +444,15 @@ func _physics_process(delta: float) -> void:
 		_was_disabled = true
 	elif _was_disabled:
 		_was_disabled = false
-		enter_state(_state_after_flinch())
+		enter_state(_state_after_flinch() if aware else _calm_state())
 	elif state == FLINCH:
 		desired_velocity = Vector3.ZERO
 		if state_time >= flinch_time:
 			enter_state(_state_after_flinch())
+	elif not aware:
+		_tick_awareness(ai_delta)
+	elif _should_give_up(ai_delta):
+		enter_state(RETURN_HOME)
 	else:
 		_tick_state(ai_delta)
 
@@ -375,6 +477,7 @@ func enter_state(new_state: StringName) -> void:
 	visual_scale = Vector3.ONE
 	visual_pitch = 0.0
 	state_log.append("%s@%.2f" % [new_state, _age])
+	_on_enter_awareness_state(new_state)
 	_on_enter_state(new_state)
 
 
@@ -517,6 +620,279 @@ func _resolve_target() -> Node3D:
 	if target != null and is_instance_valid(target) and target.is_in_group(&"player"):
 		return target
 	return get_tree().get_first_node_in_group(&"player") as Node3D
+
+
+# --- Awareness ------------------------------------------------------------------
+# Unaware enemies run rest / wander / patrol / suspicious / investigate / alert /
+# return_home here instead of _tick_state. Noticing ends in `idle`, which every
+# enemy hands to combat. Aware enemies with a leash or forget_time walk home
+# (return_home) and become unaware again.
+
+## Wave enemies: start aware and never leash or forget (they have no home).
+## Call before adding to the tree.
+func make_always_aware() -> void:
+	starts_aware = true
+	leash_radius = 0.0
+	forget_time = 0.0
+
+
+func is_awareness_state(s: StringName) -> bool:
+	return s in [REST, WANDER, PATROL, SUSPICIOUS, INVESTIGATE, ALERT, RETURN_HOME]
+
+
+## Notice at once (damage, point blank): no alert pop. `spread` wakes neighbours.
+func become_aware(spread: bool = true) -> void:
+	if aware or health.is_dead:
+		return
+	aware = true
+	suspicion = 1.0
+	unseen_time = 0.0
+	_alert_delay = -1.0
+	enter_state(&"idle")
+	if spread:
+		_alert_neighbours()
+
+
+## Another enemy's alert reached this one: alert after `delay`, without spreading.
+func receive_alert(from: Enemy, delay: float) -> void:
+	if aware or health.is_dead or state == ALERT or _alert_delay >= 0.0:
+		return
+	alerted_by = from
+	alerted_at = _age
+	_alert_delay = delay
+
+
+func is_alert_pending() -> bool:
+	return _alert_delay >= 0.0
+
+
+## Called by NoiseEvent.emit(). Unaware enemies in range go to investigate the spot.
+func hear(at: Vector3, radius: float) -> bool:
+	if aware or health.is_dead or state == ALERT or is_disabled():
+		return false
+	if global_position.distance_to(at) > radius + hearing_range:
+		return false
+	investigate_point = at
+	enter_state(INVESTIGATE)
+	return true
+
+
+## Suspicion gained per second while seeing someone `distance` metres away.
+func notice_rate(distance: float) -> float:
+	var t := clampf(distance / maxf(sight_range, 0.01), 0.0, 1.0)
+	return lerpf(NEAR_NOTICE_BOOST, FAR_NOTICE_FACTOR, t) / maxf(notice_time, 0.01)
+
+
+func eye_point() -> Vector3:
+	return global_position + Vector3.UP * extents().y * 0.8
+
+
+func has_line_of_sight(point: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(eye_point(), point, Layers.WORLD)
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+
+
+## Updates sees_target / los_* for `target`. `cone` false = any direction.
+func perceive(range_limit: float, cone: bool) -> bool:
+	sees_target = false
+	los_checked = false
+	los_blocked = false
+	perceived_distance = INF
+	if not has_target():
+		return false
+	var p := target.global_position + Vector3.UP * 0.9
+	if target.has_method(&"get_aim_point"):
+		p = target.call(&"get_aim_point")
+	var to := p - eye_point()
+	perceived_distance = to.length()
+	if perceived_distance > range_limit:
+		return false
+	if cone and perceived_distance > point_blank_range:
+		var flat := Vector3(to.x, 0.0, to.z)
+		if flat.length_squared() > 0.0001 and rad_to_deg(forward().angle_to(flat.normalized())) > sight_fov_deg * 0.5:
+			return false
+	los_checked = true
+	los_blocked = not has_line_of_sight(p)
+	sees_target = not los_blocked
+	if sees_target:
+		last_seen_position = target.global_position
+	return sees_target
+
+
+## Where an unaware enemy settles after losing interest.
+func _calm_state() -> StringName:
+	if not patrol_points.is_empty():
+		return PATROL
+	if _flat_distance(global_position, home_position) > maxf(wander_radius, 1.5):
+		return RETURN_HOME
+	return REST
+
+
+func _tick_awareness(delta: float) -> void:
+	if _alert_delay >= 0.0:
+		_alert_delay -= delta
+		if _alert_delay < 0.0:
+			_begin_alert(false)
+	if state == ALERT:
+		_stop()
+		if has_target():
+			face_toward(target_position(), delta, 720.0)
+		visual_scale = ALERT_POP_SCALE if state_time < alert_time * 0.35 else Vector3.ONE
+		if state_time >= alert_time:
+			aware = true
+			suspicion = 1.0
+			unseen_time = 0.0
+			enter_state(&"idle")
+		return
+
+	# Heading home only point-blank contact counts (stops leash ping-pong).
+	var sees := perceive(point_blank_range, false) if state == RETURN_HOME else perceive(sight_range, true)
+	if sees and perceived_distance <= point_blank_range:
+		become_aware()
+		return
+	if sees:
+		unseen_time = 0.0
+		suspicion = minf(1.0, suspicion + notice_rate(perceived_distance) * delta)
+	else:
+		unseen_time += delta
+		suspicion = maxf(0.0, suspicion - suspicion_decay * delta)
+	if suspicion >= 1.0:
+		_begin_alert(true)
+		return
+	if sees and state != SUSPICIOUS and state != RETURN_HOME:
+		enter_state(SUSPICIOUS)
+
+	var walk := move_speed * unaware_speed_factor
+	match state:
+		REST:
+			_stop()
+			if patrol_points.is_empty() and wander_radius <= 0.0:
+				rotation.y = rotate_toward(rotation.y, home_yaw, deg_to_rad(turn_speed_deg) * 0.5 * delta)
+			elif state_time >= _rest_duration:
+				enter_state(WANDER if patrol_points.is_empty() else PATROL)
+		WANDER:
+			if _walk_to(_walk_goal, walk, delta) or state_time > _walk_limit:
+				enter_state(REST)
+		PATROL:
+			if _walk_to(_walk_goal, walk, delta) or state_time > _walk_limit:
+				_patrol_index = (_patrol_index + 1) % patrol_points.size()
+				enter_state(REST)
+		SUSPICIOUS:
+			_stop()
+			face_toward(last_seen_position, delta, turn_speed_deg * 0.5)
+			if suspicion <= 0.0:
+				enter_state(_calm_state())
+			elif unseen_time > 1.0:
+				investigate_point = last_seen_position
+				enter_state(INVESTIGATE)
+		INVESTIGATE:
+			if _look_left < 0.0:
+				if _walk_to(investigate_point, walk, delta) or state_time > _walk_limit:
+					_look_left = investigate_time
+			else:
+				_stop()
+				rotation.y += deg_to_rad(turn_speed_deg) * 0.25 * delta * signf(sin(state_time * 1.3) + 0.01)
+				_look_left -= delta
+				if _look_left <= 0.0:
+					enter_state(_calm_state())
+		RETURN_HOME:
+			var speed := move_speed * RETURN_SPEED_FACTOR
+			if _walk_to(home_position, speed, delta) or state_time > _walk_limit:
+				health.heal(health.max_health)
+				enter_state(PATROL if not patrol_points.is_empty() else REST)
+		_:
+			# A subclass state while unaware (e.g. resumed after a freeze).
+			enter_state(_calm_state())
+
+
+func _begin_alert(spread: bool) -> void:
+	_alert_delay = -1.0
+	suspicion = 1.0
+	enter_state(ALERT)
+	if spread:
+		_alert_neighbours()
+
+
+## Wakes unaware enemies within alert_radius that can see this one. The woken
+## ones alert after a staggered delay and do not pass it on.
+func _alert_neighbours() -> void:
+	if health.current <= 0.0:
+		return
+	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var e := n as Enemy
+		if e == null or e == self or e.aware or e.health.is_dead:
+			continue
+		if e.global_position.distance_to(global_position) > alert_radius:
+			continue
+		var q := PhysicsRayQueryParameters3D.create(eye_point(), e.eye_point(), Layers.WORLD)
+		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+			continue
+		e.receive_alert(self, rng.randf_range(GROUP_ALERT_DELAY_MIN, GROUP_ALERT_DELAY_MAX))
+
+
+## Aware enemies give up when leashed or when they lost their target too long.
+func _should_give_up(delta: float) -> bool:
+	if leash_radius > 0.0 and _flat_distance(global_position, home_position) > leash_radius:
+		return true
+	if forget_time > 0.0:
+		if perceive(sight_range * AWARE_SIGHT_FACTOR, false):
+			unseen_time = 0.0
+		else:
+			unseen_time += delta
+			if unseen_time >= forget_time:
+				return true
+	return false
+
+
+func _on_enter_awareness_state(s: StringName) -> void:
+	match s:
+		REST:
+			_rest_duration = rng.randf_range(rest_time_min, rest_time_max)
+		WANDER:
+			var a := rng.randf() * TAU
+			var r := sqrt(rng.randf()) * wander_radius
+			_walk_goal = home_position + Vector3(cos(a) * r, 0.0, sin(a) * r)
+			_walk_limit = _walk_timeout(_walk_goal, move_speed * unaware_speed_factor)
+		PATROL:
+			_walk_goal = patrol_points[_patrol_index]
+			_walk_limit = _walk_timeout(_walk_goal, move_speed * unaware_speed_factor)
+		INVESTIGATE:
+			_look_left = -1.0
+			_walk_limit = _walk_timeout(investigate_point, move_speed * unaware_speed_factor)
+		RETURN_HOME:
+			aware = false
+			suspicion = 0.0
+			unseen_time = 0.0
+			_alert_delay = -1.0
+			_walk_limit = _walk_timeout(home_position, move_speed * RETURN_SPEED_FACTOR) + 5.0
+
+
+## Steers towards `point` (flat). Returns true once there. Flyers hold hover height.
+func _walk_to(point: Vector3, speed: float, delta: float) -> bool:
+	var to := point - global_position
+	to.y = 0.0
+	if to.length() <= ARRIVE_DISTANCE:
+		_stop()
+		return true
+	face_toward(point, delta)
+	desired_velocity = to.normalized() * speed
+	desired_velocity.y = hover_velocity(hover_height) if flying else 0.0
+	return false
+
+
+## Give up on a walk after twice the expected time (stuck on a wall).
+func _walk_timeout(point: Vector3, speed: float) -> float:
+	return _flat_distance(global_position, point) / maxf(speed, 0.1) * 2.0 + 3.0
+
+
+func _stop() -> void:
+	desired_velocity = Vector3(0.0, hover_velocity(hover_height) if flying else 0.0, 0.0)
+
+
+static func _flat_distance(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 # --- Status effects -------------------------------------------------------------
@@ -674,6 +1050,9 @@ func status_summary() -> String:
 
 
 func _on_damaged(amount: float, info: DamageInfo) -> void:
+	# Getting hurt wakes an enemy at once, except by neutral hazards or stray DoT.
+	if not aware and not info.from_hazard and (not info.is_dot or is_instance_valid(info.source_weapon)):
+		become_aware()
 	if info.is_dot:
 		return
 	_flash = 1.0
