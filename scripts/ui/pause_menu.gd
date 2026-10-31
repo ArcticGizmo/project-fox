@@ -2,16 +2,25 @@ class_name PauseMenu
 extends CanvasLayer
 ## Pause menu (Start / Esc / P). Pauses the scene tree and frees the mouse.
 ## Navigable with D-pad/left stick + A/B, keyboard, or mouse.
-## Restart is a signal so the owning scene decides how to reset.
+## Restart and level changes are signals so the owning LevelRoot decides how.
+## "Level" cycles the level selection; the restart button then loads it.
 
 signal restart_requested
+signal level_requested(path: String)
 
 var is_open: bool = false
+## Scene path of the level this menu belongs to (set by LevelRoot).
+var current_level_path: String = ""
+## Index into LevelRoot.available_levels(); -1 = the current level.
+var selected_level: int = -1
+var levels: PackedStringArray = PackedStringArray()
 
 var _resume: Button
 var _boxes: Button
 var _ai: Button
 var _restart: Button
+var _level: Button
+var _gadgets: Button
 var _quit: Button
 var _mouse_mode_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 
@@ -50,10 +59,14 @@ func _ready() -> void:
 	box.add_child(title)
 
 	_resume = _button(box, "Resume", close)
-	_restart = _button(box, "Restart Arena", _on_restart)
+	_restart = _button(box, "", _on_restart)
+	_level = _button(box, "", _on_cycle_level)
 	_boxes = _button(box, "", _on_toggle_boxes)
 	_ai = _button(box, "", _on_toggle_ai)
+	_gadgets = _button(box, "Unlock All Gadgets", _on_unlock_gadgets)
 	_quit = _button(box, "Quit to Desktop", func() -> void: get_tree().quit())
+	levels = LevelRoot.available_levels()
+	selected_level = levels.find(current_level_path)
 	DebugSettings.show_boxes_changed.connect(func(_on: bool) -> void: _refresh())
 	DebugSettings.show_ai_changed.connect(func(_on: bool) -> void: _refresh())
 	_refresh()
@@ -80,6 +93,7 @@ func open() -> void:
 		return
 	is_open = true
 	visible = true
+	_refresh()
 	get_tree().paused = true
 	_mouse_mode_before = Input.mouse_mode
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -97,7 +111,30 @@ func close() -> void:
 
 func _on_restart() -> void:
 	close()
-	restart_requested.emit()
+	var path := selected_level_path()
+	if path == "" or path == current_level_path:
+		restart_requested.emit()
+	else:
+		level_requested.emit(path)
+
+
+## The chosen level's scene path, or "" when nothing else is selected.
+func selected_level_path() -> String:
+	return levels[selected_level] if selected_level >= 0 and selected_level < levels.size() else ""
+
+
+func _on_cycle_level() -> void:
+	if levels.is_empty():
+		return
+	selected_level = (selected_level + 1) % levels.size()
+	_refresh()
+
+
+func _on_unlock_gadgets() -> void:
+	var p := get_tree().get_first_node_in_group(&"player") as Player
+	if p != null:
+		p.gadgets.unlock_all()
+	_refresh()
 
 
 func _on_toggle_boxes() -> void:
@@ -109,6 +146,14 @@ func _on_toggle_ai() -> void:
 
 
 func _refresh() -> void:
+	var path := selected_level_path()
+	var same := path == "" or path == current_level_path
+	_restart.text = "Restart Level" if same else "Load %s" % LevelRoot.level_name(path)
+	var shown := path if path != "" else current_level_path
+	_level.text = "Level: %s" % (LevelRoot.level_name(shown) if shown != "" else "-")
+	var p := get_tree().get_first_node_in_group(&"player") as Player
+	var all_unlocked := p != null and p.gadgets.unlocked.size() >= Gadgets.ALL.size()
+	_gadgets.text = "Gadgets: all unlocked" if all_unlocked else "Unlock All Gadgets"
 	_boxes.text = "Hitboxes: %s" % ("ON" if DebugSettings.show_boxes else "OFF")
 	_ai.text = "AI Debug: %s" % ("ON" if DebugSettings.show_ai else "OFF")
 

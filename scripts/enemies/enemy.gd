@@ -627,9 +627,12 @@ func _resolve_target() -> Node3D:
 			best_dist = d
 	if best != null:
 		return best
-	if target != null and is_instance_valid(target) and target.is_in_group(&"player"):
-		return target
-	return get_tree().get_first_node_in_group(&"player") as Node3D
+	var p: Node3D = target if target != null and is_instance_valid(target) and target.is_in_group(&"player") else get_tree().get_first_node_in_group(&"player") as Node3D
+	# A dead player is no target: enemies stop attacking the corpse during the
+	# respawn delay (placed enemies are then reset by LevelRoot).
+	if p is Player and (p as Player).is_dead:
+		return null
+	return p
 
 
 # --- Awareness ------------------------------------------------------------------

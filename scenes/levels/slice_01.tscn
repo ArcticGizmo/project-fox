@@ -1,0 +1,65 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/level_root.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/world/block.gd" id="2_block"]
+[ext_resource type="Script" path="res://scripts/world/checkpoint.gd" id="3_checkpoint"]
+[ext_resource type="Script" path="res://scripts/world/gadget_gate.gd" id="4_gate"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/clockwork_rat.tscn" id="5_rat"]
+
+[node name="Slice01" type="Node3D"]
+script = ExtResource("1_level")
+
+[node name="Level" type="Node3D" parent="."]
+
+[node name="Floor" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+script = ExtResource("2_block")
+size = Vector3(40, 1, 40)
+color = Color(0.32, 0.36, 0.3, 1)
+
+[node name="Cover" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, -4)
+script = ExtResource("2_block")
+size = Vector3(3, 2, 1)
+color = Color(0.2, 0.5, 0.55, 1)
+
+[node name="GrappleGate" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 3, -12)
+script = ExtResource("4_gate")
+size = Vector3(4, 6, 4)
+
+[node name="GlideGate" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.25, -4)
+script = ExtResource("4_gate")
+size = Vector3(3, 0.5, 3)
+requires = &"glide"
+
+[node name="BurrowGate" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, 4)
+script = ExtResource("4_gate")
+size = Vector3(3, 0.2, 3)
+requires = &"burrow"
+
+[node name="ConduitGate" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.5, 12)
+script = ExtResource("4_gate")
+size = Vector3(1, 3, 4)
+requires = &"conduit"
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 14)
+
+[node name="Checkpoint" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+script = ExtResource("3_checkpoint")
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="Rat" parent="Enemies" instance=ExtResource("5_rat")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+
+[node name="Patrol1" type="Marker3D" parent="Enemies/Rat"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+
+[node name="Patrol2" type="Marker3D" parent="Enemies/Rat"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)

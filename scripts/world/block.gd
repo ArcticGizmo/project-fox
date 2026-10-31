@@ -33,9 +33,20 @@ func _rebuild() -> void:
 	box.size = size
 	_mesh.mesh = box
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
+	mat.albedo_color = _display_color()
 	mat.roughness = 0.9
 	_mesh.material_override = mat
 	var shape := BoxShape3D.new()
 	shape.size = size
 	_shape.shape = shape
+	_decorate()
+
+
+## Colour actually drawn (subclasses such as GadgetGate override it).
+func _display_color() -> Color:
+	return color
+
+
+## Hook for subclasses to add marker meshes after a rebuild.
+func _decorate() -> void:
+	pass

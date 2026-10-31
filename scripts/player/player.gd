@@ -54,6 +54,10 @@ var melee: StaffMelee
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
+## Facing (yaw) after a respawn; checkpoints set it with spawn_point.
+var spawn_yaw: float = 0.0
+## Unlocked traversal gadgets (has_gadget / unlock_gadget).
+var gadgets: Gadgets = Gadgets.new()
 
 var aim_target: Node3D = null
 var aim_point: Vector3 = Vector3.ZERO
@@ -98,6 +102,7 @@ func _ready() -> void:
 	floor_snap_length = 0.3
 	spawn_point = global_position
 	facing_yaw = rotation.y
+	spawn_yaw = facing_yaw
 	rotation = Vector3.ZERO
 
 	var cs := CollisionShape3D.new()
@@ -669,6 +674,9 @@ func _on_died(_info: DamageInfo) -> void:
 func respawn() -> void:
 	is_dead = false
 	global_position = spawn_point
+	facing_yaw = spawn_yaw
+	camera_rig.yaw = spawn_yaw
+	visual.rotation.y = spawn_yaw
 	velocity = Vector3.ZERO
 	_knockback = Vector3.ZERO
 	_launched = false
@@ -677,6 +685,14 @@ func respawn() -> void:
 	visual.visible = true
 	camera_rig.snap_to_target()
 	respawned.emit()
+
+
+func has_gadget(id: StringName) -> bool:
+	return gadgets.has(id)
+
+
+func unlock_gadget(id: StringName) -> bool:
+	return gadgets.unlock(id)
 
 
 func _update_visuals(_delta: float) -> void:
