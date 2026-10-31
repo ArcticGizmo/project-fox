@@ -33,6 +33,8 @@ const POISON_DURATION := 5.0
 const POISON_TICK := 0.5
 const CONTAGION_RADIUS := 4.5
 const FREEZE_COLOR := Color(0.6, 0.88, 1.0)
+## Blue glow at full chill, so the build-up towards a freeze reads clearly.
+const CHILL_GLOW := Color(0.15, 0.45, 1.0)
 const POISON_COLOR := Color(0.4, 1.0, 0.2)
 const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
 
@@ -101,6 +103,8 @@ var _poison_source: Weapon = null
 var _poison_contagious: bool = false
 var _was_disabled: bool = false
 var _web: Node3D
+## Transparent ice block shown around the body while frozen.
+var ice_block: MeshInstance3D
 
 
 func _ready() -> void:
@@ -242,6 +246,26 @@ func _build_body() -> void:
 		strand.position.y = 0.1
 		strand.rotation.y = PI * float(i) / 3.0
 		_web.add_child(strand)
+
+	# Ice block encasing the body (snout included), shown while frozen.
+	ice_block = MeshInstance3D.new()
+	ice_block.name = "IceBlock"
+	var ice_mesh := BoxMesh.new()
+	ice_mesh.size = Vector3(e.x + 0.3, e.y + 0.25, e.z + 0.5)
+	ice_block.mesh = ice_mesh
+	var ice := StandardMaterial3D.new()
+	ice.albedo_color = Color(0.7, 0.9, 1.0, 0.35)
+	ice.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	ice.emission_enabled = true
+	ice.emission = Color(0.2, 0.45, 0.7)
+	ice.roughness = 0.05
+	ice.metallic_specular = 1.0
+	ice.cull_mode = BaseMaterial3D.CULL_DISABLED
+	ice_block.material_override = ice
+	ice_block.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ice_block.position = Vector3(0, (e.y + 0.25) * 0.5, -0.1)
+	ice_block.visible = false
+	visual.add_child(ice_block)
 
 
 func add_visual_box(size: Vector3, pos: Vector3, c: Color) -> MeshInstance3D:
@@ -544,6 +568,7 @@ func _update_statuses(delta: float) -> void:
 		frozen_left -= delta
 		if frozen_left <= 0.0:
 			chill = 0.0
+			GameFeel.impact(get_aim_point(), FREEZE_COLOR, extents().length() * 1.1, 0.2)
 	else:
 		_chill_hold -= delta
 		if _chill_hold <= 0.0:
@@ -652,9 +677,12 @@ func _update_visuals(delta: float) -> void:
 		glow += EXPOSED_COLOR * (0.3 + 0.2 * sin(_age * 10.0))
 	if is_frozen():
 		glow += FREEZE_COLOR * 0.5
+	elif chill > 0.0:
+		glow += CHILL_GLOW * chill * (0.6 + 0.15 * sin(_age * 8.0))
 	_material.emission = glow
-	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.6)
+	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.75)
 	_web.visible = is_rooted()
+	ice_block.visible = is_frozen() and not health.is_dead
 	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else 0.0
 	if not health.is_dead:
 		visual.scale = visual.scale.lerp(visual_scale, 1.0 - exp(-20.0 * delta))

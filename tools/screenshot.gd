@@ -26,12 +26,12 @@ func _ready() -> void:
 	await get_tree().create_timer(0.2).timeout
 	await _capture("firing.png")
 	Input.action_release(&"fire")
-	# Weapon wheel held with the right stick pushed right (slot 3 highlighted).
+	# Weapon wheel held with the left stick pushed right (slot 3 highlighted).
 	Input.action_press(&"weapon_wheel")
-	Input.action_press(&"look_right", 1.0)
+	Input.action_press(&"move_right", 1.0)
 	await get_tree().create_timer(0.3, true, false, true).timeout
 	await _capture("wheel.png")
-	Input.action_release(&"look_right")
+	Input.action_release(&"move_right")
 	await get_tree().create_timer(0.1, true, false, true).timeout
 	Input.action_release(&"weapon_wheel")
 	await get_tree().create_timer(0.3).timeout
@@ -51,6 +51,7 @@ func _ready() -> void:
 	Input.action_release(&"melee")
 	await _capture("melee.png")
 	await get_tree().create_timer(0.5).timeout
+	await _capture_status(arena.get("player") as Player)
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)
@@ -95,6 +96,32 @@ func _capture_scoped(player: Player) -> void:
 	await get_tree().physics_frame
 	Input.action_release(key)
 	await get_tree().create_timer(0.4).timeout
+
+
+## Line two enemies up in the open: one half chilled, one frozen solid.
+func _capture_status(player: Player) -> void:
+	var enemies := get_tree().get_nodes_in_group(&"enemies")
+	if enemies.size() < 2:
+		return
+	DebugSettings.show_boxes = false
+	var chilled := enemies[0] as Enemy
+	var frozen := enemies[1] as Enemy
+	var base := player.global_position + Vector3(0, 0, 6)
+	chilled.global_position = base + Vector3(-1.6, 0, 0)
+	frozen.global_position = base + Vector3(1.6, 0, 0)
+	frozen.freeze(5.0)
+	await get_tree().physics_frame
+	# Keep the chilled one still without stopping its visuals ticking.
+	chilled.root(5.0)
+	chilled.add_chill(0.6, 5.0)
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = base + Vector3(0, 2.5, 5.0)
+	cam.look_at(base + Vector3.UP * 0.6)
+	cam.make_current()
+	await get_tree().create_timer(0.1).timeout
+	await _capture("status.png")
+	cam.queue_free()
 
 
 func _capture(file_name: String) -> void:

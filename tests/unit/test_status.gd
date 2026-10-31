@@ -20,9 +20,13 @@ func test_chill_slows_then_freezes() -> void:
 	rat.add_chill(0.5, 2.0)
 	assert_near(rat.move_multiplier(), 1.0 - 0.5 * Enemy.CHILL_MAX_SLOW, 0.001, "half chill slows")
 	assert_near(rat.ai_speed(), rat.move_multiplier(), 0.001, "AI clock slows too")
+	await wait_frames(1)
+	assert_false(rat.ice_block.visible, "no ice block while only chilled")
 	rat.add_chill(0.5, 2.0)
 	assert_true(rat.is_frozen(), "full chill freezes")
 	assert_eq(rat.move_multiplier(), 0.0, "frozen enemies don't move")
+	await wait_frames(1)
+	assert_true(rat.ice_block.visible, "frozen enemies are encased in ice")
 
 
 func test_frozen_pauses_ai_takes_bonus_damage_and_thaws() -> void:
@@ -44,6 +48,7 @@ func test_frozen_pauses_ai_takes_bonus_damage_and_thaws() -> void:
 	assert_false(bull.is_frozen(), "thawed after the resisted duration")
 	assert_eq(bull.chill, 0.0, "chill cleared on thaw")
 	await wait_frames(2)
+	assert_false(bull.ice_block.visible, "ice block gone on thaw")
 	assert_ne_state(bull, &"charge")
 
 

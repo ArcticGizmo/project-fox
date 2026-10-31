@@ -16,7 +16,7 @@ godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one sh
 
 Run the test suite after every change. Use the screenshot tool to check anything visual
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
-and an overview).
+chill vs frozen enemies and an overview).
 
 ## Controls (controller / keyboard+mouse)
 
