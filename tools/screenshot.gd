@@ -53,6 +53,7 @@ func _ready() -> void:
 	await get_tree().create_timer(0.5).timeout
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
+	await _capture_hazards()
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)
@@ -144,6 +145,34 @@ func _capture_flyers(player: Player, waves: WaveManager) -> void:
 	await get_tree().create_timer(0.12).timeout
 	await _capture("falcon_dive.png")
 	cam.queue_free()
+
+
+## One shot of each hazard type mid-telegraph and while dangerous.
+func _capture_hazards() -> void:
+	var done: Dictionary = {}
+	for n: Node in get_tree().get_nodes_in_group(&"hazards"):
+		var kind := (n.get_script() as Script).get_global_name()
+		if done.has(kind):
+			continue
+		done[kind] = true
+		var cam := _hazard_camera(n as Hazard)
+		var trap := n as FireTrap
+		if trap != null:
+			trap.trigger_now()
+			await get_tree().create_timer(trap.arm_time * 0.8).timeout
+			await _capture("hazard_fire_armed.png")
+			await get_tree().create_timer(trap.arm_time * 0.2 + 0.3).timeout
+			await _capture("hazard_fire_burning.png")
+		cam.queue_free()
+
+
+func _hazard_camera(h: Hazard, offset: Vector3 = Vector3(0, 3.5, 7), look_height: float = 1.0) -> Camera3D:
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = h.global_position + offset
+	cam.look_at(h.global_position + Vector3.UP * look_height)
+	cam.make_current()
+	return cam
 
 
 func _capture(file_name: String) -> void:

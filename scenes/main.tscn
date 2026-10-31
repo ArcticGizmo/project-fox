@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/world/block.gd" id="2_block"]
 [ext_resource type="Script" path="res://scripts/world/crate.gd" id="3_crate"]
 [ext_resource type="Script" path="res://scripts/world/wave_manager.gd" id="4_waves"]
+[ext_resource type="Script" path="res://scripts/hazards/fire_trap.gd" id="5_fire"]
 
 [node name="Arena" type="Node3D"]
 script = ExtResource("1_arena")
@@ -154,7 +155,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 24)
 script = ExtResource("3_crate")
 kind = 1
 
-[node name="PlayerSpawn" type="Marker3D" parent="."]
+[node name="Hazards" type="Node3D" parent="."]
+
+[node name="FireTrap1" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -2)
+script = ExtResource("5_fire")
+
+[node name="FireTrap2" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 0, -2)
+script = ExtResource("5_fire")
+arm_time = 1.0
+
+[node name="FireTrap3" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0, -2)
+script = ExtResource("5_fire")
+arm_time = 2.0
+
+[node name="PlayerSpawn"type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 10)
 
 [node name="WaveManager" type="Node3D" parent="."]

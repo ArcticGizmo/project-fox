@@ -18,6 +18,7 @@ markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lightin
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
+| `scripts/hazards/` | `Hazard` base + traps (fire trap, ...) |
 | `scripts/world/` | `Arena`, `Block` (@tool coloured box with collision), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
@@ -99,6 +100,11 @@ D-pad up/F2 · next wave D-pad down/F3.
   real-time when slowed, so input read in `_physics_process` stays responsive.
 - **Melee** lives in `StaffMelee` (timing, hitboxes, pose); the player reads its `phase`
   to drive movement. Tuning is in the Staff combo / Slam and pounce groups of `PlayerTuning`.
+- **Hazards** extend `Hazard` (`scripts/hazards/`): neutral, so their HitBoxes use `HIT_MASK`
+  (player AND enemy hurtboxes; kills credit no weapon). Same state machine + `state_log` as
+  enemies; pressure plates use `make_trigger()` + `creatures_in()`. Instances live under
+  `Hazards` in `main.tscn`; keep crates out of their volumes. Add each new type to
+  `_capture_hazards()` in the screenshot tool.
 
 ## Testing gotchas
 
