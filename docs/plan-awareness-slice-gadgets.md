@@ -65,7 +65,7 @@ every enemy already hands straight to combat. Enemy subclasses should not need c
 - Screenshot step `_capture_awareness()`: resting / suspicious / alerting enemies with the
   AI debug view on.
 
-## Task 3: Level infrastructure
+## Task 3: Level infrastructure (done)
 
 - Split the runtime setup in `Arena` (player, HUD, pause menu, lighting) into a reusable
   `LevelRoot`; `main.tscn` keeps working, `WaveManager` becomes optional.
@@ -79,6 +79,29 @@ every enemy already hands straight to combat. Enemy subclasses should not need c
 - Level select: `run.cmd -- --level=slice_01` and a pause-menu entry.
 - `GravityRift` zone (Area3D): inside it gravity points along the zone's local down.
   Prototype only if cheap; otherwise leave a stub and note it.
+
+Done notes / deviations:
+- `LevelRoot` (`scripts/world/level_root.gd`) is the root script of every playable scene;
+  `Arena` is an empty subclass kept for its name. `PlayerSpawn` and `WaveManager` are optional.
+- Placed enemies are snapshotted in `LevelRoot._enter_tree` (scene path, local transform,
+  parent, name, every stored script export, patrol `Marker3D`s) and rebuilt only when the
+  player respawns **after a death**; the kill-plane respawn (falling off) resets nothing.
+- `Player.spawn_yaw` added: checkpoints set it from their own yaw; `respawn()` restores
+  facing and camera yaw.
+- Enemies treat a dead player as no target (`_resolve_target` returns null), so nobody
+  attacks the corpse during the 1.5 s respawn delay.
+- Gadgets are a `Gadgets` RefCounted on `player.gadgets` (`has`, `unlock`, `unlock_all`,
+  signal `unlocked_gadget`) with `Player.has_gadget` / `unlock_gadget` shortcuts.
+- `GadgetGate` gets a coloured block, a marker primitive (ring / vent slats + plume / soil
+  mound / copper terminal) and a "<id> gate" label; `is_open_for(player)` for tasks 5-8.
+- Level select: `run.cmd -- --level=slice_01` (`--level=arena` = `main.tscn`). Pause menu:
+  "Level: X" cycles through the arena + `scenes/levels/*.tscn`; the restart button then reads
+  "Load X". `scenes/levels/slice_01.tscn` is a placeholder (floor, cover, spawn, checkpoint,
+  one patrolling rat, one gate per gadget) for task 4 to replace.
+- **GravityRift is a stub** (`scripts/world/gravity_rift.gd`: volume, visual,
+  `gravity_direction()`, no effect). Not cheap: player movement, floor checks, jumping and the
+  camera all assume world-up (`velocity.y`, `is_on_floor`, CameraRig pitch). Real support means
+  moving the player onto an `up_direction` basis; schedule it as its own task if wanted.
 
 ## Task 4: Greybox slice `scenes/levels/slice_01.tscn`
 

@@ -6,20 +6,23 @@ variety, weapon levelling. Art is coloured primitives until real assets exist.
 
 ## Where things live
 
-Almost everything is built in code; scenes are thin. `scenes/main.tscn` (the main scene) holds
-only level `Block`s, `Crate`s, the `PlayerSpawn` marker and the `WaveManager` with its spawn
-markers. `scripts/world/arena.gd` builds the player, HUD, pause menu and lighting at runtime.
+Almost everything is built in code; scenes are thin. Every playable scene has a `LevelRoot`
+root script (`scripts/world/level_root.gd`) that builds the player, HUD, pause menu and lighting
+at runtime. `scenes/main.tscn` (the main scene, the wave arena, `Arena extends LevelRoot`) holds
+level `Block`s, `Crate`s, `Hazards`, the `PlayerSpawn` marker and the `WaveManager` with its spawn
+markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gadget gates).
 
 | Path | What |
 |---|---|
 | `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
-| `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
+| `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
-| `scripts/world/` | `Arena`, `Block` (@tool coloured box with collision), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool coloured box with collision), `GadgetGate` (Block per gadget id), `Checkpoint`, `GravityRift` (stub), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scenes/levels/` | Level scenes (`slice_01.tscn`); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
@@ -47,7 +50,8 @@ godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one sh
 
 Run the test suite after every change. Use the screenshot tool to check anything visual
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
-chill vs frozen enemies, the two flyers (cruising and diving) and an overview).
+chill vs frozen enemies, the two flyers (cruising and diving), an overview and each level in
+`_capture_level`: slice_01 from the player and from above).
 
 ## Controls (controller / keyboard+mouse)
 
@@ -118,6 +122,17 @@ D-pad up/F2 · next wave D-pad down/F3.
   enemies; pressure plates use `make_trigger()` + `creatures_in()`. Instances live under
   `Hazards` in `main.tscn`; keep crates out of their volumes. Add each new type to
   `_capture_hazards()` in the screenshot tool.
+- **Levels** (`scenes/levels/<name>.tscn`): root `Node3D` with `level_root.gd`, a `PlayerSpawn`
+  Marker3D (its yaw = start facing), `Block`/`GadgetGate` geometry, `Checkpoint`s (yaw = respawn
+  facing), and enemies instanced from `scenes/enemies/*.tscn` (patrol route = Marker3D children).
+  `WaveManager` is optional. Every Enemy under the level at load is "placed": when the player
+  dies and respawns, `LevelRoot` frees and rebuilds them all from a snapshot of their exports
+  (dead ones return, living ones go home unaware at full hp). Falling off (kill plane) and
+  reaching a checkpoint reset nothing; wave-spawned enemies are never touched. Enemies ignore
+  a dead player (`has_target()` false during the respawn delay).
+- **Gadgets**: ids `Gadgets.ALL` (&"grapple", &"glide", &"burrow", &"conduit") on
+  `player.gadgets`; gates are `GadgetGate` blocks with `requires` (`is_open_for(player)`).
+  Pause menu has "Unlock All Gadgets" for testing.
 
 ## Testing gotchas
 

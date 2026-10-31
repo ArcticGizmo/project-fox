@@ -63,8 +63,33 @@ func _ready() -> void:
 	cam.make_current()
 	await get_tree().create_timer(0.1).timeout
 	await _capture("overview.png")
+	cam.queue_free()
+	await _capture_level(arena, "res://scenes/levels/slice_01.tscn")
 	get_tree().quit()
 
+
+
+## Swap the arena for a level scene: player view (checkpoint lit) and an overview.
+func _capture_level(arena: Node, path: String) -> void:
+	DebugSettings.show_boxes = false
+	arena.queue_free()
+	await get_tree().process_frame
+	var level := (load(path) as PackedScene).instantiate() as LevelRoot
+	add_child(level)
+	var level_id := LevelRoot.level_name(path)
+	var checkpoints := get_tree().get_nodes_in_group(&"checkpoints")
+	if not checkpoints.is_empty():
+		(checkpoints[0] as Checkpoint).activate(level.player)
+	await get_tree().create_timer(1.0).timeout
+	await _capture("level_%s.png" % level_id)
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = Vector3(0, 32, 26)
+	cam.look_at(Vector3(0, 0, -2))
+	cam.make_current()
+	await get_tree().create_timer(0.1).timeout
+	await _capture("level_%s_overview.png" % level_id)
+	cam.queue_free()
 
 ## Fire each weapon for a moment and capture weapon_<id>.png (pass --weapons).
 func _capture_each_weapon(player: Player) -> void:
