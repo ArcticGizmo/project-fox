@@ -127,8 +127,11 @@ func _snapshot(e: Enemy) -> Dictionary:
 	}
 
 
-## Free every placed enemy (alive or dead) and rebuild it as authored.
+## Free every placed enemy (alive or dead) and rebuild it as authored. Enemy
+## projectiles still in flight are cleared too.
 func reset_placed_enemies() -> void:
+	for n: Node in get_tree().get_nodes_in_group(LobProjectile.GROUP):
+		n.queue_free()
 	for rec: Dictionary in placed:
 		var old: Variant = rec[&"node"]
 		if is_instance_valid(old):

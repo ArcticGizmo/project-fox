@@ -57,6 +57,8 @@ const ARRIVE_DISTANCE := 0.7
 const RETURN_SPEED_FACTOR := 0.75
 ## Upward stretch of the alert pop (wind-ups squash, so this reads differently).
 const ALERT_POP_SCALE := Vector3(0.8, 1.4, 0.8)
+## Enemies that fall below this (off a ledge into a pit) die.
+const KILL_PLANE_Y := -20.0
 
 @export_group("Body")
 @export var display_name: String = "Enemy"
@@ -438,6 +440,9 @@ func _physics_process(delta: float) -> void:
 	_age += delta
 	_update_visuals(delta)
 	if health.is_dead:
+		return
+	if global_position.y < KILL_PLANE_Y:
+		health.apply_damage(DamageInfo.create(health.current + 1.0, global_position))
 		return
 	_update_burn(delta)
 	_update_statuses(delta)

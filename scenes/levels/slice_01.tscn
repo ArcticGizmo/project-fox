@@ -4,62 +4,751 @@
 [ext_resource type="Script" path="res://scripts/world/block.gd" id="2_block"]
 [ext_resource type="Script" path="res://scripts/world/checkpoint.gd" id="3_checkpoint"]
 [ext_resource type="Script" path="res://scripts/world/gadget_gate.gd" id="4_gate"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/clockwork_rat.tscn" id="5_rat"]
+[ext_resource type="Script" path="res://scripts/world/crate.gd" id="5_crate"]
+[ext_resource type="Script" path="res://scripts/hazards/fire_trap.gd" id="6_fire"]
+[ext_resource type="Script" path="res://scripts/hazards/lightning_barrier.gd" id="7_lightning"]
+[ext_resource type="Script" path="res://scripts/hazards/clockwork_sweeper.gd" id="8_sweeper"]
+[ext_resource type="Script" path="res://scripts/hazards/steam_hammer.gd" id="9_hammer"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/clockwork_rat.tscn" id="10_rat"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/brass_bull.tscn" id="11_bull"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/spitter_toad.tscn" id="12_toad"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/bombardier_gull.tscn" id="13_gull"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/brass_falcon.tscn" id="14_falcon"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
 
 [node name="Level" type="Node3D" parent="."]
 
-[node name="Floor" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+[node name="AbyssFloor" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -31, 30)
 script = ExtResource("2_block")
-size = Vector3(40, 1, 40)
-color = Color(0.32, 0.36, 0.3, 1)
+size = Vector3(170, 2, 220)
+color = Color(0.12, 0.1, 0.12, 1)
 
-[node name="Cover" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1, -4)
+[node name="Pad" type="Node3D" parent="Level"]
+
+[node name="PadTop" type="StaticBody3D" parent="Level/Pad" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("2_block")
+size = Vector3(12, 6, 12)
+color = Color(0.46, 0.44, 0.52, 1)
+metadata/path_index = 1
+
+[node name="PadStep" type="StaticBody3D" parent="Level/Pad" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.75, -7.5)
+script = ExtResource("2_block")
+size = Vector3(5, 4.5, 3)
+color = Color(0.46, 0.44, 0.52, 1)
+metadata/path_index = 2
+
+[node name="RailSouth" type="StaticBody3D" parent="Level/Pad"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, 5.75)
+script = ExtResource("2_block")
+size = Vector3(12, 0.8, 0.5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="RailWest" type="StaticBody3D" parent="Level/Pad"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.75, 3.4, -0.25)
+script = ExtResource("2_block")
+size = Vector3(0.5, 0.8, 11.5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="RailEastN" type="StaticBody3D" parent="Level/Pad"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.75, 3.4, -3.5)
+script = ExtResource("2_block")
+size = Vector3(0.5, 0.8, 5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="RailEastS" type="StaticBody3D" parent="Level/Pad"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.75, 3.4, 4.25)
+script = ExtResource("2_block")
+size = Vector3(0.5, 0.8, 2.5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="PocketA" type="Node3D" parent="Level"]
+
+[node name="Floor" type="StaticBody3D" parent="Level/PocketA" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.5, -23)
+script = ExtResource("2_block")
+size = Vector3(22, 3, 34)
+color = Color(0.36, 0.38, 0.32, 1)
+metadata/path_index = 3
+
+[node name="CourtRailW" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10.75, 0.5, -12)
+script = ExtResource("2_block")
+size = Vector3(0.5, 1, 12)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="CourtRailE" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.75, 0.5, -12)
+script = ExtResource("2_block")
+size = Vector3(0.5, 1, 12)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="FenceW" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.75, 0.6, -18)
+script = ExtResource("2_block")
+size = Vector3(8.5, 1.2, 0.5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="FenceE" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.75, 0.6, -18)
+script = ExtResource("2_block")
+size = Vector3(8.5, 1.2, 0.5)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="WallW" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.25, 2.25, -29.125)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 22.75)
+color = Color(0.52, 0.3, 0.22, 1)
+
+[node name="WallN" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, -40.25)
+script = ExtResource("2_block")
+size = Vector3(23, 4.5, 0.5)
+color = Color(0.52, 0.3, 0.22, 1)
+
+[node name="WallE1" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.25, 2.25, -24.375)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 13.25)
+color = Color(0.52, 0.3, 0.22, 1)
+
+[node name="WallE2" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.25, 2.25, -38.25)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 4.5)
+color = Color(0.52, 0.3, 0.22, 1)
+
+[node name="CoverA" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1, -24)
 script = ExtResource("2_block")
 size = Vector3(3, 2, 1)
 color = Color(0.2, 0.5, 0.55, 1)
 
-[node name="GrappleGate" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 3, -12)
-script = ExtResource("4_gate")
-size = Vector3(4, 6, 4)
+[node name="CoverB" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 1, -29)
+script = ExtResource("2_block")
+size = Vector3(1, 2, 3)
+color = Color(0.2, 0.5, 0.55, 1)
 
-[node name="GlideGate" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.25, -4)
-script = ExtResource("4_gate")
-size = Vector3(3, 0.5, 3)
-requires = &"glide"
+[node name="Pillar" type="StaticBody3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 2, -34)
+script = ExtResource("2_block")
+size = Vector3(2, 4, 2)
+color = Color(0.66, 0.54, 0.3, 1)
 
-[node name="BurrowGate" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.1, 4)
+[node name="Traversal" type="Node3D" parent="Level"]
+
+[node name="T0Start" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -1.5, -33.5)
+script = ExtResource("2_block")
+size = Vector3(8, 3, 5)
+color = Color(0.66, 0.54, 0.3, 1)
+metadata/path_index = 4
+
+[node name="T1" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.75, -1.5, -33.5)
+script = ExtResource("2_block")
+size = Vector3(4.5, 3, 5)
+color = Color(0.66, 0.54, 0.3, 1)
+metadata/path_index = 5
+
+[node name="T2Step" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, -0.75, -33.5)
+script = ExtResource("2_block")
+size = Vector3(4, 4.5, 5)
+color = Color(0.66, 0.54, 0.3, 1)
+metadata/path_index = 6
+
+[node name="T3Corner" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 39.5, -0.75, -33.5)
+script = ExtResource("2_block")
+size = Vector3(9, 4.5, 5)
+color = Color(0.66, 0.54, 0.3, 1)
+metadata/path_index = 7
+
+[node name="T4" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5, -0.75, -21.5)
+script = ExtResource("2_block")
+size = Vector3(5, 4.5, 5)
+color = Color(0.66, 0.54, 0.3, 1)
+metadata/path_index = 8
+
+[node name="T5Overlook" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5, 0.75, -14.5)
+script = ExtResource("2_block")
+size = Vector3(5, 7.5, 9)
+color = Color(0.78, 0.66, 0.38, 1)
+metadata/path_index = 9
+
+[node name="GrappleLedge" type="StaticBody3D" parent="Level/Traversal" groups=["gadget_gates"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 2.5, -42)
+script = ExtResource("4_gate")
+size = Vector3(4, 11, 4)
+requires = &"grapple"
+
+[node name="Yard" type="Node3D" parent="Level"]
+
+[node name="Floor" type="StaticBody3D" parent="Level/Yard" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, -1.5, 1)
+script = ExtResource("2_block")
+size = Vector3(22, 3, 22)
+color = Color(0.3, 0.3, 0.33, 1)
+metadata/path_index = 10
+
+[node name="WallN1" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.25, 2.25, -10.25)
+script = ExtResource("2_block")
+size = Vector3(3.5, 4.5, 0.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="WallN2" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 51.25, 2.25, -10.25)
+script = ExtResource("2_block")
+size = Vector3(14.5, 4.5, 0.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="WallE" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.25, 2.25, 1)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 23)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="WallS" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 2.25, 12.25)
+script = ExtResource("2_block")
+size = Vector3(23, 4.5, 0.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="WallW1" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.75, 2.25, -3.75)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 13.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="WallW2" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.75, 2.25, 10.25)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 4.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="Divider" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42.5, 1.25, 0)
+script = ExtResource("2_block")
+size = Vector3(13, 2.5, 1)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="BurrowIn" type="StaticBody3D" parent="Level/Yard" groups=["gadget_gates"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 0.1, -2)
 script = ExtResource("4_gate")
 size = Vector3(3, 0.2, 3)
 requires = &"burrow"
 
-[node name="ConduitGate" type="StaticBody3D" parent="Level"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.5, 12)
+[node name="BurrowOut" type="StaticBody3D" parent="Level/Yard" groups=["gadget_gates"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 0.1, 2)
 script = ExtResource("4_gate")
-size = Vector3(1, 3, 4)
+size = Vector3(3, 0.2, 3)
+requires = &"burrow"
+
+[node name="DoorFloor" type="StaticBody3D" parent="Level/Yard" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, -1.5, 5.5)
+script = ExtResource("2_block")
+size = Vector3(6, 3, 5)
+color = Color(0.3, 0.3, 0.33, 1)
+metadata/path_index = 11
+
+[node name="DoorWallN" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 2.25, 2.75)
+script = ExtResource("2_block")
+size = Vector3(6, 4.5, 0.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="DoorWallS" type="StaticBody3D" parent="Level/Yard"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 2.25, 8.25)
+script = ExtResource("2_block")
+size = Vector3(6, 4.5, 0.5)
+color = Color(0.42, 0.36, 0.3, 1)
+
+[node name="PocketB" type="Node3D" parent="Level"]
+
+[node name="Floor" type="StaticBody3D" parent="Level/PocketB" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19, -1.5, 7)
+script = ExtResource("2_block")
+size = Vector3(22, 3, 22)
+color = Color(0.33, 0.42, 0.33, 1)
+metadata/path_index = 12
+
+[node name="WallN" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.25, 2.25, -4.25)
+script = ExtResource("2_block")
+size = Vector3(22.5, 4.5, 0.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallW1" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 4, -2.5)
+script = ExtResource("2_block")
+size = Vector3(1, 8, 3)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallW2" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 4, 10.75)
+script = ExtResource("2_block")
+size = Vector3(1, 8, 15.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallE1" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.25, 2.25, -0.75)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 7.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallE2" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.25, 2.25, 13.25)
+script = ExtResource("2_block")
+size = Vector3(0.5, 4.5, 10.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallS1" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 2.25, 18.25)
+script = ExtResource("2_block")
+size = Vector3(9, 4.5, 0.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="WallS2" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.25, 2.25, 18.25)
+script = ExtResource("2_block")
+size = Vector3(8.5, 4.5, 0.5)
+color = Color(0.46, 0.34, 0.26, 1)
+
+[node name="ToadPlatNE" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.5, 1.5, 0)
+script = ExtResource("2_block")
+size = Vector3(7, 3, 6)
+color = Color(0.42, 0.56, 0.36, 1)
+
+[node name="ToadPlatNEStep" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.5, 0.75, -0.5)
+script = ExtResource("2_block")
+size = Vector3(3, 1.5, 3)
+color = Color(0.42, 0.56, 0.36, 1)
+
+[node name="ToadPlatNERailN" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.5, 3.4, -2.8)
+script = ExtResource("2_block")
+size = Vector3(7, 0.8, 0.4)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="ToadPlatNERailE" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.8, 3.4, 0)
+script = ExtResource("2_block")
+size = Vector3(0.4, 0.8, 5.2)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="ToadPlatNERailS" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.5, 3.4, 2.8)
+script = ExtResource("2_block")
+size = Vector3(7, 0.8, 0.4)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="ToadPlatSW" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.5, 14)
+script = ExtResource("2_block")
+size = Vector3(6, 3, 6)
+color = Color(0.42, 0.56, 0.36, 1)
+
+[node name="ToadPlatSWStep" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 0.75, 14)
+script = ExtResource("2_block")
+size = Vector3(3, 1.5, 3)
+color = Color(0.42, 0.56, 0.36, 1)
+
+[node name="ToadPlatSWRailW" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.2, 3.4, 14)
+script = ExtResource("2_block")
+size = Vector3(0.4, 0.8, 6)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="ToadPlatSWRailN" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.2, 3.4, 11.2)
+script = ExtResource("2_block")
+size = Vector3(5.6, 0.8, 0.4)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="ToadPlatSWRailS" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.2, 3.4, 16.8)
+script = ExtResource("2_block")
+size = Vector3(5.6, 0.8, 0.4)
+color = Color(0.6, 0.42, 0.3, 1)
+
+[node name="CoverB1" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.5, 1, 4.5)
+script = ExtResource("2_block")
+size = Vector3(3, 2, 1)
+color = Color(0.2, 0.5, 0.55, 1)
+
+[node name="CoverB2" type="StaticBody3D" parent="Level/PocketB"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.5, 1, 9.5)
+script = ExtResource("2_block")
+size = Vector3(1, 2, 3)
+color = Color(0.2, 0.5, 0.55, 1)
+
+[node name="Shortcut" type="Node3D" parent="Level"]
+
+[node name="Step" type="StaticBody3D" parent="Level/Shortcut"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, -0.75, 1)
+script = ExtResource("2_block")
+size = Vector3(2, 4.5, 4)
+color = Color(0.46, 0.44, 0.52, 1)
+
+[node name="ShortcutDoor" type="StaticBody3D" parent="Level/Shortcut" groups=["gadget_gates"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 2.25, 1)
+script = ExtResource("4_gate")
+size = Vector3(1, 4.5, 4)
 requires = &"conduit"
 
-[node name="PlayerSpawn" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 14)
+[node name="Ridge" type="Node3D" parent="Level"]
 
-[node name="Checkpoint" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 5)
+[node name="R0Foot" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -1.5, 20)
+script = ExtResource("2_block")
+size = Vector3(5, 3, 4)
+color = Color(0.56, 0.5, 0.44, 1)
+metadata/path_index = 13
+
+[node name="R1Step" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -2.25, 24)
+script = ExtResource("2_block")
+size = Vector3(5, 7.5, 4)
+color = Color(0.56, 0.5, 0.44, 1)
+metadata/path_index = 14
+
+[node name="R2Ledge" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -0.75, 28)
+script = ExtResource("2_block")
+size = Vector3(5, 10.5, 4)
+color = Color(0.56, 0.5, 0.44, 1)
+metadata/path_index = 15
+
+[node name="R3Spine" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -0.75, 41)
+script = ExtResource("2_block")
+size = Vector3(4, 10.5, 10)
+color = Color(0.56, 0.5, 0.44, 1)
+metadata/path_index = 16
+
+[node name="R4Step" type="StaticBody3D" parent="Level/Ridge" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, 0, 47.5)
+script = ExtResource("2_block")
+size = Vector3(5, 12, 3)
+color = Color(0.56, 0.5, 0.44, 1)
+metadata/path_index = 17
+
+[node name="Finale" type="Node3D" parent="Level"]
+
+[node name="Floor" type="StaticBody3D" parent="Level/Finale" groups=["critical_path"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 61)
+script = ExtResource("2_block")
+size = Vector3(24, 8, 24)
+color = Color(0.44, 0.38, 0.46, 1)
+metadata/path_index = 18
+
+[node name="RailW" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.25, 6.5, 61)
+script = ExtResource("2_block")
+size = Vector3(0.5, 1, 24)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="RailE" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.75, 6.5, 61)
+script = ExtResource("2_block")
+size = Vector3(0.5, 1, 24)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="RailN1" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.75, 6.5, 49.25)
+script = ExtResource("2_block")
+size = Vector3(8.5, 1, 0.5)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="RailN2" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.75, 6.5, 49.25)
+script = ExtResource("2_block")
+size = Vector3(9.5, 1, 0.5)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="RailS1" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 6.5, 72.75)
+script = ExtResource("2_block")
+size = Vector3(10, 1, 0.5)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="RailS2" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 6.5, 72.75)
+script = ExtResource("2_block")
+size = Vector3(10, 1, 0.5)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="Cover1" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 7, 57.5)
+script = ExtResource("2_block")
+size = Vector3(3, 2, 1)
+color = Color(0.2, 0.5, 0.55, 1)
+
+[node name="Cover2" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.5, 7, 60.5)
+script = ExtResource("2_block")
+size = Vector3(1, 2, 3)
+color = Color(0.2, 0.5, 0.55, 1)
+
+[node name="Dais" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 6.75, 64.5)
+script = ExtResource("2_block")
+size = Vector3(6, 1.5, 5)
+color = Color(0.58, 0.48, 0.56, 1)
+
+[node name="GlideVent" type="StaticBody3D" parent="Level/Finale" groups=["gadget_gates"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 6.2, 71)
+script = ExtResource("4_gate")
+size = Vector3(3, 0.4, 3)
+requires = &"glide"
+
+[node name="BeyondPlatform" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, -2, 98)
+script = ExtResource("2_block")
+size = Vector3(16, 8, 12)
+color = Color(0.35, 0.45, 0.5, 1)
+
+[node name="BeyondBeacon" type="StaticBody3D" parent="Level/Finale"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 6, 101)
+script = ExtResource("2_block")
+size = Vector3(2, 8, 2)
+color = Color(0.78, 0.66, 0.38, 1)
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 2)
+
+[node name="Checkpoint1" type="Area3D" parent="."]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 15, 0, -33.5)
 script = ExtResource("3_checkpoint")
+
+[node name="Checkpoint2" type="Area3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 32, 0, 5.5)
+script = ExtResource("3_checkpoint")
+
+[node name="Checkpoint3" type="Area3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 19.5, 0, 20)
+script = ExtResource("3_checkpoint")
+
+[node name="Crates" type="Node3D" parent="."]
+
+[node name="PadAmmo" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 4)
+script = ExtResource("5_crate")
+
+[node name="PadHealth" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, 4)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="TraversalHealth" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -35.3)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="GrappleLedgeAmmo" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 8, -42)
+script = ExtResource("5_crate")
+
+[node name="YardAmmo" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 56.5, 0, -8.5)
+script = ExtResource("5_crate")
+
+[node name="DoorHealth" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.8, 0, 7.3)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="PocketBHealth" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 27.5, 0, 16)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="PocketBAmmo" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.5, 3, 12.5)
+script = ExtResource("5_crate")
+
+[node name="FinaleHealth1" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 6, 51)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="FinaleAmmo" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 6, 51)
+script = ExtResource("5_crate")
+
+[node name="FinaleHealth2" type="StaticBody3D" parent="Crates"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 6, 71)
+script = ExtResource("5_crate")
+kind = 1
+
+[node name="Hazards" type="Node3D" parent="."]
+
+[node name="FirePlate1" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 0, -9)
+script = ExtResource("6_fire")
+arm_time = 1.5
+
+[node name="FirePlate2" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 0, -7)
+script = ExtResource("6_fire")
+arm_time = 1.2
+
+[node name="FirePlate3" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 0, -5)
+script = ExtResource("6_fire")
+arm_time = 1.5
+
+[node name="FirePlate4" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47, 0, -3)
+script = ExtResource("6_fire")
+arm_time = 1.2
+
+[node name="Sweeper" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 54, 0, 1)
+script = ExtResource("8_sweeper")
+radius = 3.8
+
+[node name="SteamHammer" type="Node3D" parent="Hazards"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 6.5)
+script = ExtResource("9_hammer")
+rail_length = 12.0
+
+[node name="DoorBarrier" type="Node3D" parent="Hazards"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 35, 0, 5.5)
+script = ExtResource("7_lightning")
+span = 5.6
 
 [node name="Enemies" type="Node3D" parent="."]
 
-[node name="Rat" parent="Enemies" instance=ExtResource("5_rat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+[node name="PocketA" type="Node3D" parent="Enemies"]
 
-[node name="Patrol1" type="Marker3D" parent="Enemies/Rat"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+[node name="Rat1" parent="Enemies/PocketA" instance=ExtResource("10_rat")]
+transform = Transform3D(0.6967, 0, 0.7174, 0, 1, 0, -0.7174, 0, 0.6967, -7, 0, -29)
+random_seed = 11
+wander_radius = 3.0
+leash_radius = 16.0
 
-[node name="Patrol2" type="Marker3D" parent="Enemies/Rat"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)
+[node name="Rat2" parent="Enemies/PocketA" instance=ExtResource("10_rat")]
+transform = Transform3D(-0.4161, 0, -0.9093, 0, 1, 0, 0.9093, 0, -0.4161, 3, 0, -28)
+random_seed = 12
+wander_radius = 3.0
+leash_radius = 16.0
+
+[node name="Rat3" parent="Enemies/PocketA" instance=ExtResource("10_rat")]
+transform = Transform3D(-0.8011, 0, 0.5985, 0, 1, 0, -0.5985, 0, -0.8011, 6, 0, -34)
+random_seed = 13
+wander_radius = 3.0
+leash_radius = 16.0
+
+[node name="Bull" parent="Enemies/PocketA" instance=ExtResource("11_bull")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -36)
+random_seed = 14
+leash_radius = 18.0
+
+[node name="Yard" type="Node3D" parent="Enemies"]
+
+[node name="PatrolRat1" parent="Enemies/Yard" instance=ExtResource("10_rat")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 39, 0, -8)
+random_seed = 21
+leash_radius = 14.0
+
+[node name="Patrol1" type="Marker3D" parent="Enemies/Yard/PatrolRat1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 0, 0)
+
+[node name="Patrol2" type="Marker3D" parent="Enemies/Yard/PatrolRat1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="PatrolRat2" parent="Enemies/Yard" instance=ExtResource("10_rat")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 52, 0, -5)
+random_seed = 22
+leash_radius = 14.0
+
+[node name="Patrol1" type="Marker3D" parent="Enemies/Yard/PatrolRat2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0, 0)
+
+[node name="Patrol2" type="Marker3D" parent="Enemies/Yard/PatrolRat2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="PocketB" type="Node3D" parent="Enemies"]
+
+[node name="ToadNE" parent="Enemies/PocketB" instance=ExtResource("12_toad")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 26, 3, 0)
+random_seed = 31
+move_speed = 0.0
+leash_radius = 0.0
+
+[node name="ToadSW" parent="Enemies/PocketB" instance=ExtResource("12_toad")]
+transform = Transform3D(-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071, 12, 3, 14)
+random_seed = 32
+move_speed = 0.0
+leash_radius = 0.0
+
+[node name="Gull1" parent="Enemies/PocketB" instance=ExtResource("13_gull")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17, 6.5, 6)
+random_seed = 33
+leash_radius = 14.0
+
+[node name="Gull2" parent="Enemies/PocketB" instance=ExtResource("13_gull")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 6.5, 12)
+random_seed = 34
+leash_radius = 14.0
+
+[node name="Ridge" type="Node3D" parent="Enemies"]
+
+[node name="Falcon1" parent="Enemies/Ridge" instance=ExtResource("14_falcon")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, 10.5, 28)
+random_seed = 41
+leash_radius = 16.0
+
+[node name="Falcon2" parent="Enemies/Ridge" instance=ExtResource("14_falcon")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 19.5, 10.5, 42)
+random_seed = 42
+leash_radius = 16.0
+
+[node name="Finale" type="Node3D" parent="Enemies"]
+
+[node name="Bull" parent="Enemies/Finale" instance=ExtResource("11_bull")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 16, 6, 62)
+random_seed = 51
+leash_radius = 14.0
+
+[node name="Rat1" parent="Enemies/Finale" instance=ExtResource("10_rat")]
+transform = Transform3D(0.5403, 0, 0.8415, 0, 1, 0, -0.8415, 0, 0.5403, 25, 6, 55)
+random_seed = 52
+wander_radius = 3.0
+leash_radius = 14.0
+
+[node name="Rat2" parent="Enemies/Finale" instance=ExtResource("10_rat")]
+transform = Transform3D(0.5403, 0, -0.8415, 0, 1, 0, 0.8415, 0, 0.5403, 27, 6, 67)
+random_seed = 53
+wander_radius = 3.0
+leash_radius = 14.0
+
+[node name="Toad" parent="Enemies/Finale" instance=ExtResource("12_toad")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 20, 7.5, 65)
+random_seed = 54
+leash_radius = 12.0
+
+[node name="Gull" parent="Enemies/Finale" instance=ExtResource("13_gull")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 12.5, 66)
+random_seed = 55
+leash_radius = 14.0
+
+[node name="Falcon" parent="Enemies/Finale" instance=ExtResource("14_falcon")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 12, 60)
+random_seed = 56
+leash_radius = 14.0

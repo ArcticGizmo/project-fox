@@ -6,6 +6,8 @@ extends Node3D
 ## `source`, now hitting enemies and crediting the reflecting weapon.
 
 const REFLECTED_COLOR := Color(1.0, 0.8, 0.3)
+## Every enemy projectile in flight joins this group (LevelRoot clears it on reset).
+const GROUP := &"enemy_projectiles"
 
 var start: Vector3 = Vector3.ZERO
 var end: Vector3 = Vector3.ZERO
@@ -41,6 +43,7 @@ static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	_arc_height = 2.5 + start.distance_to(end) * 0.15
 	global_position = start
 	var glob := MeshInstance3D.new()

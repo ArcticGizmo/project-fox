@@ -233,3 +233,22 @@ func test_slice_scene_instantiates_as_a_level() -> void:
 	for e: Enemy in level.placed_enemies():
 		assert_false(e.aware, "%s placed unaware" % e.name)
 	assert_true(get_tree().get_nodes_in_group(&"checkpoints").size() >= 1, "has a checkpoint")
+
+
+func test_respawn_reset_clears_enemy_projectiles() -> void:
+	var level := _make_level()
+	await wait_frames(3)
+	var thrower := level.placed_enemies()[0]
+	var lob := LobProjectile.launch(thrower, thrower.global_position + Vector3.UP * 2.0, Vector3(0, 0, 10), 5.0, 10.0, 2.0)
+	await wait_frames(2)
+	assert_true(is_instance_valid(lob) and lob.is_in_group(LobProjectile.GROUP), "lob in flight")
+	_kill(level.player.health)
+	await wait_until(func() -> bool: return not level.player.is_dead, Player.RESPAWN_DELAY + 1.0)
+	await wait_frames(2)
+	assert_false(is_instance_valid(lob), "lob cleared with the enemy reset")
+
+
+func test_enemy_falling_into_a_pit_dies() -> void:
+	var rat := spawn_enemy(RAT, Vector3(0, -15, 0), 0.0, 3, false)
+	await wait_until(func() -> bool: return rat.health.is_dead, 3.0)
+	assert_true(rat.health.is_dead, "rat below the kill plane died")

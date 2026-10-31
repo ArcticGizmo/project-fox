@@ -2,6 +2,9 @@ extends Node
 ## Renders the main scene (needs a GPU, so not --headless), waits, saves PNGs
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
+##   ... -- --slice     only the greybox slice shots (slice_*.png)
+
+const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 
 var out_dir: String = "res://screenshots"
 var wait: float = 2.5
@@ -16,6 +19,11 @@ func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out_dir))
 	# Stop the editor importing screenshots as game assets.
 	FileAccess.open(out_dir.path_join(".gdignore"), FileAccess.WRITE)
+	# `--slice`: only the greybox slice shots (quick layout iteration).
+	if "--slice" in OS.get_cmdline_user_args():
+		await _capture_slice(null, SLICE_PATH)
+		get_tree().quit()
+		return
 	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	add_child(arena)
 	await get_tree().create_timer(wait).timeout
@@ -64,32 +72,73 @@ func _ready() -> void:
 	await get_tree().create_timer(0.1).timeout
 	await _capture("overview.png")
 	cam.queue_free()
-	await _capture_level(arena, "res://scenes/levels/slice_01.tscn")
+	await _capture_slice(arena, SLICE_PATH)
 	get_tree().quit()
 
 
 
-## Swap the arena for a level scene: player view (checkpoint lit) and an overview.
-func _capture_level(arena: Node, path: String) -> void:
+## Swap the arena for the greybox slice: the player's view from the landing pad,
+## a few in-level shots, and overviews sized to the level's real extents.
+func _capture_slice(arena: Node, path: String) -> void:
 	DebugSettings.show_boxes = false
-	arena.queue_free()
-	await get_tree().process_frame
+	if arena != null:
+		arena.queue_free()
+		await get_tree().process_frame
 	var level := (load(path) as PackedScene).instantiate() as LevelRoot
 	add_child(level)
-	var level_id := LevelRoot.level_name(path)
-	var checkpoints := get_tree().get_nodes_in_group(&"checkpoints")
-	if not checkpoints.is_empty():
-		(checkpoints[0] as Checkpoint).activate(level.player)
-	await get_tree().create_timer(1.0).timeout
-	await _capture("level_%s.png" % level_id)
+	await get_tree().create_timer(1.5).timeout
+	await _capture("slice_pad_view.png")
+	var shots: Array[Array] = [
+		["slice_traversal.png", Vector3(12.5, 2.4, -32), Vector3(32, 1.5, -36)],
+		["slice_hazard_yard.png", Vector3(41.5, 7.5, -13), Vector3(46, 0, 3)],
+		["slice_pocket_b.png", Vector3(31, 2.2, 4.2), Vector3(18, 3.0, 7)],
+		["slice_shortcut_from_pad.png", Vector3(-2, 5.0, 1), Vector3(9, 2.5, 1)],
+		["slice_ridge.png", Vector3(21.5, 2.6, 18.5), Vector3(19.5, 5, 40)],
+		["slice_finale.png", Vector3(19.5, 8.2, 47.5), Vector3(19.5, 6, 66)],
+	]
 	var cam := Camera3D.new()
 	add_child(cam)
-	cam.global_position = Vector3(0, 32, 26)
-	cam.look_at(Vector3(0, 0, -2))
 	cam.make_current()
-	await get_tree().create_timer(0.1).timeout
-	await _capture("level_%s_overview.png" % level_id)
+	for s: Array in shots:
+		cam.global_position = s[1] as Vector3
+		cam.look_at(s[2] as Vector3)
+		await get_tree().create_timer(0.1).timeout
+		await _capture(s[0] as String)
+	await _capture_slice_overview(level, cam)
 	cam.queue_free()
+
+
+## Top-down (orthographic) and high-angle overviews framed on the level's Blocks.
+func _capture_slice_overview(level: LevelRoot, cam: Camera3D) -> void:
+	var bounds := AABB()
+	var first := true
+	for n: Node in level.find_children("*", "Block", true, false):
+		var b := n as Block
+		if b.size.x > 100.0:
+			continue  # the abyss floor
+		var box := AABB(b.global_position - b.size * 0.5, b.size)
+		bounds = box if first else bounds.merge(box)
+		first = false
+	var center := bounds.get_center()
+	var aspect := get_viewport().get_visible_rect().size.aspect()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = maxf(bounds.size.z, bounds.size.x / aspect) * 1.04
+	cam.far = 200.0
+	cam.global_position = Vector3(center.x, 80, center.z)
+	cam.look_at(center, Vector3.FORWARD)
+	await get_tree().create_timer(0.1).timeout
+	await _capture("slice_overview.png")
+	DebugSettings.show_ai = true
+	await get_tree().create_timer(0.2).timeout
+	await _capture("slice_overview_ai.png")
+	DebugSettings.show_ai = false
+	cam.projection = Camera3D.PROJECTION_PERSPECTIVE
+	cam.far = 400.0
+	var reach := maxf(bounds.size.x, bounds.size.z)
+	cam.global_position = center + Vector3(-reach * 0.3, reach * 0.5, reach * 0.42)
+	cam.look_at(center)
+	await get_tree().create_timer(0.1).timeout
+	await _capture("slice_overview_angle.png")
 
 ## Fire each weapon for a moment and capture weapon_<id>.png (pass --weapons).
 func _capture_each_weapon(player: Player) -> void:
