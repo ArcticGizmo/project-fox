@@ -11,6 +11,8 @@ const ENEMY_SCENES: Dictionary = {
 	&"rat": preload("res://scenes/enemies/clockwork_rat.tscn"),
 	&"toad": preload("res://scenes/enemies/spitter_toad.tscn"),
 	&"bull": preload("res://scenes/enemies/brass_bull.tscn"),
+	&"falcon": preload("res://scenes/enemies/brass_falcon.tscn"),
+	&"gull": preload("res://scenes/enemies/bombardier_gull.tscn"),
 }
 
 @export var autostart: bool = true
@@ -19,10 +21,13 @@ const ENEMY_SCENES: Dictionary = {
 
 var waves: Array[Dictionary] = [
 	{&"rat": 4},
+	{&"falcon": 3},
 	{&"toad": 2, &"rat": 2},
-	{&"bull": 1},
+	{&"gull": 2, &"rat": 3},
+	{&"bull": 1, &"falcon": 2},
 	{&"bull": 1, &"rat": 4},
-	{&"toad": 3, &"bull": 1, &"rat": 3},
+	{&"toad": 2, &"gull": 2, &"falcon": 2},
+	{&"toad": 3, &"bull": 1, &"rat": 3, &"gull": 1},
 ]
 var wave_number: int = 0
 var alive: Array[Enemy] = []

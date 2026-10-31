@@ -16,7 +16,7 @@ godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one sh
 
 Run the test suite after every change. Use the screenshot tool to check anything visual
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
-chill vs frozen enemies and an overview).
+chill vs frozen enemies, the two flyers (cruising and diving) and an overview).
 
 ## Controls (controller / keyboard+mouse)
 
@@ -45,6 +45,9 @@ D-pad up/F2 · next wave D-pad down/F3.
   `_setup`, implement the pattern as states in `_tick_state`. Every transition is logged in
   `state_log` ("state@seconds") so tests can assert sequences and telegraph timings.
   Telegraphs use `telegraph` (glow) and `visual_scale` (squash).
+- **Flyers** set `flying = true` (+ `hover_height`): gravity is off and `desired_velocity.y`
+  steers vertically; use `hover_velocity(height)` to cruise. Frozen flyers fall and climb
+  back after thawing. Lobbers share `LobProjectile.launch()` and `lead_target()`.
 - **Weapons** extend `Weapon`: `_fire()` per shot, `_trigger_update()` for continuous
   weapons, `_on_level_changed()` to rebuild shapes. Kills credit XP to the weapon, including
   kills by things the weapon leaves behind (mines, sentries): pass the weapon along and use

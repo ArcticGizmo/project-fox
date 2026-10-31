@@ -52,6 +52,7 @@ func _ready() -> void:
 	await _capture("melee.png")
 	await get_tree().create_timer(0.5).timeout
 	await _capture_status(arena.get("player") as Player)
+	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	# Overview from above to check layout and enemy scale.
 	var cam := Camera3D.new()
 	add_child(cam)
@@ -121,6 +122,27 @@ func _capture_status(player: Player) -> void:
 	cam.make_current()
 	await get_tree().create_timer(0.1).timeout
 	await _capture("status.png")
+	cam.queue_free()
+
+
+## Spawn a falcon and a gull near the player: cruising shot, then the falcon's dive.
+func _capture_flyers(player: Player, waves: WaveManager) -> void:
+	var base := player.global_position
+	var falcon := waves.spawn_enemy(&"falcon", base + Vector3(-4, 0, -8)) as BrassFalcon
+	waves.spawn_enemy(&"gull", base + Vector3(4, 0, -10))
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = base + Vector3(0, 2.5, 7)
+	cam.look_at(base + Vector3(0, 3.5, -6))
+	cam.make_current()
+	await get_tree().create_timer(2.2).timeout
+	await _capture("flyers.png")
+	for _i: int in 300:
+		if not is_instance_valid(falcon) or falcon.state == &"dive":
+			break
+		await get_tree().physics_frame
+	await get_tree().create_timer(0.12).timeout
+	await _capture("falcon_dive.png")
 	cam.queue_free()
 
 

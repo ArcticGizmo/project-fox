@@ -86,13 +86,7 @@ func is_volley_attack(index: int) -> bool:
 
 
 func predicted_target_point() -> Vector3:
-	var p := target_position()
-	var body := target as CharacterBody3D
-	if body != null:
-		var v := body.velocity
-		v.y = 0.0
-		p += v * lob_flight_time * lead_factor
-	return p
+	return lead_target(lob_flight_time * lead_factor)
 
 
 func _attack() -> void:
@@ -105,21 +99,8 @@ func _attack() -> void:
 	attack_count += 1
 	var mouth := global_position + Vector3.UP * extents().y * 0.6 + forward() * extents().z * 0.5
 	for p: Vector3 in points:
-		var lob := LobProjectile.new()
-		lob.start = mouth
-		lob.end = _ground_point(p)
-		lob.flight_time = lob_flight_time
-		lob.damage = lob_damage
-		lob.radius = lob_radius
-		lob.source = self
-		get_parent().add_child(lob)
+		LobProjectile.launch(self, mouth, ground_point(p), lob_flight_time, lob_damage, lob_radius)
 	visual_scale = Vector3(0.8, 0.8, 0.8)
-
-
-func _ground_point(p: Vector3) -> Vector3:
-	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 4.0, p + Vector3.DOWN * 30.0, Layers.WORLD)
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	return p if hit.is_empty() else (hit["position"] as Vector3)
 
 
 func _can_flinch() -> bool:

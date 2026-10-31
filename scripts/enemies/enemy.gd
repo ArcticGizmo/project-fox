@@ -61,6 +61,14 @@ const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
 ## Fixed RNG seed for deterministic tests; -1 = random.
 @export var random_seed: int = -1
 
+@export_group("Flight")
+## Flyers ignore gravity and steer vertically with desired_velocity.y (see
+## hover_velocity()). Frozen flyers drop like a stone until they thaw.
+@export var flying: bool = false
+## Cruising height above the ground for hover_velocity().
+@export var hover_height: float = 5.0
+@export var climb_speed: float = 4.0
+
 @export_group("Status effects")
 ## Scales chill, freeze, root and stagger strength/duration. 0 = immune.
 @export_range(0.0, 2.0) var status_resistance: float = 1.0
@@ -76,6 +84,8 @@ var state_log: PackedStringArray = PackedStringArray()
 var desired_velocity: Vector3 = Vector3.ZERO
 var telegraph: float = 0.0
 var visual_scale: Vector3 = Vector3.ONE
+## Nose-down tilt of the body in radians (dives). Resets on every state change.
+var visual_pitch: float = 0.0
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 var _age: float = 0.0
@@ -350,7 +360,10 @@ func _physics_process(delta: float) -> void:
 	var kb := 0.0 if is_frozen() or is_rooted() else 1.0
 	velocity.x = _move_velocity.x * m + _knockback.x * kb
 	velocity.z = _move_velocity.z * m + _knockback.z * kb
-	velocity.y -= gravity * delta
+	if flying and not is_frozen():
+		velocity.y = _move_velocity.y * m
+	else:
+		velocity.y -= gravity * delta
 	move_and_slide()
 	_after_move(delta)
 
@@ -360,6 +373,7 @@ func enter_state(new_state: StringName) -> void:
 	state_time = 0.0
 	telegraph = 0.0
 	visual_scale = Vector3.ONE
+	visual_pitch = 0.0
 	state_log.append("%s@%.2f" % [new_state, _age])
 	_on_enter_state(new_state)
 
@@ -411,6 +425,37 @@ func direction_to_target() -> Vector3:
 
 func get_aim_point() -> Vector3:
 	return global_position + Vector3.UP * extents().y * 0.5
+
+
+## The ground (WORLD) below `p`, or `p` itself over a void.
+func ground_point(p: Vector3) -> Vector3:
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 4.0, p + Vector3.DOWN * 30.0, Layers.WORLD)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return p if hit.is_empty() else (hit["position"] as Vector3)
+
+
+## Height of the feet above the ground below (hover_height over a void, so
+## flyers just hold their height there).
+func altitude() -> float:
+	var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 0.1, global_position + Vector3.DOWN * 30.0, Layers.WORLD)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return hover_height if hit.is_empty() else global_position.y - (hit["position"] as Vector3).y
+
+
+## Where the target will be in `seconds` if it keeps its ground velocity.
+func lead_target(seconds: float) -> Vector3:
+	var p := target_position()
+	var body := target as CharacterBody3D
+	if body != null:
+		var v := body.velocity
+		v.y = 0.0
+		p += v * seconds
+	return p
+
+
+## Vertical speed that eases a flyer to `height` above the ground.
+func hover_velocity(height: float) -> float:
+	return clampf((height - altitude()) * 3.0, -climb_speed, climb_speed)
 
 
 func apply_burn(dps: float, duration: float, source: Weapon) -> void:
@@ -561,6 +606,7 @@ func _interrupt() -> void:
 	snap_velocity(Vector3.ZERO)
 	telegraph = 0.0
 	visual_scale = Vector3.ONE
+	visual_pitch = 0.0
 
 
 func _update_statuses(delta: float) -> void:
@@ -683,7 +729,7 @@ func _update_visuals(delta: float) -> void:
 	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.75)
 	_web.visible = is_rooted()
 	ice_block.visible = is_frozen() and not health.is_dead
-	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else 0.0
+	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else visual_pitch
 	if not health.is_dead:
 		visual.scale = visual.scale.lerp(visual_scale, 1.0 - exp(-20.0 * delta))
 	if _label.visible:

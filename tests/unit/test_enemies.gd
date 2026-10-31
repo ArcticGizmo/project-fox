@@ -5,6 +5,8 @@ extends TestCase
 const BULL := "res://scenes/enemies/brass_bull.tscn"
 const RAT := "res://scenes/enemies/clockwork_rat.tscn"
 const TOAD := "res://scenes/enemies/spitter_toad.tscn"
+const FALCON := "res://scenes/enemies/brass_falcon.tscn"
+const GULL := "res://scenes/enemies/bombardier_gull.tscn"
 const TIMING_TOLERANCE := 0.04
 
 
@@ -14,7 +16,7 @@ func _durations(e: Enemy, from_state: String, to_state: String) -> float:
 
 func test_enemy_sizes_match_body_size() -> void:
 	add_floor()
-	for path: String in [BULL, RAT, TOAD]:
+	for path: String in [BULL, RAT, TOAD, FALCON, GULL]:
 		var e := spawn_enemy(path, Vector3.ZERO)
 		await wait_frames(1)
 		var ext := e.extents()

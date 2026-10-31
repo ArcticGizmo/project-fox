@@ -27,6 +27,19 @@ var _glob_mat: StandardMaterial3D
 var _reflect_weapon: Weapon = null
 
 
+## Throws a lob from `thrower` (its source, for reflection) into the thrower's parent.
+static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob_damage: float, lob_radius: float) -> LobProjectile:
+	var lob := LobProjectile.new()
+	lob.start = from
+	lob.end = to
+	lob.flight_time = time
+	lob.damage = lob_damage
+	lob.radius = lob_radius
+	lob.source = thrower
+	thrower.get_parent().add_child(lob)
+	return lob
+
+
 func _ready() -> void:
 	_arc_height = 2.5 + start.distance_to(end) * 0.15
 	global_position = start
