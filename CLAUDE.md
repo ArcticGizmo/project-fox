@@ -21,7 +21,7 @@ and an overview).
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space · dodge B/Shift · staff X/F (air: slam, air+stick: pounce) · weapon wheel hold
+jump A/Space · dodge B/Shift · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
 Y/Tab · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 

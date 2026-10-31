@@ -109,7 +109,14 @@ func test_ground_slam_hits_area_on_landing() -> void:
 	assert_near(_damage(rat), minf(player.tuning.slam_damage, rat.max_health), 0.01, "rat inside slam radius takes slam damage")
 
 
+func _set_pounce(enabled: bool) -> void:
+	player.tuning = player.tuning.duplicate() as PlayerTuning
+	player.tuning.pounce_enabled = enabled
+	player.melee.tuning = player.tuning
+
+
 func test_pounce_launches_forward_and_slams() -> void:
+	_set_pounce(true)
 	pad.next.jump_pressed = true
 	pad.next.jump_held = true
 	await wait_seconds(0.25)
@@ -121,9 +128,7 @@ func test_pounce_launches_forward_and_slams() -> void:
 
 
 func test_pounce_can_be_disabled() -> void:
-	player.tuning = player.tuning.duplicate() as PlayerTuning
-	player.tuning.pounce_enabled = false
-	player.melee.tuning = player.tuning
+	_set_pounce(false)
 	pad.next.jump_pressed = true
 	pad.next.jump_held = true
 	await wait_seconds(0.3)
@@ -131,3 +136,7 @@ func test_pounce_can_be_disabled() -> void:
 	pad.next.melee_pressed = true
 	await wait_frames(1)
 	assert_eq(player.melee.phase, StaffMelee.Phase.SLAM_HOVER, "falls back to a straight slam")
+	var z := player.global_position.z
+	var landed := await wait_until(func() -> bool: return slams > 0, 2.0)
+	assert_true(landed, "slam landed")
+	assert_near(player.global_position.z, z, 0.05, "no forward travel while slamming")

@@ -88,7 +88,8 @@ extends Resource
 @export var melee_snap_angle_deg: float = 75.0
 
 @export_group("Slam and pounce")
-## Melee in the air with the stick neutral: hover, then plunge straight down.
+## Melee in the air (stick neutral, or any stick while the pounce is off): hover,
+## then plunge straight down.
 @export var slam_hover_time: float = 0.12
 @export var slam_fall_speed: float = 32.0
 @export var slam_damage: float = 30.0
@@ -97,7 +98,8 @@ extends Resource
 @export var slam_knockback_up: float = 7.0
 @export var slam_recovery: float = 0.3
 ## Melee in the air with the stick pushed: long-jump arc that slams on landing.
-@export var pounce_enabled: bool = true
+## Off for now so the slam never carries you forward.
+@export var pounce_enabled: bool = false
 @export var pounce_speed: float = 15.0
 @export var pounce_up_speed: float = 6.0
 
