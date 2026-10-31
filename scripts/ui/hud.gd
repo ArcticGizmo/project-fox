@@ -3,7 +3,7 @@ extends CanvasLayer
 ## Prototype HUD: health, current weapon (level, XP, ammo), weapon wheel,
 ## crosshair, wave counter, level-up popup and debug hints.
 
-const HELP_TEXT := "X / F: staff (in air: slam, +stick: pounce)    Y hold / Tab: weapon wheel    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave"
+const HELP_TEXT := "X / F: staff (in air: slam)    Y hold / Tab: weapon wheel (L-stick / mouse)    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave"
 
 var _player: Player
 var _hp_bar: ProgressBar
