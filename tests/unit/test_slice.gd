@@ -214,3 +214,50 @@ func test_pad_is_safe_and_enemies_keep_home() -> void:
 		assert_true(e.global_position.y > e.home_position.y - 0.5, "%s still on its floor" % e.name)
 		assert_false(e.aware or e.state == Enemy.SUSPICIOUS or e.state == Enemy.ALERT, "%s ignores the pad (%s)" % [e.name, e.state])
 	assert_true(level.player.health.current >= level.player.health.max_health, "untouched on the pad")
+
+
+## GrappleLedge with real input from the run below it (T2Step, facing north):
+## jump + double jump falls short; with the Grapple-Tail, jump then jump at the
+## highlighted ring reels the fox up and lands it on top.
+func test_grapple_ledge_needs_and_takes_the_grapple() -> void:
+	var level := _load_level(true)
+	var player := level.player
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	await wait_frames(3)
+	var ledge := level.get_node(^"Level/Traversal/GrappleLedge") as GadgetGate
+	var start_block := level.get_node(^"Level/Traversal/T2Step") as Block
+	assert_true(ledge.ring != null, "the grapple gate has a ring")
+	assert_false(await _ledge_attempt(player, pad, start_block, ledge), "jump + double jump can't reach the ledge")
+	player.unlock_gadget(Gadgets.GRAPPLE)
+	assert_true(await _ledge_attempt(player, pad, start_block, ledge), "the grapple reaches the ledge top")
+
+
+## Stand on the start block's north half under the ledge, jump, press jump again
+## near the apex (double jump, or grapple if a ring is highlighted), and report
+## whether the fox ends up standing on the ledge's top face.
+func _ledge_attempt(player: Player, pad: ScriptedInputProvider, from: Block, ledge: Block) -> bool:
+	var r := _rect(from)
+	var lr := _rect(ledge)
+	player.global_position = Vector3(clampf(lr.get_center().x, r.position.x + 0.6, r.end.x - 0.6), _top(from) + 0.05, r.position.y + 1.0)
+	player.velocity = Vector3.ZERO
+	player.camera_rig.yaw = 0.0  # north, at the ledge
+	pad.next = PlayerInputState.new()
+	await wait_frames(5)
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	pad.next.move = Vector2(0, -1)
+	var second := false
+	for _f: int in 240:
+		if not second and player.velocity.y <= 1.0 and not player.is_on_floor():
+			second = true
+			pad.next.jump_pressed = true
+		await get_tree().physics_frame
+		var p := player.global_position
+		if second and player.is_on_floor() and lr.grow(-0.1).has_point(Vector2(p.x, p.z)) and absf(p.y - _top(ledge)) < 0.3:
+			pad.next = PlayerInputState.new()
+			return true
+		if second and player.is_on_floor() and p.y < _top(ledge) - 1.0:
+			break  # landed back on the run
+	pad.next = PlayerInputState.new()
+	return false

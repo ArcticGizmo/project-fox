@@ -85,6 +85,7 @@ func _process(_delta: float) -> void:
 		_reticle.visible = not _player.wheel_open
 		_reticle.locked = _player.aim_target != null
 		_reticle.zoomed = _player.is_zoomed()
+		_reticle.grapple_ready = _player.grapple != null and _player.grapple.is_ready()
 
 
 func _on_health_changed(current: float, maximum: float) -> void:

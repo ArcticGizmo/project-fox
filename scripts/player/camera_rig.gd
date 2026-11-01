@@ -10,6 +10,9 @@ var pitch: float = 0.0
 var spring: SpringArm3D
 var camera: Camera3D
 
+## When > 0, replaces tuning.camera_vertical_sharpness (the grapple reel uses it).
+var vertical_sharpness_override: float = 0.0
+
 var _follow: Vector3 = Vector3.ZERO
 var _shake: float = 0.0
 var _view_distance: float = 0.0
@@ -70,7 +73,8 @@ func follow(delta: float) -> void:
 		return
 	var desired := target.global_position + Vector3(0, tuning.camera_height, 0)
 	var k := 1.0 - exp(-tuning.camera_follow_sharpness * delta)
-	var kv := 1.0 - exp(-tuning.camera_vertical_sharpness * delta)
+	var vs := vertical_sharpness_override if vertical_sharpness_override > 0.0 else tuning.camera_vertical_sharpness
+	var kv := 1.0 - exp(-vs * delta)
 	_follow.x = lerpf(_follow.x, desired.x, k)
 	_follow.z = lerpf(_follow.z, desired.z, k)
 	_follow.y = lerpf(_follow.y, desired.y, kv)

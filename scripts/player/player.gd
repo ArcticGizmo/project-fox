@@ -51,6 +51,8 @@ var hurt_box: HurtBox
 var visual: Node3D
 var muzzle: Node3D
 var melee: StaffMelee
+## Brass Grapple-Tail (gadget &"grapple"): ring targeting, reel and rope.
+var grapple: GrappleTail
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
@@ -83,6 +85,12 @@ var _dodge_iframes: float = 0.0
 var _hurt_iframes: float = 0.0
 ## Rising from launch_up(): releasing jump must not cut the arc short.
 var _launched: bool = false
+## Rising from a grapple release hop: releasing jump must not cut it short
+## (unlike _launched, jumps and grapples stay allowed).
+var _grapple_hop: bool = false
+## After a grapple release: reduced air control so holding forward does not
+## carry the fox off the small ledge it was reeled onto.
+var _grapple_settle: float = 0.0
 var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
@@ -191,6 +199,11 @@ func _build_visual() -> void:
 	melee.tuning = tuning
 	visual.add_child(melee)
 
+	grapple = GrappleTail.new()
+	grapple.player = self
+	grapple.tuning = tuning
+	add_child(grapple)
+
 
 func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -235,10 +248,12 @@ func _physics_process(delta: float) -> void:
 	_handle_weapon_switch()
 	_update_camera_mode()
 	_update_aim()
+	grapple.update_target(has_gadget(Gadgets.GRAPPLE))
 	_handle_melee(delta)
 	_move(delta)
 	_handle_fire()
 	_update_facing(delta)
+	camera_rig.vertical_sharpness_override = tuning.grapple_camera_vertical_sharpness if grapple.is_active() else 0.0
 	camera_rig.follow(delta)
 	_update_visuals(delta)
 	if global_position.y < KILL_PLANE_Y:
@@ -253,6 +268,7 @@ func _update_timers(delta: float) -> void:
 	_dodge_iframes = maxf(0.0, _dodge_iframes - delta)
 	_hurt_iframes = maxf(0.0, _hurt_iframes - delta)
 	_fire_facing = maxf(0.0, _fire_facing - delta)
+	_grapple_settle = maxf(0.0, _grapple_settle - delta)
 	_flash = maxf(0.0, _flash - delta * 6.0)
 	hurt_box.invulnerable = is_invulnerable()
 	if input.jump_pressed:
@@ -267,6 +283,15 @@ func _move(delta: float) -> void:
 		_coyote = tuning.coyote_time
 		_air_jumps_left = 1
 		_air_dodge_used = false
+		_grapple_settle = 0.0
+
+	# Grapple-Tail: the reel owns velocity; dodge lets go (and dodges).
+	if grapple.is_active():
+		if input.dodge_pressed:
+			grapple.cancel()
+		else:
+			_reel(delta)
+			return
 
 	# The left stick drives the weapon wheel while it is open, so stand still.
 	var wish := Vector3.ZERO if wheel_open else camera_relative(input.move)
@@ -307,6 +332,8 @@ func _move(delta: float) -> void:
 		var accel: float
 		if not on_floor:
 			accel = tuning.air_acceleration
+			if _grapple_settle > 0.0:
+				accel *= tuning.grapple_release_air_control
 		elif wish.length_squared() > 0.0001:
 			accel = tuning.ground_acceleration
 		else:
@@ -322,10 +349,15 @@ func _move(delta: float) -> void:
 			velocity.y = tuning.jump_velocity()
 			_jump_buffer = 0.0
 			_coyote = 0.0
+		elif grapple.is_ready():
+			# A highlighted ring beats the double jump (which the release refunds).
+			grapple.start()
+			_jump_buffer = 0.0
 		elif _air_jumps_left > 0:
 			velocity.y = tuning.double_jump_velocity()
 			_air_jumps_left -= 1
 			_jump_buffer = 0.0
+			_grapple_hop = false
 
 	# Gravity (none during an air dodge so it reads as a dash; slams set it directly)
 	if melee.phase == StaffMelee.Phase.SLAM_HOVER:
@@ -337,7 +369,8 @@ func _move(delta: float) -> void:
 		if velocity.y < 0.0:
 			g *= tuning.fall_gravity_multiplier
 			_launched = false
-		elif not input.jump_held and not _launched:
+			_grapple_hop = false
+		elif not input.jump_held and not _launched and not _grapple_hop:
 			g *= tuning.jump_release_gravity_multiplier
 		velocity.y = maxf(velocity.y - g * delta, -tuning.max_fall_speed)
 
@@ -348,10 +381,24 @@ func _move(delta: float) -> void:
 		melee.land(global_position)
 
 
+## One frame on the grapple line. Buffered jumps are dropped so a press during
+## the reel does not eat the release hop.
+func _reel(delta: float) -> void:
+	_jump_buffer = 0.0
+	_knockback = Vector3.ZERO
+	velocity = grapple.reel(delta)
+	if grapple.just_released:
+		_grapple_hop = true
+		_grapple_settle = tuning.grapple_release_settle_time
+		_coyote = 0.0
+		_air_jumps_left = 1
+	move_and_slide()
+
+
 # --- Melee --------------------------------------------------------------------
 
 func _handle_melee(delta: float) -> void:
-	if input.melee_pressed and not is_dodging() and not wheel_open:
+	if input.melee_pressed and not is_dodging() and not wheel_open and not grapple.is_active():
 		var stick := camera_relative(input.move)
 		var started := melee.request_attack(is_on_floor(), stick)
 		match started:
@@ -437,6 +484,10 @@ func _update_facing(delta: float) -> void:
 	var speed := deg_to_rad(tuning.turn_speed_deg)
 	if melee.is_busy():
 		pass  # facing is set when the attack starts
+	elif grapple.is_active():
+		var to_ring := grapple.ring_direction()
+		if to_ring != Vector3.ZERO:
+			target_yaw = yaw_of(to_ring)
 	elif is_strafing():
 		# Lock to the camera, not the aim target, so strafing never jitters
 		# when aim assist swaps targets.
@@ -508,7 +559,7 @@ func _handle_fire() -> void:
 	var w := current_weapon()
 	if w == null:
 		return
-	var firing := input.fire_held and not is_dodging() and not melee.is_busy() and not wheel_open
+	var firing := input.fire_held and not is_dodging() and not melee.is_busy() and not wheel_open and not grapple.is_active()
 	if firing:
 		_fire_facing = tuning.fire_facing_time
 	w.trigger(firing, current_aim())
@@ -634,6 +685,7 @@ func launch_up(speed: float) -> void:
 		return
 	velocity.y = maxf(velocity.y, speed)
 	_launched = true
+	grapple.cancel()
 	_dodge_time = 0.0
 	_coyote = 0.0
 	_air_jumps_left = 1
@@ -648,15 +700,20 @@ func _on_hurt(info: DamageInfo) -> void:
 		return
 	_hurt_iframes = tuning.hurt_iframes
 	hurt_box.invulnerable = true
+	_flash = 1.0
+	GameFeel.shake(0.5)
+	GameFeel.hit_stop(0.05)
+	# On the grapple line small hits are shrugged off; big ones knock you off it.
+	if grapple.is_active():
+		if info.knockback < tuning.grapple_cancel_knockback:
+			return
+		grapple.cancel()
 	var away := global_position - info.source_position
 	away.y = 0.0
 	if away.length_squared() < 0.01:
 		away = -facing_forward()
 	_knockback = away.normalized() * info.knockback * tuning.hurt_knockback_scale
 	velocity.y = maxf(velocity.y, info.knockback_up)
-	_flash = 1.0
-	GameFeel.shake(0.5)
-	GameFeel.hit_stop(0.05)
 
 
 func _on_died(_info: DamageInfo) -> void:
@@ -665,6 +722,7 @@ func _on_died(_info: DamageInfo) -> void:
 	velocity = Vector3.ZERO
 	current_weapon().on_unequipped()
 	melee.cancel()
+	grapple.cancel()
 	close_wheel(false)
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
@@ -680,6 +738,8 @@ func respawn() -> void:
 	velocity = Vector3.ZERO
 	_knockback = Vector3.ZERO
 	_launched = false
+	_grapple_hop = false
+	grapple.cancel()
 	health.reset()
 	_hurt_iframes = tuning.hurt_iframes
 	visual.visible = true
@@ -697,6 +757,7 @@ func unlock_gadget(id: StringName) -> bool:
 
 func _update_visuals(_delta: float) -> void:
 	_body_material.emission = Color(1.0, 0.1, 0.1) * _flash
+	grapple.update_rope()
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
 	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.

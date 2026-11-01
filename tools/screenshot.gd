@@ -2,7 +2,7 @@ extends Node
 ## Renders the main scene (needs a GPU, so not --headless), waits, saves PNGs
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
-##   ... -- --slice     only the greybox slice shots (slice_*.png)
+##   ... -- --slice     only the greybox slice shots (slice_*.png, grapple_*.png)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 
@@ -106,6 +106,7 @@ func _capture_slice(arena: Node, path: String) -> void:
 		await _capture(s[0] as String)
 	await _capture_slice_overview(level, cam)
 	cam.queue_free()
+	await _capture_grapple(level)
 
 
 ## Top-down (orthographic) and high-angle overviews framed on the level's Blocks.
@@ -368,3 +369,43 @@ func _place_unaware(parent: Node, path: String, at: Vector3, yaw: float, route: 
 		e.add_child(m)
 	parent.add_child(e)
 	return e
+
+
+## Grapple-Tail at the slice's GrappleLedge: airborne with the ring highlighted
+## (and the reticle's brass ring), then mid-reel from the player's camera and
+## from the side so the rope reads.
+func _capture_grapple(level: LevelRoot) -> void:
+	var player := level.player
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	player.unlock_gadget(Gadgets.GRAPPLE)
+	player.global_position = Vector3(30.4, 1.55, -35.0)
+	player.velocity = Vector3.ZERO
+	player.camera_rig.yaw = 0.0
+	player.camera_rig.pitch = deg_to_rad(-5.0)
+	player.camera_rig.snap_to_target()
+	player.camera_rig.camera.make_current()
+	await get_tree().create_timer(0.4).timeout
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	for _i: int in 60:
+		await get_tree().physics_frame
+		if player.velocity.y <= 2.0:
+			break
+	await _capture("grapple_ready.png")
+	pad.next.jump_pressed = true
+	for _i: int in 60:
+		await get_tree().physics_frame
+		if player.grapple.phase == GrappleTail.Phase.REEL and player.grapple.phase_time > 0.12:
+			break
+	get_tree().paused = true  # hold the pose for both shots
+	await _capture("grapple_reel.png")
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = player.global_position + Vector3(7.5, 2.0, 1.5)
+	cam.look_at(player.global_position.lerp(player.grapple.ring.global_position, 0.5))
+	cam.make_current()
+	await _capture("grapple_reel_side.png")
+	get_tree().paused = false
+	cam.queue_free()
+	player.input_provider = DeviceInputProvider.new()

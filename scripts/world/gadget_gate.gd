@@ -1,11 +1,13 @@
 @tool
 class_name GadgetGate
 extends Block
-## A Block that marks a spot only a gadget gets past. For now it is only a
-## visible "not yet": a per-gadget colour, a marker primitive on top and a label.
-## Gadget behaviour (tasks 5-8) will read `requires` and `is_open_for()`.
-##   grapple = brass ring, glide = pale green vent, burrow = brown soil mound,
-##   conduit = copper terminal.
+## A Block that marks a spot only a gadget gets past: a per-gadget colour, a
+## marker primitive on top and a label. Gadget behaviour reads `requires` and
+## `is_open_for()`.
+##   grapple = a real GrappleRing (`ring`) RING_HEIGHT above the top: the
+##             Grapple-Tail reels the fox onto this block.
+##   glide = pale green vent, burrow = brown soil mound, conduit = copper terminal
+##   (tasks 6-8).
 
 const GATE_COLORS: Dictionary = {
 	&"grapple": Color(0.78, 0.6, 0.25),
@@ -21,6 +23,11 @@ const UNKNOWN_COLOR := Color(0.4, 0.4, 0.4)
 		requires = value
 		_rebuild()
 
+## Height of the grapple ring above the gate's top face.
+const RING_HEIGHT := 1.4
+
+## The anchor built on top of a grapple gate (null for other gadgets).
+var ring: GrappleRing
 var _deco: Node3D
 
 
@@ -35,6 +42,7 @@ func _display_color() -> Color:
 func _decorate() -> void:
 	if _deco != null:
 		_deco.queue_free()
+	ring = null
 	_deco = Node3D.new()
 	_deco.name = "GateMarker"
 	_deco.position.y = size.y * 0.5
@@ -42,12 +50,11 @@ func _decorate() -> void:
 	var c := _display_color()
 	match requires:
 		&"grapple":
-			var ring := TorusMesh.new()
-			ring.inner_radius = 0.45
-			ring.outer_radius = 0.6
-			var m := _mesh_at(ring, Vector3(0, 1.4, 0), c.lightened(0.25), 0.6)
-			m.rotation.x = PI * 0.5
-			_mesh_at(_cylinder(0.06, 0.8), Vector3(0, 0.4, 0), c.darkened(0.3))
+			# A real anchor: the Grapple-Tail reels the fox up to it (and onto this top).
+			ring = GrappleRing.new()
+			ring.name = "GrappleRing"
+			ring.position = Vector3(0, RING_HEIGHT, 0)
+			_deco.add_child(ring)
 		&"glide":
 			for i: int in 3:
 				var slat := BoxMesh.new()
@@ -77,7 +84,7 @@ func _decorate() -> void:
 	label.outline_size = 10
 	label.pixel_size = 0.01
 	label.modulate = c.lightened(0.4)
-	label.position.y = 2.4
+	label.position.y = 3.3 if requires == &"grapple" else 2.4  # clear of the ring and its pip
 	_deco.add_child(label)
 
 

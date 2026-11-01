@@ -186,13 +186,64 @@ Done notes / deviations:
   framed on the level's Blocks), `slice_overview_ai` (AI debug view on), `slice_overview_angle`.
   `-- --slice` renders only these.
 
+
+## Task 5: Brass Grapple-Tail (done)
+
+- `scripts/gadgets/`: `GrappleTail` (component on the player, like `StaffMelee`: picks and
+  highlights the best ring, throws the tail, returns the reel velocity, draws the rope) and
+  `GrappleRing` (@tool anchor; group `grapple_rings`; halo + pip highlight). The grapple
+  `GadgetGate` builds a real `GrappleRing` (`gate.ring`) `RING_HEIGHT` (1.4 m) above its top.
+- Controls: jump in the air while a ring is highlighted grapples. A ring beats the double
+  jump (the release refunds it, so you can still double jump after). Ground → jump → jump is
+  the natural way in; there is no grapple from the ground. Without `&"grapple"` nothing is
+  highlighted and jump is unchanged.
+- Targeting (`PlayerTuning` "Grapple" group): within `grapple_range` 15 m of the reel point
+  (1 m above the feet), farther than `grapple_min_distance` 2 m, within `grapple_aim_cone_deg`
+  60° (horizontal) of the camera's forward, not more than 1 m below the feet, with a clear
+  ray against WORLD. The body the ring is mounted under is excluded from that ray, so a
+  ring on a ledge top is visible from below the lip. Score = angle/cone + distance/range.
+  Highlight: dim halo (`IN_REACH`) on the ground, bright pulsing halo + pip (`READY`) in the
+  air and while reeling; the reticle gets a brass ring when jump would grapple.
+- Reel: 0.08 s throw (fox hangs, rope extends), then 8 → 22 m/s at 90 m/s², easing to 7 m/s
+  over the last 2.5 m; let go within 0.6 m with a 1 m hop (not cut by releasing jump) and
+  1.5 m/s carry. Pulled into a wall (the ledge lip), the reel slides along it at full speed,
+  so the fox climbs the face and goes over. For 0.5 s after the release (or until landing)
+  air control is ×0.15 so holding forward settles on a 4 m ledge instead of overshooting.
+  Gives up after 1.6 s (stuck).
+- Cancels: dodge (lets go and dodges), a hit with knockback ≥ 6 (smaller hits are shrugged
+  off: i-frames and flash, no knockback), death, respawn, lava launch. No firing or staff
+  while reeling: the tail is the action, and it keeps the reel short and readable.
+- Camera: vertical follow uses `grapple_camera_vertical_sharpness` (14, normally 6) while
+  reeling, via `CameraRig.vertical_sharpness_override`. The fox faces the ring.
+- Slice: `GrappleLedge` reachable with the grapple from T2Step (test, real input); its crate
+  moved off-centre (32.3, 8, -43.3) so it doesn't sit under the ring. No extra rings: a ring
+  on pocket A's pillar would let you perch out of the bull's reach and hop the 4.5 m walls
+  into the void; mid-gap rings have no ledge to land on. Revisit with Task 6 (glide) where a
+  ring + glide chain could make a real optional route.
+- Tests: `tests/unit/test_grapple.gd` (highlight only when unlocked + in range + LOS + in
+  the cone; jump grapples and lands on top; reel speed within tuning; double jump unchanged
+  without a ring; dodge cancels; small hit doesn't, big hit does; no firing while reeling)
+  and `test_slice.test_grapple_ledge_needs_and_takes_the_grapple` (jump + double jump from
+  the run falls short; with the gadget, jump then jump lands on the ledge top).
+- Screenshots: `grapple_ready`, `grapple_reel`, `grapple_reel_side` (`_capture_grapple`, run
+  at the end of `_capture_slice`).
+- Not done (future): staff yank of light enemies at grapple range. Cheap-ish later: on staff
+  press, if an enemy with low `knockback_resistance` is the aim target within `grapple_range`,
+  draw the rope to it and `stagger()` + pull it toward the fox. Needs a "pulled" movement on
+  `Enemy` (like knockback) and flyers handled; skipped to keep this task clean.
+- Shared gadget structure for tasks 6–8: a `scripts/gadgets/<Gadget>` component node created
+  in `Player._build_visual` with `player`/`tuning` set, asked each frame from
+  `_physics_process` (`update_target(has_gadget(id))`-style), `is_active()` gates fire/melee
+  and takes over velocity in `_move` early; anchors/objects are their own @tool nodes in a
+  group, built by `GadgetGate._decorate` for gates. Tuning is a `PlayerTuning` group.
+
 ## Tasks 5–8: Starter gadgets
 
 Each: gadget script under `scripts/gadgets/`, gate objects, tuning as data
 (`data/gadgets/*.tres` or `PlayerTuning` group), tests, screenshot step, and at least one gate
 in the slice.
 
-5. **Brass Grapple-Tail.** Press jump in the air while a brass ring in range is
+5. **Brass Grapple-Tail** (done, see Task 5 above). Press jump in the air while a brass ring in range is
    highlighted (reticle/marker) → reeled to it, then a release jump. Combat crossover: staff
    (X) on a light enemy at grapple range yanks it to you (later, if cheap).
 6. **Leaf-wing Cloak.** Hold jump while falling after the double jump → glide (capped fall

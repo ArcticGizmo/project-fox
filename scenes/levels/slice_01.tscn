@@ -560,7 +560,7 @@ script = ExtResource("5_crate")
 kind = 1
 
 [node name="GrappleLedgeAmmo" type="StaticBody3D" parent="Crates"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 8, -42)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.3, 8, -43.3)
 script = ExtResource("5_crate")
 
 [node name="YardAmmo" type="StaticBody3D" parent="Crates"]

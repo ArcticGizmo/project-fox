@@ -1,7 +1,8 @@
 class_name Reticle
 extends Control
 ## Screen-centre reticle. Small cross normally, red when aim assist has a
-## target, and a scope ring with long cross-hairs when zoomed.
+## target, and a scope ring with long cross-hairs when zoomed. A brass ring
+## around it means jump will grapple (GrappleTail.is_ready()).
 
 var locked: bool = false:
 	set(value):
@@ -12,6 +13,11 @@ var zoomed: bool = false:
 	set(value):
 		if value != zoomed:
 			zoomed = value
+			queue_redraw()
+var grapple_ready: bool = false:
+	set(value):
+		if value != grapple_ready:
+			grapple_ready = value
 			queue_redraw()
 
 
@@ -35,3 +41,6 @@ func _draw() -> void:
 	else:
 		for d: Vector2 in [Vector2.LEFT, Vector2.RIGHT, Vector2.UP, Vector2.DOWN]:
 			draw_line(c + d * 4.0, c + d * 11.0, col, 2.0, true)
+	if grapple_ready:
+		draw_arc(c, 17.0, 0.0, TAU, 48, Color(0, 0, 0, 0.5), 5.0, true)
+		draw_arc(c, 17.0, 0.0, TAU, 48, GrappleRing.HIGHLIGHT_COLOR, 2.5, true)

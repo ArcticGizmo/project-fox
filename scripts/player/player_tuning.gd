@@ -105,6 +105,44 @@ extends Resource
 @export var pounce_speed: float = 15.0
 @export var pounce_up_speed: float = 6.0
 
+@export_group("Grapple")
+## Brass Grapple-Tail (GrappleTail). Rings count when within this distance of
+## the fox's reel point (grapple_hang_height above the feet)...
+@export var grapple_range: float = 15.0
+## ...but not closer than this (the ring you are standing next to).
+@export var grapple_min_distance: float = 2.0
+## ...and within this horizontal angle of the camera's forward direction.
+@export var grapple_aim_cone_deg: float = 60.0
+## Rings this far below the feet (or lower) are ignored: the tail pulls up and across.
+@export var grapple_max_drop: float = 1.0
+## Point on the fox (height above the feet) that is reeled to the ring.
+@export var grapple_hang_height: float = 1.0
+## Tail flying out to the ring; the fox hangs in the air meanwhile.
+@export var grapple_throw_time: float = 0.08
+## Reel: accelerates from grapple_reel_start_speed to grapple_reel_speed...
+@export var grapple_reel_start_speed: float = 8.0
+@export var grapple_reel_speed: float = 22.0
+@export var grapple_reel_acceleration: float = 90.0
+## ...and eases down to grapple_arrive_speed over the last grapple_ease_distance.
+@export var grapple_ease_distance: float = 2.5
+@export var grapple_arrive_speed: float = 7.0
+## Let go this close to the ring.
+@export var grapple_release_distance: float = 0.6
+## Release: a hop of this height (not cut short by releasing jump)...
+@export var grapple_release_hop_height: float = 1.0
+## ...carrying this much of the reel direction horizontally (m/s), onto the ledge.
+@export var grapple_release_carry: float = 1.5
+## For this long after the release (or until landing) air control is scaled by
+## grapple_release_air_control, so holding forward settles on the ledge.
+@export var grapple_release_settle_time: float = 0.5
+@export var grapple_release_air_control: float = 0.15
+## Give up a reel that has not arrived after this long (stuck on geometry).
+@export var grapple_max_time: float = 1.6
+## Hits with at least this knockback knock the fox off the line (smaller ones are shrugged off).
+@export var grapple_cancel_knockback: float = 6.0
+## Camera vertical follow while reeling (normal follow lags a fast climb).
+@export var grapple_camera_vertical_sharpness: float = 14.0
+
 @export_group("Weapon wheel")
 ## Game speed while the wheel is open.
 @export var wheel_time_scale: float = 0.1
@@ -129,3 +167,7 @@ func jump_velocity() -> float:
 
 func double_jump_velocity() -> float:
 	return sqrt(2.0 * gravity * double_jump_height)
+
+
+func grapple_hop_velocity() -> float:
+	return sqrt(2.0 * gravity * grapple_release_hop_height)

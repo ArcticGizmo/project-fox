@@ -18,6 +18,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
+| `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
@@ -45,7 +46,7 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 .\tools\test.ps1 -Filter bull    # tests whose file/method name contains "bull"
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
-godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*.png)
+godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*.png, grapple_*.png)
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 
@@ -53,12 +54,13 @@ Run the test suite after every change. Use the screenshot tool to check anything
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
 chill vs frozen enemies, the two flyers (cruising and diving), an overview, and the slice in
 `_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
-framed on the level's Blocks).
+framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`, `grapple_reel`,
+`grapple_reel_side`). Add a `_capture_<gadget>` step per gadget.
 
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space · dodge B/Shift · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
+jump A/Space (air, ring highlighted: grapple) · dodge B/Shift · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
 Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
@@ -144,7 +146,15 @@ D-pad up/F2 · next wave D-pad down/F3.
   the plan doc for its beats and gates).
 - **Gadgets**: ids `Gadgets.ALL` (&"grapple", &"glide", &"burrow", &"conduit") on
   `player.gadgets`; gates are `GadgetGate` blocks with `requires` (`is_open_for(player)`).
-  Pause menu has "Unlock All Gadgets" for testing.
+  Pause menu has "Unlock All Gadgets" for testing. Gadget code lives in `scripts/gadgets/`:
+  a component node on the player (like `StaffMelee`) that the player asks each frame and
+  that owns its own visuals; tuning in its own `PlayerTuning` group. Gadgets are context
+  actions on existing verbs (no new buttons) and read only `PlayerInputState` via the player.
+  Grapple: `GrappleRing` (group `grapple_rings`) anywhere, ~1.4 m above the ledge it should
+  land you on (`GadgetGate.RING_HEIGHT`); the body it is mounted under never blocks its own
+  line of sight. Jump in the air with a ring highlighted grapples (beats the double jump,
+  which the release refunds); dodge or a hit with knockback ≥ `grapple_cancel_knockback`
+  lets go; no firing or staff while reeling.
 
 ## Testing gotchas
 
