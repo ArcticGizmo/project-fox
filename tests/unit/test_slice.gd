@@ -373,3 +373,108 @@ func test_ambush_tunnel_reaches_behind_the_bull() -> void:
 	var reach := Enemy._flat_distance(to.global_position, bull.global_position) - (to.radius - BurrowClaws.EDGE_MARGIN) - bull.extents().z * 0.5
 	assert_true(reach < 1.5, "a swing from the patch edge reaches the bull (%.2f m)" % reach)
 	assert_true(reach > Player.RADIUS, "but the patch is not under it (%.2f m)" % reach)
+
+
+## The conduit shortcut with real staff input (teleporting between legs, the
+## charge carried along): staff the yard's DoorBarrier while live, staff the
+## ShortcutTerminal in pocket B, then walk west through ShortcutDoor, up the step
+## onto the pad. Without the gauntlet nothing is absorbed, the terminal clanks
+## and the door stays shut.
+func test_shortcut_door_needs_and_takes_the_conduit() -> void:
+	var level := _load_level_without_enemies()
+	var player := level.player
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	await wait_frames(3)
+	var door := level.get_node(^"Level/Shortcut/ShortcutDoor") as GadgetGate
+	var terminal := level.get_node(^"Level/Shortcut/ShortcutTerminal") as ConduitTerminal
+	assert_eq(terminal.target_node(), door, "the terminal drives the shortcut door")
+	assert_true(terminal.global_position.x > door.global_position.x, "terminal on the pocket B side")
+	assert_false(await _conduit_attempt(level, player, pad), "no gauntlet: the door stays shut")
+	assert_false(door.is_open, "door still shut")
+	assert_false(terminal.is_powered, "terminal still dead")
+	player.unlock_gadget(Gadgets.CONDUIT)
+	assert_true(await _conduit_attempt(level, player, pad), "charge, power, through the door to the pad")
+
+
+## Doors opened by a terminal stay open when the player dies and the placed
+## enemies are rebuilt.
+func test_shortcut_door_stays_open_after_respawn() -> void:
+	var level := _load_level()
+	await wait_frames(3)
+	level.player.input_provider = ScriptedInputProvider.new()
+	var door := level.get_node(^"Level/Shortcut/ShortcutDoor") as GadgetGate
+	var terminal := level.get_node(^"Level/Shortcut/ShortcutTerminal") as ConduitTerminal
+	terminal.power()
+	assert_true(await wait_until(func() -> bool: return door.is_fully_open(), GadgetGate.DOOR_OPEN_TIME + 1.0), "door opened")
+	var open_y := door.position.y
+	var resets := [0]
+	level.placed_enemies_reset.connect(func() -> void: resets[0] += 1)
+	level.player.health.apply_damage(DamageInfo.create(9999.0, Vector3.ZERO))
+	await wait_seconds(Player.RESPAWN_DELAY + 0.5)
+	assert_false(level.player.is_dead, "respawned")
+	assert_eq(resets[0], 1, "placed enemies were rebuilt")
+	assert_true(door.is_open and terminal.is_powered, "door and terminal untouched")
+	assert_near(door.position.y, open_y, 0.001, "still sunk")
+
+
+func _load_level_without_enemies() -> LevelRoot:
+	var level := (load(SLICE) as PackedScene).instantiate() as LevelRoot
+	var node := level.get_node(^"Enemies")
+	level.remove_child(node)
+	node.free()
+	add_child(level)
+	return level
+
+
+func _place(player: Player, pad: ScriptedInputProvider, at: Vector3, look_at: Vector3) -> void:
+	pad.next = PlayerInputState.new()
+	player.global_position = at
+	player.velocity = Vector3.ZERO
+	player.facing_yaw = Player.yaw_of(look_at - at)
+	player.visual.rotation.y = player.facing_yaw
+	player.camera_rig.yaw = player.facing_yaw
+	await wait_frames(5)
+
+
+func _staff(player: Player, pad: ScriptedInputProvider) -> void:
+	pad.next.melee_pressed = true
+	await wait_frames(1)
+	await wait_until(func() -> bool: return not player.melee.is_busy(), 1.0)
+
+
+func _conduit_attempt(level: LevelRoot, player: Player, pad: ScriptedInputProvider) -> bool:
+	var barrier := level.get_node(^"Hazards/DoorBarrier") as LightningBarrier
+	var terminal := level.get_node(^"Level/Shortcut/ShortcutTerminal") as ConduitTerminal
+	var door := level.get_node(^"Level/Shortcut/ShortcutDoor") as GadgetGate
+	# Leg 1: the corridor (west) side of the barrier, staff it while it arcs.
+	var a := barrier.to_global(Vector3(0, 0.05, 1.9))
+	var b := barrier.to_global(Vector3(0, 0.05, -1.9))
+	await _place(player, pad, a if a.x < b.x else b, barrier.global_position)
+	await wait_until(func() -> bool: return barrier.state == LightningBarrier.ON, barrier.off_time + barrier.charge_time + barrier.on_time + 1.0)
+	var hp := player.health.current
+	await _staff(player, pad)
+	if player.has_gadget(Gadgets.CONDUIT):
+		assert_true(player.conduit.is_charged(), "absorbed the barrier's charge")
+		assert_near(player.health.current, hp, 0.01, "without getting zapped")
+	# Leg 2: pocket B, just east of the terminal.
+	await _place(player, pad, terminal.global_position + Vector3(1.6, 0.05, 0), terminal.global_position)
+	await _staff(player, pad)
+	await wait_until(func() -> bool: return door.is_fully_open(), GadgetGate.DOOR_OPEN_TIME + 1.0)
+	# Leg 3: walk west at the doorway, jumping up the step and onto the pad.
+	var z := door.global_position.z
+	await _place(player, pad, Vector3(11.5, 0.05, z), Vector3(0, 0, z))
+	pad.next.move = Vector2(0, -1)
+	var pad_rect := Rect2(-6, -6, 12, 12)
+	for _f: int in 300:
+		var p := player.global_position
+		if player.is_on_floor() and p.x < 10.0:
+			pad.next.jump_pressed = true
+			pad.next.jump_held = true
+		await get_tree().physics_frame
+		p = player.global_position
+		if player.is_on_floor() and pad_rect.has_point(Vector2(p.x, p.z)) and absf(p.y - 3.0) < 0.3:
+			pad.next = PlayerInputState.new()
+			return true
+	pad.next = PlayerInputState.new()
+	return false

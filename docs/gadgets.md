@@ -13,7 +13,7 @@ camera, collision or scale. Decisions and the current plan: [plan-awareness-slic
 | Brass Grapple-Tail | Traversal | Jump at a highlighted brass ring in the air and get reeled to it | High ledges, gaps with a ring | Yank light enemies to you, rip shields (later) | M | Built (task 5) |
 | Leaf-wing Cloak | Traversal | Hold jump to glide; steam vents give updrafts | Gaps over 10 m, vent shafts | Slow descent for aerial shooting (fire while gliding, no strafe) | S | Built (task 6) |
 | Burrow Claws | Traversal / stealth | Dodge onto soil to dig in, tunnel to a linked patch | Soil patches by walls and fences | Unseen underground (enemies lose track); pop up behind for a sneak attack (×2.5 staff hit) | M | Built (task 7) |
-| Copper Conduit Gauntlet | Interaction | Absorb charge from lightning barriers, discharge into terminals | Unpowered doors and lifts | Stored charge as chain lightning | M | Starter |
+| Copper Conduit Gauntlet | Interaction | Staff a live lightning barrier to absorb a charge (drains it), staff a dead terminal to spend it | Unpowered doors (and lifts: any `power()` target) | A charged staff hit chains lightning to up to 3 enemies and staggers them | M | Built (task 8) |
 | Fox Nose | Sense | Sniff: scent trails, hidden switches, enemies through walls | Hidden doors, secrets | Scout sleepers before a pocket | S | Bench (collectables) |
 | Ink Bomb | Stealth | Smoke burst that drains suspicion and breaks sight | — | Escape a fight, reset a pocket | S | Bench (stealth) |
 | Steam Boots | Traversal | Short wall-run on copper walls; or the double jump / charge jump as an unlock | Copper walls, tall ledges | Wall-run past a charging bull | M | Bench |

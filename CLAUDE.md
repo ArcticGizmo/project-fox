@@ -15,14 +15,14 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | Path | What |
 |---|---|
 | `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
-| `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
+| `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR, CONDUCTOR (staff-strikeable sockets) |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
-| `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`) |
+| `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
-| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool coloured box with collision), `GadgetGate` (Block per gadget id), `Checkpoint`, `GravityRift` (stub), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool coloured box with collision), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scenes/levels/` | Level scenes (`slice_01.tscn`); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
@@ -46,7 +46,7 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 .\tools\test.ps1 -Filter bull    # tests whose file/method name contains "bull"
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
-godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*)
+godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 
@@ -56,12 +56,12 @@ chill vs frozen enemies, the two flyers (cruising and diving), an overview, and 
 `_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
 framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`, `grapple_reel`,
 `grapple_reel_side`, then `_capture_burrow` at pocket A's ambush tunnel: `burrow_mound` (AI view on), `burrow_pop`,
-`burrow_sneak`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`). Add a `_capture_<gadget>` step per gadget.
+`burrow_sneak`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`, then `_capture_conduit` on the shortcut: `conduit_barrier_live`, `conduit_absorb`, `conduit_charged`, `conduit_terminal_dead`, `conduit_powered`, `conduit_door_open`, `conduit_door_from_pad`). Add a `_capture_<gadget>` step per gadget.
 
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space (air, ring highlighted: grapple; hold while falling after the double jump: glide) · dodge B/Shift (on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
+jump A/Space (air, ring highlighted: grapple; hold while falling after the double jump: glide) · dodge B/Shift (on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default; staff a live barrier: charge; staff a terminal: power; charged hit on an enemy: chain lightning) · weapon wheel hold
 Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
@@ -172,6 +172,16 @@ D-pad up/F2 · next wave D-pad down/F3.
   for `burrow_surface_conceal_time` (ended early by a staff hit or firing) and the first staff
   swing hit within `burrow_sneak_window` does ×`burrow_sneak_multiplier` to an unaware enemy
   (a staff press during the hop swings on landing). Keep patches away from lava.
+  Conduit: `ConduitGauntlet` reads the staff swing HitBox's overlaps on `Layers.CONDUCTOR` (only
+  that HitBox masks it) and calls `conduit_struck(gauntlet, unlocked)` on each `ConduitSocket`'s
+  `receiver` once per swing. A `LightningBarrier` that is on (or charging past
+  `absorb_min_charge`) gives a charge (max `conduit_max_charges`, no timeout, lost on death) and
+  switches off. A `ConduitTerminal` (@tool, group `conduit_terminals`) spends one and powers up
+  for good, calling `power()` (else `open()`) on its `target` NodePath; uncharged it clanks.
+  Conduit `GadgetGate`s are copper doors: `power()` sinks them into the floor (collision moves
+  with the body) and `is_open_for()` is `is_open`; doors are never reset by respawns. A charged
+  swing hit on an enemy spends the charge as chain lightning (`discharge`, staggers).
+  New strikeable things: give them a `ConduitSocket.make(...)` and a `conduit_struck` method.
 
 ## Testing gotchas
 

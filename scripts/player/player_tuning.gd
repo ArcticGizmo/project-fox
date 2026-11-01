@@ -186,6 +186,20 @@ extends Resource
 ## ...deals this much more damage to an unaware enemy.
 @export var burrow_sneak_multiplier: float = 2.5
 
+@export_group("Conduit")
+## Copper Conduit Gauntlet (ConduitGauntlet). A staff swing on a live lightning
+## barrier stores a charge (up to this many; the barrier is drained and goes off).
+## A swing on a dead ConduitTerminal spends one to power it.
+@export var conduit_max_charges: int = 1
+## While charged, a staff swing hit on an enemy spends the charge as chain
+## lightning: this damage to the enemy hit and up to conduit_chain_jumps more...
+@export var conduit_chain_damage: float = 12.0
+@export var conduit_chain_jumps: int = 2
+## ...each the nearest un-hit enemy within this distance of the previous one...
+@export var conduit_chain_radius: float = 6.0
+## ...and every enemy in the chain is staggered this long.
+@export var conduit_chain_stagger: float = 0.9
+
 @export_group("Weapon wheel")
 ## Game speed while the wheel is open.
 @export var wheel_time_scale: float = 0.1

@@ -160,9 +160,9 @@ Gates for tasks 5–8:
   is the updraft spot.
 - **Burrow** (`BurrowIn` → `BurrowOut`): dodge onto the soil north of the divider, pop out
   south of it, past the plates, sweeper and hammer (still before the lightning door).
-- **Conduit** (`ShortcutDoor`): the door itself is the gate. Task 8 should add a dead copper
-  terminal beside it on the pocket B side (charge from the yard's lightning barrier) and make
-  the door open.
+- **Conduit** (`ShortcutDoor`): the door itself is the gate. Task 8 added `ShortcutTerminal`
+  beside it on the pocket B side (charge from the yard's lightning barrier); powered, the door
+  sinks open for good.
 
 Done notes / deviations:
 - Critical-path Blocks are in group `critical_path` with a `path_index` meta (walking order).
@@ -336,6 +336,70 @@ Done notes / deviations:
   reachable before the rats notice you, and whether the mound should be visible to enemies
   (e.g. raise suspicion slowly when it moves in their cone) for more tension.
 
+## Task 8: Copper Conduit Gauntlet (done)
+
+- `scripts/gadgets/`: `ConduitGauntlet` (component on the player: charges, socket strikes,
+  discharge, the cuff/coil/tip-orb/crackle visuals on the staff), `ConduitSocket` (Area3D on the
+  new `Layers.CONDUCTOR` (64, project layer 7 "conductor") that forwards a strike to its
+  `receiver.conduit_struck(gauntlet, unlocked)`; copper debug outline) and `ConduitTerminal`
+  (@tool dead copper post: solid `Block` post, coil rings, dead lamp, a floor cable to its
+  `target`; signals `powered`, `clanked`). `LightningBarrier` got a socket over its arc and
+  `conduit_struck`; `GadgetGate` conduit gates are now copper doors (banded faces, a row of
+  dead lamps) with `power()`/`open()`, `is_open`, `opened`, `is_fully_open()`.
+- Controls (no new buttons, the staff does it): with `&"conduit"`, a **staff swing** whose live
+  window overlaps a barrier's socket while the barrier is **on, or charging with its tubes at
+  least `absorb_min_charge` (0.5) full**, stores a charge. A swing on a dead terminal with a
+  charge spends it and powers the terminal, which calls `power()` (else `open()`) on `target`.
+  Only the swing HitBox masks CONDUCTOR (not the slam, enemies, hazards or weapons: tested).
+  Each socket hears about a swing once (re-armed per combo swing). With a charge and no enemy
+  in snap range, a swing snaps toward a dead terminal in the cone (`melee_snap_*`).
+- Decisions:
+  - **Absorbing drains the barrier**: it switches off at once and restarts its cycle (off 2 s,
+    charging 1.2 s in the slice), so "catch the lightning" also opens the barrier for ~3 s. Nicer
+    crossover than a static pickup; costs nothing on barriers you'd rather keep (it only
+    happens with the gadget and an empty gauntlet).
+  - **Safety comes from reach, not i-frames**: the socket is 0.9 m thick vs the arc's 0.5 m
+    HitBox, and the staff box reaches 2.35 m, so a swing from ~1.9 m catches it with the 0.84 m
+    lunge leaving the fox clear of the arc (tested: no damage). Swinging from inside the arc
+    still hurts (on that frame); the drain then switches it off.
+  - **One charge** (`conduit_max_charges` 1); a full gauntlet leaves barriers alone. **No
+    timeout**; lost on death (not on a fall). OFF (or barely charging) barriers give nothing.
+  - **Without the gadget** a terminal clanks (grey puff, head wobble, `clanked`) and a barrier is
+    just a hazard. A conduit door's `is_open_for()` is `is_open` (the gadget alone doesn't open it).
+  - **Doors stay open**: `LevelRoot` only rebuilds enemies on a death respawn (tested in the
+    slice). Door opening: lamps light, 0.25 s pause, sinks `size.y + 0.02` (no z-fight) over
+    `DOOR_OPEN_TIME` 1.2 s on a physics tween, collision moving with the body.
+  - **Chain lightning built** (cheap, like the eel): a charged staff swing hit on an enemy spends
+    the charge: `conduit_chain_damage` 12 to the enemy hit and up to `conduit_chain_jumps` 2 more
+    (nearest un-hit within `conduit_chain_radius` 6 m with a clear line), each staggered
+    `conduit_chain_stagger` 0.9 s. No weapon credited. Swing hits only (not slams).
+- Feel numbers: `PlayerTuning` "Conduit" group; `LightningBarrier.absorb_min_charge`;
+  absorb = 0.05 s hit stop + 0.25 shake + bolt from the arc to the staff tip; spend = 0.04 s hit
+  stop + bolt; charged = copper cuff + bands glow arc-blue, a tip orb + blue light, two jagged
+  crackles along the staff re-rolled every 0.05 s, staff tinted.
+- Slice: `Level/Shortcut/ShortcutTerminal` at (10.2, 0, -2.4) on pocket B's floor beside
+  `ShortcutDoor` (target), cable to the door. Route: absorb at `Hazards/DoorBarrier` (yard
+  mouth), carry the charge through pocket B (~25 m), staff the terminal, walk west through the
+  doorway, up the 1.5 m step onto the pad. Critical path unchanged.
+- Tests: `tests/unit/test_conduit.gd` (live barrier charges and drains, no damage, glow; charging
+  only past `absorb_min_charge`; OFF gives nothing; locked: no charge, arc still deals its damage,
+  no cuff; full gauntlet doesn't drain; only the staff swing masks CONDUCTOR, socket outline;
+  terminal clanks without a charge; locked gauntlet can't spend; charged swing powers the
+  terminal once, spends the charge, door sinks and its collision clears; charge has no timeout
+  but is lost on death; chain lightning staggers the bull and a nearby rat, not a far one; no
+  chain without a charge) and `test_slice` (`test_shortcut_door_needs_and_takes_the_conduit`:
+  real staff input at the barrier and terminal, then walking + jumping onto the pad; without the
+  gadget the door holds; `test_shortcut_door_stays_open_after_respawn`).
+- Screenshots (`_capture_conduit`, after glide): `conduit_barrier_live`, `conduit_absorb` (bolt
+  into the staff), `conduit_charged` (crackling staff by the drained barrier),
+  `conduit_terminal_dead`, `conduit_powered` (lamps lit), `conduit_door_open`,
+  `conduit_door_from_pad`.
+- Wants a hands-on pass: whether a stray staff hit on a gull/toad in pocket B spending the charge
+  as chain lightning is fun or annoying (the barrier is ~25 m back; if annoying, make discharge
+  need a full combo finisher, or `conduit_max_charges` 2); whether draining the barrier makes
+  the yard door too easy; whether the charge needs a HUD pip (it's only on the staff now).
+- Not done: lifts (any node with `power()` works as a target); slam or projectile charging.
+
 ## Tasks 5–8: Starter gadgets
 
 Each: gadget script under `scripts/gadgets/`, gate objects, tuning as data
@@ -350,9 +414,9 @@ in the slice.
 7. **Burrow Claws** (done, see Task 7 above). Dodge onto a soil patch → burrow; move underground (unseen by the
    awareness system); dodge again or reach the linked patch → pop out. Popping out behind
    an unaware enemy = sneak attack bonus on the next staff hit.
-8. **Copper Conduit Gauntlet.** Staff-hit a lightning barrier to absorb a charge (gauntlet
-   glows); staff-hit a dead copper terminal to power a door/lift. Later: discharge as a
-   chain-lightning burst.
+8. **Copper Conduit Gauntlet** (done, see Task 8 above). Staff-hit a lightning barrier to absorb a charge (gauntlet
+   glows); staff-hit a dead copper terminal to power a door/lift. A charged staff hit on an
+   enemy discharges it as chain lightning (built).
 
 ## Bench (good later additions)
 
@@ -363,3 +427,49 @@ in the slice.
 - **Gravity rifts**: level feature replacing magnet boots (see decisions).
 
 Full brainstorm: [gadgets.md](gadgets.md).
+
+## Overnight summary / open items for playtest
+
+Tasks 1–8 are built and green (`.\tools\test.ps1`), each with screenshots. Everything below
+was only measured headless or judged from stills; it needs hands-on play with a controller.
+Load the slice with `run.cmd -- --level=slice_01`; pause menu → "Unlock All Gadgets".
+
+Awareness and readability (Tasks 1–2)
+- Notice / alert timings per enemy: does the "?" fill give enough time to back off or commit?
+  Is the bull's slow notice readable, the rat's hearing fair, the falcon's wide cone annoying?
+- Group alert delay (0.15–0.4 s) and radius: does a pocket wake as one or in a fun cascade?
+- Leash and return home: do chases end at sensible spots, or does it look like enemies give up?
+- Idle flavour: do grazing/scurrying/puffing read as "unaware" from mid-range?
+
+Slice (Task 4)
+- Survival: standing still dies in ~15–20 s in pocket A's centre and the finale; is the fight
+  difficulty right with dodging, crates and checkpoints? Is pocket B's toad/gull crossfire fair?
+- Length (~5–8 min estimated), sight lines to the next beat, and whether the yard's hazards
+  read before you are in them. Is the 7 m double-jump gap too tight on a real stick?
+
+Grapple (Task 5)
+- Jump-then-jump to grapple: discoverable? Does the ring beating the double jump ever surprise?
+- Reel speed (22 m/s), the 1 m release hop and 0.5 s low air control after it: does the landing
+  on GrappleLedge feel guided or sticky? Camera during the reel.
+
+Glide (Task 6)
+- Turn rate (150°/s, U-turn ~1.2 s): too gentle? Fall 2.5 m/s and speed 9 m/s over the 19 m gap.
+- Holding jump through the double jump to open: natural, or should a fresh press open it?
+- Riding the vent to its top then pushing off: is the column top readable?
+
+Burrow (Task 7)
+- 0.75 s conceal after popping out: fair or cheap? Pocket A's ambush tunnel: reachable before
+  the rats notice you? Should a moving mound slowly raise suspicion?
+- Floor dodge onto soil to dig: does it ever trigger when you just wanted to dodge?
+
+Conduit (Task 8)
+- Swinging at a barrier from ~1.9 m: does the reach feel generous enough, or do players walk
+  into the arc? Is draining the barrier (off ~3 s) too generous?
+- A charged swing on any enemy spends the charge as chain lightning: fun bonus, or an annoying
+  way to lose the charge in pocket B on the way to the terminal?
+- Charge readability: staff glow only, no HUD pip. Door open time (0.25 s + 1.2 s).
+
+Cross-cutting
+- Gadgets all live on existing verbs (jump, dodge, staff). Do the context rules ever collide
+  (e.g. dodge on soil next to a fight, staff near a terminal mid-combat)?
+- No HUD feedback for unlocked gadgets or the conduit charge yet.

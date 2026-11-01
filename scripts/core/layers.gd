@@ -13,3 +13,6 @@ const PLAYER_HURTBOX := 8
 const ENEMY_HURTBOX := 16
 ## Areas that bounce enemy projectiles back (Hermit Bulwark).
 const REFLECTOR := 32
+## Things the staff can strike for the Copper Conduit Gauntlet (ConduitSocket on
+## lightning barriers and conduit terminals). Only the staff swing masks it.
+const CONDUCTOR := 64

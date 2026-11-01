@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/bombardier_gull.tscn" id="13_gull"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/brass_falcon.tscn" id="14_falcon"]
 [ext_resource type="Script" path="res://scripts/gadgets/soil_patch.gd" id="15_soil"]
+[ext_resource type="Script" path="res://scripts/gadgets/conduit_terminal.gd" id="16_terminal"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
@@ -422,6 +423,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 4, 1)
 script = ExtResource("4_gate")
 size = Vector3(1, 8, 4)
 requires = &"conduit"
+
+[node name="ShortcutTerminal" type="Node3D" parent="Level/Shortcut"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.2, 0, -2.4)
+script = ExtResource("16_terminal")
+target = NodePath("../ShortcutDoor")
 
 [node name="Ridge" type="Node3D" parent="Level"]
 

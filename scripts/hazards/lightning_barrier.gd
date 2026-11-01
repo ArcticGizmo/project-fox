@@ -17,6 +17,7 @@ const BOLT_COUNT := 3
 const BOLT_SEGMENTS := 8
 const PYLON_WIDTH := 0.6
 const DRAIN_TIME := 0.4
+const SOCKET_THICKNESS := 0.9
 
 ## Gap between the pylon centres.
 @export var span: float = 6.0
@@ -30,8 +31,17 @@ const DRAIN_TIME := 0.4
 @export var knockback: float = 10.0
 @export var knockback_up: float = 4.0
 @export var enemy_stagger: float = 0.8
+## Copper Conduit Gauntlet: a staff swing absorbs the lightning while on, or
+## while charging once the tubes are at least this full.
+@export var absorb_min_charge: float = 0.5
+
+## A Conduit Gauntlet drained the barrier (it switched off).
+signal absorbed(gauntlet: ConduitGauntlet)
 
 var hit_box: HitBox
+## Struck by the staff (Layers.CONDUCTOR); slightly thicker than the arc so a
+## swing from just outside the arc's reach catches it.
+var socket: ConduitSocket
 ## Charge indicator level, 0..1 (full while on, drains when it switches off).
 var charge: float = 0.0
 
@@ -89,6 +99,8 @@ func _setup() -> void:
 	hit_box.repeat_interval = 0.5
 	hit_box.damage_modifier = _push_out_sideways
 	hit_box.hit_landed.connect(_on_hit_landed)
+	socket = ConduitSocket.make(self, "ConduitSocket", Vector3(span - PYLON_WIDTH, height, SOCKET_THICKNESS),
+			Vector3(0, height * 0.5, 0), self)
 	enter_state(OFF)
 	state_time = -phase_offset
 	_update_charge_visuals()
@@ -181,3 +193,25 @@ func _on_hit_landed(hb: HurtBox, _info: DamageInfo) -> void:
 	if e != null:
 		e.stagger(enemy_stagger)
 	GameFeel.impact(hb.center(), Color(ARC_COLOR, 0.8), 1.2, 0.15)
+
+
+# --- Copper Conduit Gauntlet ---------------------------------------------------
+
+## Is there lightning to catch? On, or charging with the tubes absorb_min_charge full.
+func is_absorbable() -> bool:
+	return state == ON or (state == CHARGING and charge >= absorb_min_charge)
+
+
+## Staff swing on the socket (ConduitSocket): with the gadget and a live arc the
+## gauntlet takes a charge and the barrier is drained (off, restarting its cycle).
+## Without the gadget nothing happens here: the arc hits as usual.
+func conduit_struck(gauntlet: ConduitGauntlet, unlocked: bool) -> void:
+	if not unlocked or not is_absorbable():
+		return
+	var tip := to_local(gauntlet.tip_position())
+	var inner := span * 0.5 - PYLON_WIDTH * 0.5
+	var contact := to_global(Vector3(clampf(tip.x, -inner, inner), clampf(tip.y, 0.2, height), 0))
+	if not gauntlet.add_charge(self, contact):
+		return
+	enter_state(OFF)
+	absorbed.emit(gauntlet)

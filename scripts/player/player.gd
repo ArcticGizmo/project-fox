@@ -59,6 +59,8 @@ var grapple: GrappleTail
 var cloak: LeafCloak
 ## Burrow Claws (gadget &"burrow"): dig into soil patches, tunnel, pop out.
 var burrow: BurrowClaws
+## Copper Conduit Gauntlet (gadget &"conduit"): staff a live barrier to charge, a terminal to power.
+var conduit: ConduitGauntlet
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
@@ -144,6 +146,7 @@ func _ready() -> void:
 	melee.hit_box.damage_modifier = _sneak_modifier
 	melee.hit_box.hit_landed.connect(_on_staff_hit)
 	melee.slam_box.hit_landed.connect(_on_staff_hit)
+	melee.hit_box.hit_landed.connect(conduit.on_staff_hit)
 
 	health = Health.new()
 	health.name = "Health"
@@ -236,6 +239,11 @@ func _build_visual() -> void:
 	burrow.tuning = tuning
 	add_child(burrow)
 
+	conduit = ConduitGauntlet.new()
+	conduit.player = self
+	conduit.tuning = tuning
+	add_child(conduit)
+
 
 func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -282,6 +290,7 @@ func _physics_process(delta: float) -> void:
 	_update_aim()
 	grapple.update_target(has_gadget(Gadgets.GRAPPLE) and not burrow.is_active())
 	_handle_melee(delta)
+	conduit.update(delta)
 	_move(delta)
 	_handle_fire()
 	_update_facing(delta)
@@ -630,6 +639,19 @@ func _snap_facing_for_swing(stick: Vector3) -> void:
 			continue
 		best = n
 		best_dist = dist
+	# No enemy: a charged gauntlet turns to a dead conduit terminal instead.
+	if best == null and conduit.is_charged() and has_gadget(Gadgets.CONDUIT):
+		for n: Node3D in AimAssist.nodes_in_group(get_tree(), ConduitTerminal.GROUP):
+			var term := n as ConduitTerminal
+			var to := n.global_position - global_position
+			to.y = 0.0
+			var dist := to.length()
+			if term.is_powered or dist < 0.01 or dist > best_dist:
+				continue
+			if rad_to_deg(reference.angle_to(to / dist)) > tuning.melee_snap_angle_deg:
+				continue
+			best = n
+			best_dist = dist
 	if best != null:
 		facing_yaw = yaw_of(best.global_position - global_position)
 	elif stick.length_squared() > 0.04:
@@ -934,6 +956,7 @@ func _on_died(_info: DamageInfo) -> void:
 	grapple.cancel()
 	close_glide()
 	_reset_burrow()
+	conduit.clear()  # a stored charge is lost on death (not on a fall)
 	close_wheel(false)
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
@@ -973,6 +996,7 @@ func _update_visuals(_delta: float) -> void:
 	grapple.update_rope()
 	cloak.update_visual(_delta)
 	burrow.update_visual(_delta)
+	conduit.update_visual(_delta)
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
 	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.

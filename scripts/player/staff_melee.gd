@@ -13,6 +13,9 @@ enum Phase { IDLE, SWING, SLAM_HOVER, SLAM_FALL, POUNCE, SLAM_RECOVER }
 
 const STAFF_COLOR := Color(0.55, 0.36, 0.18)
 const SLAM_ACTIVE_TIME := 0.1
+## Staff tip and grip in pivot space (the staff mesh runs along -Z).
+const STAFF_TIP_Z := -1.65
+const STAFF_GRIP_Z := 0.15
 
 var tuning: PlayerTuning
 var phase: Phase = Phase.IDLE
@@ -29,13 +32,16 @@ var _swing_shape: BoxShape3D
 var _swing_cs: CollisionShape3D
 var _slam_shape: SphereShape3D
 var _pivot: Node3D
+## The staff mesh material (the Conduit Gauntlet tints it while charged).
+var staff_material: StandardMaterial3D
 
 
 func _ready() -> void:
 	name = "StaffMelee"
 	hit_box = HitBox.new()
 	hit_box.name = "StaffHitBox"
-	hit_box.collision_mask = Layers.ENEMY_HURTBOX
+	# CONDUCTOR: lightning barriers and terminals (ConduitGauntlet reads those overlaps).
+	hit_box.collision_mask = Layers.ENEMY_HURTBOX | Layers.CONDUCTOR
 	hit_box.knockback_up = 2.5
 	_swing_shape = BoxShape3D.new()
 	_swing_cs = CollisionShape3D.new()
@@ -65,11 +71,19 @@ func _ready() -> void:
 	staff.mesh = mesh
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = STAFF_COLOR
+	mat.emission_enabled = true
+	mat.emission = Color.BLACK
+	staff_material = mat
 	staff.material_override = mat
 	staff.position = Vector3(0, 0, -0.75)
 	_pivot.add_child(staff)
 	_set_swing_shape(0)
 	_pose(idle_pose())
+
+
+## Pivot the staff mesh hangs from (staff runs along local -Z, tip at STAFF_TIP_Z).
+func staff_pivot() -> Node3D:
+	return _pivot
 
 
 func combo_length() -> int:

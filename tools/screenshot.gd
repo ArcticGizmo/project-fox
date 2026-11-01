@@ -2,7 +2,7 @@ extends Node
 ## Renders the main scene (needs a GPU, so not --headless), waits, saves PNGs
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
-##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*)
+##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 
@@ -109,6 +109,7 @@ func _capture_slice(arena: Node, path: String) -> void:
 	await _capture_grapple(level)
 	await _capture_burrow(level)
 	await _capture_glide(level)
+	await _capture_conduit(level)
 
 
 ## Top-down (orthographic) and high-angle overviews framed on the level's Blocks.
@@ -524,3 +525,86 @@ func _capture_burrow(level: LevelRoot) -> void:
 	cam.queue_free()
 	pad.next = PlayerInputState.new()
 	player.input_provider = DeviceInputProvider.new()
+
+
+## Copper Conduit Gauntlet on the slice's shortcut: staff the yard's DoorBarrier
+## while it arcs (conduit_absorb: the bolt into the staff; conduit_charged: the
+## charged staff crackling by the drained barrier), then the ShortcutTerminal in
+## pocket B (conduit_powered: lamp lit, door sinking; conduit_door_open: the
+## doorway from pocket B; conduit_door_from_pad: the same from the pad).
+func _capture_conduit(level: LevelRoot) -> void:
+	var player := level.player
+	if player.is_dead:
+		player.respawn()
+	player.grapple.cancel()
+	player.close_glide()
+	var barrier := level.get_node(^"Hazards/DoorBarrier") as LightningBarrier
+	var terminal := level.get_node(^"Level/Shortcut/ShortcutTerminal") as ConduitTerminal
+	var door := level.get_node(^"Level/Shortcut/ShortcutDoor") as GadgetGate
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	player.unlock_gadget(Gadgets.CONDUIT)
+	# Yard side of the barrier (east), facing it.
+	var a := barrier.to_global(Vector3(0, 0.05, 1.9))
+	var b := barrier.to_global(Vector3(0, 0.05, -1.9))
+	_place_player(player, a if a.x > b.x else b, barrier.global_position)
+	var cam := Camera3D.new()
+	add_child(cam)
+	var fox := player.global_position
+	cam.global_position = fox + Vector3(2.6, 2.6, 3.4)
+	cam.look_at(fox.lerp(barrier.global_position, 0.5) + Vector3.UP * 1.0)
+	cam.make_current()
+	for _i: int in 30:
+		await get_tree().physics_frame  # land first: a staff press in the air is a slam
+	for _i: int in 600:
+		await get_tree().physics_frame
+		if barrier.state == LightningBarrier.ON and barrier.state_time > 0.2 and player.is_on_floor():
+			break
+	await _capture("conduit_barrier_live.png")
+	pad.next.melee_pressed = true
+	for _i: int in 30:
+		await get_tree().physics_frame
+		if player.conduit.is_charged():
+			break
+	await get_tree().physics_frame
+	await _capture("conduit_absorb.png")
+	for _i: int in 30:
+		await get_tree().physics_frame
+	# Front-right of the fox (it faces the barrier; the staff rests on its right).
+	cam.global_position = player.global_position + player.facing_forward() * 1.8 + Vector3.UP * 1.7 + player.facing_forward().cross(Vector3.UP) * 1.6
+	cam.look_at(player.global_position + Vector3.UP * 1.2)
+	await _capture("conduit_charged.png")
+	print("conduit: charges %d, barrier %s" % [player.conduit.charges, barrier.state])
+	# Pocket B: the dead terminal beside the shortcut door.
+	_place_player(player, terminal.global_position + Vector3(0.4, 0.05, 1.6), terminal.global_position)
+	cam.global_position = Vector3(16.5, 3.4, -1.6)
+	cam.look_at(Vector3(9.4, 1.6, -0.4))
+	for _i: int in 10:
+		await get_tree().physics_frame
+	await _capture("conduit_terminal_dead.png")
+	pad.next.melee_pressed = true
+	for _i: int in 40:
+		await get_tree().physics_frame
+	await _capture("conduit_powered.png")
+	for _i: int in 120:
+		await get_tree().physics_frame
+		if door.is_fully_open():
+			break
+	await _capture("conduit_door_open.png")
+	cam.global_position = Vector3(-3, 5.5, -3)
+	cam.look_at(Vector3(9, 2, 1))
+	await get_tree().create_timer(0.1).timeout
+	await _capture("conduit_door_from_pad.png")
+	print("conduit: terminal powered %s, door open %s" % [terminal.is_powered, door.is_fully_open()])
+	cam.queue_free()
+	pad.next = PlayerInputState.new()
+	player.input_provider = DeviceInputProvider.new()
+
+
+func _place_player(player: Player, at: Vector3, look_at: Vector3) -> void:
+	player.global_position = at
+	player.velocity = Vector3.ZERO
+	player.facing_yaw = Player.yaw_of(look_at - at)
+	player.visual.rotation.y = player.facing_yaw
+	player.camera_rig.yaw = player.facing_yaw
+	player.camera_rig.snap_to_target()
