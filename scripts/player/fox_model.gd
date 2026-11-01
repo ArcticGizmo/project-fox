@@ -51,9 +51,17 @@ const DODGE_LENGTH := 0.3
 const HURT_LENGTH := 0.4
 const SLAM_RISE_LENGTH := 0.4
 const SLAM_FALL_LENGTH := 0.3
+const GLIDE_LENGTH := 1.6
+const REEL_LENGTH := 0.5
 ## Swing clips by combo step: the two alternating sweeps, then the overhead finisher.
 const SWINGS: Array[StringName] = [&"SwingRight", &"SwingLeft", &"SwingOverhead"]
 
+## Hips turn toward the travel direction up to this far (degrees) while the chest keeps facing.
+const TWIST_MAX := 65.0
+## Travel more than this far (degrees) from facing plays locomotion backwards instead.
+const BACKWARD_ANGLE := 105.0
+## How fast the hip twist follows (per second, exponential).
+const TWIST_RATE := 10.0
 ## How fast the gun arm rises to aim / drops back (influence per second).
 const AIM_RATE := 10.0
 ## Re-solve the aim arm when the aim pitch moves this far (degrees).
@@ -91,6 +99,7 @@ var material: StandardMaterial3D
 ## Follows the right hand; its -Z runs along the forearm (the gun's barrel direction).
 var gun_mount: Node3D
 var aim_layer: FoxAimLayer
+var twist_layer: FoxTwistLayer
 
 var _tuning: PlayerTuning
 ## Clip last started (locomotion, hold or action), so held one-shots don't restart.
@@ -99,6 +108,8 @@ var _action: StringName = &""
 var _aim_target: float = 0.0
 var _aim_pitch: float = 0.0
 var _aim_solved_pitch: float = INF
+var _travel_yaw: float = 0.0
+var _backwards: bool = false
 var _was_on_floor: bool = true
 var _air_time: float = 0.0
 var _thigh_length: float = 0.27
@@ -145,11 +156,17 @@ func _init(height: float = MODEL_HEIGHT, tuning: PlayerTuning = null) -> void:
 	lib.add_animation(&"SlamRise", _bake(SLAM_RISE_LENGTH, _slam_rise_pose))
 	lib.add_animation(&"SlamFall", _bake(SLAM_FALL_LENGTH, _slam_fall_pose))
 	lib.add_animation(&"SlamLand", _bake(_tuning.slam_recovery, _slam_land_pose, false))
+	lib.add_animation(&"Glide", _bake(GLIDE_LENGTH, _glide_pose))
+	lib.add_animation(&"Reel", _bake(REEL_LENGTH, _reel_pose))
 	anim.remove_animation_library(&"")
 	anim.add_animation_library(&"", lib)
 	anim.play(&"Idle")
 	_playing = &"Idle"
 	_build_gun_mount()
+	twist_layer = FoxTwistLayer.new()
+	twist_layer.hips = skeleton.find_bone(HIPS)
+	twist_layer.spine = skeleton.find_bone(SPINE)
+	skeleton.add_child(twist_layer)
 	aim_layer = FoxAimLayer.new()
 	aim_layer.influence = 0.0
 	skeleton.add_child(aim_layer)
@@ -186,6 +203,9 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 		_air_time = 0.0
 	_was_on_floor = on_floor
 	_update_aim()
+	var travelling := on_floor and speed > IDLE_SPEED and hold == &"" and _action == &""
+	var twist := clampf(_travel_yaw, -deg_to_rad(TWIST_MAX), deg_to_rad(TWIST_MAX)) if travelling else 0.0
+	twist_layer.yaw = lerpf(twist_layer.yaw, twist, 1.0 - exp(-TWIST_RATE * _dt()))
 
 	if _action != &"":
 		var finished := anim.current_animation != _action
@@ -203,11 +223,27 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 		_playing = clip
 	match clip:
 		&"Running":
-			anim.speed_scale = clampf(speed / RUN_CLIP_SPEED, 0.6, 1.6)
+			anim.speed_scale = clampf(speed / RUN_CLIP_SPEED, 0.6, 1.6) * (-1.0 if _backwards else 1.0)
 		&"Walk":
-			anim.speed_scale = clampf(speed / WALK_CLIP_SPEED, 0.5, 1.6)
+			anim.speed_scale = clampf(speed / WALK_CLIP_SPEED, 0.5, 1.6) * (-1.0 if _backwards else 1.0)
 		_:
 			anim.speed_scale = 1.0
+
+
+## Reports the body's world velocity so the legs can step along it when it differs from
+## facing (strafing, firing on the move): the hips turn toward it (FoxTwistLayer), and
+## travel mostly backwards plays the walk/run in reverse. Call before update().
+func set_travel(world_velocity: Vector3) -> void:
+	# Into the model's frame (it faces +Z inside this node, which faces -Z).
+	var v := (global_basis.inverse() * world_velocity).rotated(Vector3.UP, PI) if is_inside_tree() \
+			else world_velocity.rotated(Vector3.UP, PI)
+	if Vector2(v.x, v.z).length() < IDLE_SPEED:
+		_travel_yaw = 0.0
+		_backwards = false
+		return
+	var angle := atan2(v.x, v.z)
+	_backwards = absf(angle) > deg_to_rad(BACKWARD_ANGLE)
+	_travel_yaw = wrapf(angle + PI, -PI, PI) if _backwards else angle
 
 
 ## Plays a one-shot clip (Land, DoubleJump, Hurt, a swing, ...) over locomotion until it
@@ -538,6 +574,35 @@ func _slam_land_pose(p: float) -> Dictionary:
 	pose[HEAD] = _pitch(-12.0 * d)
 	var drop := lerpf(ARM_DROP, 88.0, d)
 	_set_arms(pose, 45.0 * d, 45.0 * d, lerpf(14.0, 10.0, d), lerpf(14.0, 10.0, d), drop, drop)
+	return pose
+
+
+## Gliding under the leaf cloak: arms spread wide to hold it open, chest pitched into
+## the dive, legs trailing; a slow bob and a little bank so it rides the air.
+func _glide_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var bank := sin(TAU * p + 0.8)
+	var pose := _stance()
+	pose[HIPS] = _pitch(18.0) * _roll(bank * 3.0)
+	pose[SPINE] = _pitch(20.0 + w * 2.0)
+	pose[SPINE2] = _pitch(4.0)
+	pose[HEAD] = _pitch(-30.0)
+	_set_arms(pose, -12.0, -12.0, 12.0, 12.0, 8.0 + w * 5.0 - bank * 4.0, 8.0 + w * 5.0 + bank * 4.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, -18.0 + w * 3.0, 30.0, 35.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -10.0 - w * 3.0, 40.0, 35.0)
+	return pose
+
+
+## Reeled in by the grapple-tail: streamlined toward the ring, arms swept back, knees
+## tucked, a quick flutter from the pull.
+func _reel_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var pose := _stance()
+	pose[SPINE] = _pitch(12.0)
+	pose[HEAD] = _pitch(-14.0)
+	_set_arms(pose, -40.0 + w * 4.0, -40.0 - w * 4.0, 18.0, 18.0, 72.0, 72.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 35.0 + w * 4.0, 75.0, 25.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 20.0 - w * 4.0, 60.0, 25.0)
 	return pose
 
 

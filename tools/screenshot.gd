@@ -331,7 +331,8 @@ func _hazard_camera(h: Hazard, offset: Vector3 = Vector3(0, 3.5, 7), look_height
 ## Contact sheets of the fox's clips on an empty stage, each fox frozen at a phase:
 ## fox_walk_side / fox_walk_front (contact, down, passing, up, then the other foot),
 ## fox_run_side, fox_idle (quarter-loop steps), fox_air (jump, flip, fall, land),
-## fox_actions (dodge, hurt, land, three-quarter view).
+## fox_actions (dodge, hurt, land, three-quarter view), fox_swings, fox_slam_aim,
+## fox_gadgets (glide, reel, strafe hip twist).
 func _capture_fox_anims() -> void:
 	var stage := Node3D.new()
 	add_child(stage)
@@ -358,7 +359,7 @@ func _capture_fox_anims() -> void:
 
 	var side := Vector3(9, 1.0, 0)
 	var front := Vector3(0, 1.0, -9)
-	# Each sheet: file, camera position, row direction, [clip, phase(, aiming)] per fox.
+	# Each sheet: file, camera position, row direction, [clip, phase(, aiming(, hip twist deg))] per fox.
 	var sheets: Array[Array] = [
 		["fox_walk_side.png", side, Vector3.FORWARD, _phases(&"Walk", [0.0, 0.125, 0.25, 0.375, 0.5, 0.75])],
 		["fox_walk_front.png", front, Vector3.RIGHT, _phases(&"Walk", [0.0, 0.125, 0.25, 0.375, 0.5, 0.75])],
@@ -372,6 +373,8 @@ func _capture_fox_anims() -> void:
 				[&"SwingLeft", 0.0], [&"SwingLeft", 0.3], [&"SwingOverhead", 0.0], [&"SwingOverhead", 0.3]]],
 		["fox_slam_aim.png", Vector3(8, 2.0, -3), Vector3.FORWARD, [[&"SlamRise", 0.0], [&"SlamFall", 0.0],
 				[&"SlamLand", 0.1], [&"Idle", 0.0, true], [&"Running", 0.3, true]]],
+		["fox_gadgets.png", Vector3(8, 2.0, -3), Vector3.FORWARD, [[&"Glide", 0.0], [&"Glide", 0.5], [&"Reel", 0.0],
+				[&"Walk", 0.0, true, 60.0], [&"Running", 0.0, true, -60.0]]],
 	]
 	for sheet: Array in sheets:
 		var poses: Array = sheet[3]
@@ -390,10 +393,12 @@ func _capture_fox_anims() -> void:
 			fox.anim.play(poses[i][0] as StringName)
 			fox.anim.seek(fox.anim.current_animation_length * float(poses[i][1]), true)
 			fox.anim.pause()
-			if (poses[i] as Array).size() > 2:
+			if (poses[i] as Array).size() > 2 and poses[i][2]:
 				fox.aim(true)
 				fox._update_aim()
 				fox.aim_layer.influence = 1.0
+			if (poses[i] as Array).size() > 3:
+				fox.twist_layer.yaw = deg_to_rad(float(poses[i][3]))
 			foxes.append(fox)
 		cam.position = sheet[1] as Vector3
 		cam.look_at(Vector3(0, 0.85, 0))

@@ -983,6 +983,7 @@ func _update_visuals(_delta: float) -> void:
 	fox_model.flash(_flash)
 	fox_model.aim((_fire_facing > 0.0 or is_strafing()) and not melee.is_busy() and not grapple.is_active()
 			and not burrow.is_active(), rad_to_deg(asin(clampf(aim_direction.y, -1.0, 1.0))))
+	fox_model.set_travel(Vector3(velocity.x, 0.0, velocity.z))
 	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, _anim_hold())
 	grapple.update_rope()
 	cloak.update_visual(_delta)
@@ -1011,4 +1012,8 @@ func _anim_hold() -> StringName:
 			return &"SlamFall"
 		StaffMelee.Phase.SLAM_RECOVER:
 			return &"SlamLand"
+	if grapple.is_active():
+		return &"Reel"
+	if cloak.is_open():
+		return &"Glide"
 	return &""

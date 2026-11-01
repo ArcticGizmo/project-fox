@@ -154,3 +154,33 @@ func test_firing_raises_the_gun_arm_and_it_drops_after() -> void:
 	pad.next.fire_held = false
 	await wait_seconds(player.tuning.fire_facing_time + 0.3)
 	assert_eq(player.fox_model.aim_layer.influence, 0.0, "arm back down")
+
+
+func test_travel_sideways_twists_the_hips_and_backwards_reverses() -> void:
+	var fox := _fox()
+	# The fox faces -Z; moving toward +X is to its right.
+	fox.set_travel(Vector3(FoxModel.WALK_CLIP_SPEED, 0, 0))
+	for _i: int in 30:
+		fox.update(FoxModel.WALK_CLIP_SPEED, true)
+		await wait_frames(1)
+	assert_near(absf(fox.twist_layer.yaw), deg_to_rad(FoxModel.TWIST_MAX), 0.05, "hips turned to the side")
+	fox.set_travel(Vector3(0, 0, FoxModel.WALK_CLIP_SPEED))
+	for _i: int in 30:
+		fox.update(FoxModel.WALK_CLIP_SPEED, true)
+		await wait_frames(1)
+	assert_true(fox.anim.speed_scale < 0.0, "walking backwards plays the walk in reverse")
+	assert_near(fox.twist_layer.yaw, 0.0, 0.05, "straight back needs no twist")
+
+
+func test_glide_holds_its_clip() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	player.unlock_gadget(&"glide")
+	var pad: ScriptedInputProvider = made[1]
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	await wait_frames(10)
+	pad.next.jump_pressed = true
+	assert_true(await wait_until(func() -> bool: return player.is_gliding(), 2.0), "gliding")
+	await wait_frames(2)
+	assert_eq(player.fox_model.anim.current_animation, &"Glide", "glide pose")
