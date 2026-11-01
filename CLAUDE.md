@@ -17,7 +17,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR, CONDUCTOR (staff-strikeable sockets) |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
-| `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
+| `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `FoxModel` (rigged GLB in `imported_models/Ember_the_Foxling/`; bakes Idle/Walk, picks clip by speed), `input/` (providers + `PlayerInputState`) |
 | `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
@@ -47,6 +47,7 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
 godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
+godot --path . res://tools/screenshot.tscn -- --fox        # only the fox animation contact sheets (fox_walk_side/front, fox_run_side, fox_idle)
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 

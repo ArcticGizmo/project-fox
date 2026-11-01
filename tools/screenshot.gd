@@ -24,6 +24,11 @@ func _ready() -> void:
 		await _capture_slice(null, SLICE_PATH)
 		get_tree().quit()
 		return
+	# `--fox`: only the fox animation contact sheets.
+	if "--fox" in OS.get_cmdline_user_args():
+		await _capture_fox_anims()
+		get_tree().quit()
+		return
 	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	add_child(arena)
 	await get_tree().create_timer(wait).timeout
@@ -73,6 +78,8 @@ func _ready() -> void:
 	await _capture("overview.png")
 	cam.queue_free()
 	await _capture_slice(arena, SLICE_PATH)
+	arena.queue_free()
+	await _capture_fox_anims()
 	get_tree().quit()
 
 
@@ -315,6 +322,61 @@ func _hazard_camera(h: Hazard, offset: Vector3 = Vector3(0, 3.5, 7), look_height
 	cam.look_at(h.global_position + Vector3.UP * look_height)
 	cam.make_current()
 	return cam
+
+
+## Contact sheets of the fox's clips on an empty stage, each fox frozen at a phase:
+## fox_walk_side / fox_walk_front (contact, down, passing, up, then the other foot),
+## fox_run_side, fox_idle (quarter-loop steps, three-quarter view).
+func _capture_fox_anims() -> void:
+	var stage := Node3D.new()
+	add_child(stage)
+	var env := WorldEnvironment.new()
+	env.environment = Environment.new()
+	env.environment.background_mode = Environment.BG_COLOR
+	env.environment.background_color = Color(0.32, 0.34, 0.38)
+	env.environment.ambient_light_color = Color.WHITE
+	env.environment.ambient_light_energy = 0.6
+	stage.add_child(env)
+	var sun := DirectionalLight3D.new()
+	sun.rotation_degrees = Vector3(-50, 30, 0)
+	sun.shadow_enabled = true
+	stage.add_child(sun)
+	var floor_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(40, 40)
+	floor_mesh.mesh = plane
+	stage.add_child(floor_mesh)
+	var cam := Camera3D.new()
+	cam.fov = 40.0
+	stage.add_child(cam)
+	cam.make_current()
+
+	var walk := [0.0, 0.125, 0.25, 0.375, 0.5, 0.75]
+	var sheets: Array[Array] = [
+		["fox_walk_side.png", &"Walk", walk, Vector3(9, 1.0, 0), Vector3.FORWARD],
+		["fox_walk_front.png", &"Walk", walk, Vector3(0, 1.0, -9), Vector3.RIGHT],
+		["fox_run_side.png", &"Running", [0.0, 0.17, 0.33, 0.5, 0.67, 0.83], Vector3(9, 1.0, 0), Vector3.FORWARD],
+		["fox_idle.png", &"Idle", [0.0, 0.25, 0.5, 0.75], Vector3(5, 1.2, -6), Vector3.RIGHT],
+	]
+	for sheet: Array in sheets:
+		var phases: Array = sheet[2]
+		var row_dir: Vector3 = sheet[4]
+		var foxes: Array[FoxModel] = []
+		for i: int in phases.size():
+			var fox := FoxModel.new(Player.HEIGHT)
+			stage.add_child(fox)
+			fox.position = row_dir * (float(i) - (phases.size() - 1) * 0.5) * 1.5
+			fox.anim.play(sheet[1] as StringName)
+			fox.anim.seek(fox.anim.current_animation_length * float(phases[i]), true)
+			fox.anim.pause()
+			foxes.append(fox)
+		cam.position = sheet[3] as Vector3
+		cam.look_at(Vector3(0, 0.85, 0))
+		await get_tree().process_frame
+		await _capture(sheet[0] as String)
+		for fox: FoxModel in foxes:
+			fox.queue_free()
+	stage.queue_free()
 
 
 func _capture(file_name: String) -> void:
