@@ -107,6 +107,7 @@ func _capture_slice(arena: Node, path: String) -> void:
 	await _capture_slice_overview(level, cam)
 	cam.queue_free()
 	await _capture_grapple(level)
+	await _capture_glide(level)
 
 
 ## Top-down (orthographic) and high-angle overviews framed on the level's Blocks.
@@ -408,4 +409,54 @@ func _capture_grapple(level: LevelRoot) -> void:
 	await _capture("grapple_reel_side.png")
 	get_tree().paused = false
 	cam.queue_free()
+	player.input_provider = DeviceInputProvider.new()
+
+
+## Leaf-wing Cloak at the slice's GlideVent: ride the updraft (glide_vent.png),
+## then glide south over the gap toward BeyondPlatform (glide_gap.png, plus a
+## side view glide_gap_side.png).
+func _capture_glide(level: LevelRoot) -> void:
+	var player := level.player
+	var enemies := level.get_node_or_null(^"Enemies")
+	if enemies != null:
+		enemies.queue_free()  # last step: keep the finale quiet for the glide shots
+	if player.is_dead:
+		player.respawn()  # killed during earlier shots: do not let the respawn timer move it mid-glide
+	var gate := level.get_node(^"Level/Finale/GlideVent") as GadgetGate
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	player.unlock_gadget(Gadgets.GLIDE)
+	player.grapple.cancel()  # the grapple shots leave it mid-reel
+	player.global_position = gate.global_position + Vector3.UP * (gate.size.y * 0.5 + 0.05)
+	player.velocity = Vector3.ZERO
+	player.camera_rig.yaw = PI
+	player.camera_rig.pitch = deg_to_rad(-12.0)
+	player.camera_rig.snap_to_target()
+	player.camera_rig.camera.make_current()
+	await get_tree().create_timer(0.4).timeout
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	var doubled := false
+	for _i: int in 240:
+		await get_tree().physics_frame
+		if not doubled and player.velocity.y <= 0.0 and not player.is_on_floor():
+			doubled = true
+			pad.next.jump_pressed = true
+		if player.is_gliding() and player.global_position.y > gate.global_position.y + 5.0:
+			break
+	await _capture("glide_vent.png")
+	pad.next.move = Vector2(0, -1)
+	for _i: int in 90:
+		await get_tree().physics_frame
+	get_tree().paused = true
+	await _capture("glide_gap.png")
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = player.global_position + Vector3(-7.0, 4.0, -2.5)
+	cam.look_at(player.global_position + Vector3.UP)
+	cam.make_current()
+	await _capture("glide_gap_side.png")
+	get_tree().paused = false
+	cam.queue_free()
+	pad.next = PlayerInputState.new()
 	player.input_provider = DeviceInputProvider.new()

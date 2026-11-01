@@ -237,6 +237,48 @@ Done notes / deviations:
   and takes over velocity in `_move` early; anchors/objects are their own @tool nodes in a
   group, built by `GadgetGate._decorate` for gates. Tuning is a `PlayerTuning` group.
 
+## Task 6: Leaf-wing Cloak (done)
+
+- `scripts/gadgets/`: `LeafCloak` (component under the player's visual: open/close state,
+  glide heading, `glide_velocity()`, two leaf wings that unfold over `glide_unfold_time`) and
+  `SteamVent` (@tool updraft column; group `steam_vents`; `lift_at(pos)` 0..1, full up to
+  `full_fraction` of `lift_height` then fading to 0 at the top; translucent cone plume +
+  GPU puffs). The glide `GadgetGate` builds a real `SteamVent` (`gate.vent`,
+  `VENT_LIFT_HEIGHT` 10 m) instead of the old decorative plume.
+- Controls: with `&"glide"`, hold jump while falling once the double jump is spent → the cloak
+  opens. In practice: jump, jump (double), keep holding. Releasing jump folds it. No new
+  buttons. Logic in `Player._update_glide` (opens only with `_air_jumps_left == 0`).
+- Feel (`PlayerTuning` "Glide"): fall eases to `glide_fall_speed` 2.5 m/s at 30 m/s²;
+  forward `glide_speed` 9 m/s (run is 8.5) with the stick, drifting at `glide_idle_speed`
+  0.5 m/s without it (so a vent can be ridden), accel 12 m/s²; the heading turns toward the
+  camera-relative stick at `glide_turn_speed_deg` 150°/s (gentle: a U-turn is ~1.2 s). In a
+  vent the vertical target becomes `lerp(-glide_fall_speed, glide_vent_rise_speed 7, lift)`,
+  so a glider climbs to where the column fades and hovers there. A non-glider gets only
+  `vent_push_acceleration` 3 m/s² (vs 30–48 gravity): a jump over a vent goes ~10% higher.
+- Closes on: release, landing, dodge, grapple start, a hit with knockback ≥
+  `glide_cancel_knockback` (1) or any knockback_up, `launch_up`, death and respawn. Forced
+  closes (dodge, grapple, hit, launch) need jump released and held again (`_glide_needs_press`),
+  so a held button never reopens it the frame the dodge ends.
+- Weapons fire while gliding (the aerial-shooting crossover; the slow, steady descent is a
+  stable firing platform). Strafe is off while gliding (`is_strafing()` false): strafe locks
+  facing and ground speed and would fight the heading; firing still turns the fox to aim for
+  `fire_facing_time`, the glide heading is unaffected.
+- Grapple → glide: the release refunds the double jump, so holding jump through the release
+  never opens the cloak. Press jump again (double jump), keep holding, and it opens as you
+  fall. A highlighted ring still beats everything: jump while gliding grapples.
+- Slice: GlideVent → BeyondPlatform (19 m, 4 m lower) unchanged geometry. Ride the vent up
+  ~9 m (where its lift fades), push south, let go over the platform. Jump + double jump + run falls into the void.
+  No optional ring + glide route: the only rise is the one vent, so gliding can't climb out
+  of the level; a mid-gap ring still has nothing to land on, so not worth it yet.
+- Tests: `tests/unit/test_glide.gd` (locked: no glide; no glide while the double jump
+  remains; fall capped and settles at `glide_fall_speed`; release / landing / knockback close;
+  dodge closes until a fresh press; camera-relative steering, glide speed and gentle turn;
+  fire allowed, strafe off; vent lifts a glider to near the column top; vent barely boosts a
+  jump; grapple release then double jump then glide) and
+  `test_slice.test_glide_vent_needs_and_takes_the_glide` (real input from the vent).
+- Screenshots: `glide_vent.png`, `glide_gap.png`, `glide_gap_side.png` (`_capture_glide`,
+  after `_capture_grapple` in `_capture_slice`; it frees the level's enemies first).
+
 ## Tasks 5–8: Starter gadgets
 
 Each: gadget script under `scripts/gadgets/`, gate objects, tuning as data
@@ -246,7 +288,7 @@ in the slice.
 5. **Brass Grapple-Tail** (done, see Task 5 above). Press jump in the air while a brass ring in range is
    highlighted (reticle/marker) → reeled to it, then a release jump. Combat crossover: staff
    (X) on a light enemy at grapple range yanks it to you (later, if cheap).
-6. **Leaf-wing Cloak.** Hold jump while falling after the double jump → glide (capped fall
+6. **Leaf-wing Cloak** (done, see Task 6 above). Hold jump while falling after the double jump → glide (capped fall
    speed, steerable). Steam vents give updrafts.
 7. **Burrow Claws.** Dodge onto a soil patch → burrow; move underground (unseen by the
    awareness system); dodge again or reach the linked patch → pop out. Popping out behind

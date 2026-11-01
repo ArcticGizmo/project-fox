@@ -53,6 +53,8 @@ var muzzle: Node3D
 var melee: StaffMelee
 ## Brass Grapple-Tail (gadget &"grapple"): ring targeting, reel and rope.
 var grapple: GrappleTail
+## Leaf-wing Cloak (gadget &"glide"): glide state, steering and the wings.
+var cloak: LeafCloak
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
@@ -91,6 +93,9 @@ var _grapple_hop: bool = false
 ## After a grapple release: reduced air control so holding forward does not
 ## carry the fox off the small ledge it was reeled onto.
 var _grapple_settle: float = 0.0
+## Set when the cloak is forced shut (dodge, grapple, hit): it stays shut until
+## jump is released and held again.
+var _glide_needs_press: bool = false
 var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
@@ -204,6 +209,11 @@ func _build_visual() -> void:
 	grapple.tuning = tuning
 	add_child(grapple)
 
+	cloak = LeafCloak.new()
+	cloak.player = self
+	cloak.tuning = tuning
+	visual.add_child(cloak)
+
 
 func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -273,6 +283,8 @@ func _update_timers(delta: float) -> void:
 	hurt_box.invulnerable = is_invulnerable()
 	if input.jump_pressed:
 		_jump_buffer = tuning.jump_buffer_time
+	if not input.jump_held:
+		_glide_needs_press = false
 
 
 # --- Movement -----------------------------------------------------------------
@@ -287,6 +299,7 @@ func _move(delta: float) -> void:
 
 	# Grapple-Tail: the reel owns velocity; dodge lets go (and dodges).
 	if grapple.is_active():
+		close_glide(true)
 		if input.dodge_pressed:
 			grapple.cancel()
 		else:
@@ -359,8 +372,15 @@ func _move(delta: float) -> void:
 			_jump_buffer = 0.0
 			_grapple_hop = false
 
+	_update_glide(on_floor)
+	var lift := SteamVent.lift_in(get_tree(), global_position + Vector3.UP * 0.5)
+
 	# Gravity (none during an air dodge so it reads as a dash; slams set it directly)
-	if melee.phase == StaffMelee.Phase.SLAM_HOVER:
+	if cloak.is_open():
+		var v := cloak.glide_velocity(delta, wish, lift)
+		h = Vector3(v.x, 0.0, v.z)
+		velocity.y = v.y
+	elif melee.phase == StaffMelee.Phase.SLAM_HOVER:
 		velocity.y = 0.0
 	elif melee.phase == StaffMelee.Phase.SLAM_FALL:
 		velocity.y = -tuning.slam_fall_speed
@@ -372,13 +392,37 @@ func _move(delta: float) -> void:
 			_grapple_hop = false
 		elif not input.jump_held and not _launched and not _grapple_hop:
 			g *= tuning.jump_release_gravity_multiplier
-		velocity.y = maxf(velocity.y - g * delta, -tuning.max_fall_speed)
+		velocity.y = maxf(velocity.y - g * delta + lift * tuning.vent_push_acceleration * delta, -tuning.max_fall_speed)
 
 	velocity.x = h.x
 	velocity.z = h.z
 	move_and_slide()
 	if is_on_floor() and (melee.phase == StaffMelee.Phase.SLAM_FALL or melee.phase == StaffMelee.Phase.POUNCE):
 		melee.land(global_position)
+
+
+## Leaf-wing Cloak: open while jump is held, falling, in the air, with the
+## double jump spent (so holding jump through a grapple release, which refunds
+## it, never opens it: the next press double jumps, then holding glides).
+func _update_glide(on_floor: bool) -> void:
+	var can := has_gadget(Gadgets.GLIDE) and not on_floor and input.jump_held and not _glide_needs_press \
+			and not is_dodging() and not melee.is_busy() and not grapple.is_active() and not wheel_open
+	if cloak.is_open():
+		if not can:
+			close_glide(is_dodging())
+	elif can and velocity.y < 0.0 and _air_jumps_left <= 0:
+		cloak.open()
+
+
+func is_gliding() -> bool:
+	return cloak.is_open()
+
+
+## Fold the cloak. `forced` (dodge, grapple, hit) keeps it shut until jump is pressed again.
+func close_glide(forced: bool = false) -> void:
+	if forced and cloak.is_open():
+		_glide_needs_press = true
+	cloak.close()
 
 
 ## One frame on the grapple line. Buffered jumps are dropped so a press during
@@ -451,7 +495,7 @@ func move_speed_for(wish: Vector3) -> float:
 
 
 func is_strafing() -> bool:
-	return input.strafe_held and not is_dead
+	return input.strafe_held and not is_dead and not cloak.is_open()
 
 
 ## Strafe with a scoped weapon (WeaponData.zoom_fov > 0) looks down the scope.
@@ -488,6 +532,8 @@ func _update_facing(delta: float) -> void:
 		var to_ring := grapple.ring_direction()
 		if to_ring != Vector3.ZERO:
 			target_yaw = yaw_of(to_ring)
+	elif cloak.is_open() and _fire_facing <= 0.0:
+		target_yaw = yaw_of(cloak.heading)
 	elif is_strafing():
 		# Lock to the camera, not the aim target, so strafing never jitters
 		# when aim assist swaps targets.
@@ -686,6 +732,7 @@ func launch_up(speed: float) -> void:
 	velocity.y = maxf(velocity.y, speed)
 	_launched = true
 	grapple.cancel()
+	close_glide(true)
 	_dodge_time = 0.0
 	_coyote = 0.0
 	_air_jumps_left = 1
@@ -708,6 +755,8 @@ func _on_hurt(info: DamageInfo) -> void:
 		if info.knockback < tuning.grapple_cancel_knockback:
 			return
 		grapple.cancel()
+	if info.knockback >= tuning.glide_cancel_knockback or info.knockback_up > 0.0:
+		close_glide(true)
 	var away := global_position - info.source_position
 	away.y = 0.0
 	if away.length_squared() < 0.01:
@@ -723,6 +772,7 @@ func _on_died(_info: DamageInfo) -> void:
 	current_weapon().on_unequipped()
 	melee.cancel()
 	grapple.cancel()
+	close_glide()
 	close_wheel(false)
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
@@ -740,6 +790,7 @@ func respawn() -> void:
 	_launched = false
 	_grapple_hop = false
 	grapple.cancel()
+	close_glide()
 	health.reset()
 	_hurt_iframes = tuning.hurt_iframes
 	visual.visible = true
@@ -758,6 +809,7 @@ func unlock_gadget(id: StringName) -> bool:
 func _update_visuals(_delta: float) -> void:
 	_body_material.emission = Color(1.0, 0.1, 0.1) * _flash
 	grapple.update_rope()
+	cloak.update_visual(_delta)
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
 	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.

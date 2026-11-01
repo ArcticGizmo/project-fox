@@ -11,7 +11,7 @@ camera, collision or scale. Decisions and the current plan: [plan-awareness-slic
 | Gadget | Kind | What it does | Gate it opens | Combat / awareness crossover | Cost | Status |
 |---|---|---|---|---|---|---|
 | Brass Grapple-Tail | Traversal | Jump at a highlighted brass ring in the air and get reeled to it | High ledges, gaps with a ring | Yank light enemies to you, rip shields (later) | M | Built (task 5) |
-| Leaf-wing Cloak | Traversal | Hold jump to glide; steam vents give updrafts | Gaps over 10 m, vent shafts | Slow descent for aerial shooting | S | Starter |
+| Leaf-wing Cloak | Traversal | Hold jump to glide; steam vents give updrafts | Gaps over 10 m, vent shafts | Slow descent for aerial shooting (fire while gliding, no strafe) | S | Built (task 6) |
 | Burrow Claws | Traversal / stealth | Dig into soil patches, tunnel under walls | Soil patches by walls and fences | Unseen underground; pop up behind for a sneak attack | M | Starter |
 | Copper Conduit Gauntlet | Interaction | Absorb charge from lightning barriers, discharge into terminals | Unpowered doors and lifts | Stored charge as chain lightning | M | Starter |
 | Fox Nose | Sense | Sniff: scent trails, hidden switches, enemies through walls | Hidden doors, secrets | Scout sleepers before a pocket | S | Bench (collectables) |

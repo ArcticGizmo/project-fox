@@ -261,3 +261,53 @@ func _ledge_attempt(player: Player, pad: ScriptedInputProvider, from: Block, led
 			break  # landed back on the run
 	pad.next = PlayerInputState.new()
 	return false
+
+
+## GlideVent -> BeyondPlatform (19 m gap, 4 m lower) with real input: standing
+## on the vent, jump + double jump and run south falls into the void; with the
+## Leaf-wing Cloak, holding jump rides the updraft, then stick south glides
+## across and letting go over the platform drops the fox onto it.
+func test_glide_vent_needs_and_takes_the_glide() -> void:
+	var level := _load_level(true)
+	var player := level.player
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	await wait_frames(3)
+	var gate := level.get_node(^"Level/Finale/GlideVent") as GadgetGate
+	var beyond := level.get_node(^"Level/Finale/BeyondPlatform") as Block
+	assert_true(gate.vent != null, "the glide gate has a steam vent")
+	assert_false(await _glide_attempt(player, pad, gate, beyond), "jump + double jump can't cross")
+	player.unlock_gadget(Gadgets.GLIDE)
+	assert_true(await _glide_attempt(player, pad, gate, beyond), "the glide crosses to the platform")
+
+
+func _glide_attempt(player: Player, pad: ScriptedInputProvider, gate: GadgetGate, beyond: Block) -> bool:
+	player.global_position = gate.global_position + Vector3.UP * (gate.size.y * 0.5 + 0.05)
+	player.velocity = Vector3.ZERO
+	player.camera_rig.yaw = PI  # south (+Z), at the platform
+	pad.next = PlayerInputState.new()
+	await wait_frames(5)
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	var doubled := false
+	var rect := _rect(beyond).grow(-3.0)
+	var top: float = gate.global_position.y + gate.vent.lift_height * gate.vent.full_fraction
+	for _f: int in 900:
+		var p := player.global_position
+		if not doubled and player.velocity.y <= 0.0 and not player.is_on_floor():
+			doubled = true
+			pad.next.jump_pressed = true
+		# Ride the updraft (stick neutral) until near its top, then head south.
+		if doubled and (p.y >= top or not player.is_gliding()):
+			pad.next.move = Vector2(0, -1)
+		if rect.has_point(Vector2(p.x, p.z)):
+			pad.next.jump_held = false
+		await get_tree().physics_frame
+		p = player.global_position
+		if player.is_on_floor() and _rect(beyond).has_point(Vector2(p.x, p.z)) and absf(p.y - _top(beyond)) < 0.3:
+			pad.next = PlayerInputState.new()
+			return true
+		if p.y < _top(beyond) - 2.0 or (doubled and player.is_on_floor()):
+			break
+	pad.next = PlayerInputState.new()
+	return false

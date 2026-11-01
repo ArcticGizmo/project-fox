@@ -28,6 +28,10 @@ const RING_HEIGHT := 1.4
 
 ## The anchor built on top of a grapple gate (null for other gadgets).
 var ring: GrappleRing
+## Updraft column height above a glide gate.
+const VENT_LIFT_HEIGHT := 10.0
+## The updraft built on a glide gate (null for other gadgets).
+var vent: SteamVent
 var _deco: Node3D
 
 
@@ -43,6 +47,7 @@ func _decorate() -> void:
 	if _deco != null:
 		_deco.queue_free()
 	ring = null
+	vent = null
 	_deco = Node3D.new()
 	_deco.name = "GateMarker"
 	_deco.position.y = size.y * 0.5
@@ -60,12 +65,13 @@ func _decorate() -> void:
 				var slat := BoxMesh.new()
 				slat.size = Vector3(minf(size.x, 2.5) * 0.8, 0.08, 0.18)
 				_mesh_at(slat, Vector3(0, 0.05, (i - 1) * 0.4), Color(0.15, 0.2, 0.17))
-			var plume := CylinderMesh.new()
-			plume.top_radius = 0.7
-			plume.bottom_radius = 0.5
-			plume.height = 2.0
-			var p := _mesh_at(plume, Vector3(0, 1.1, 0), Color(c, 0.25), 0.3)
-			(p.material_override as StandardMaterial3D).transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			# A real updraft: the Leaf-wing Cloak rides it up (SteamVent).
+			vent = SteamVent.new()
+			vent.name = "SteamVent"
+			vent.radius = minf(size.x, size.z) * 0.5 + 0.2
+			vent.lift_height = VENT_LIFT_HEIGHT
+			vent.position.y = 0.1
+			_deco.add_child(vent)
 		&"burrow":
 			var mound := SphereMesh.new()
 			mound.radius = 0.9

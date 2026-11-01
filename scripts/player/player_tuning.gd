@@ -143,6 +143,28 @@ extends Resource
 ## Camera vertical follow while reeling (normal follow lags a fast climb).
 @export var grapple_camera_vertical_sharpness: float = 14.0
 
+@export_group("Glide")
+## Leaf-wing Cloak (LeafCloak). Hold jump while falling once the double jump is
+## spent: the cloak opens. Fall speed eases to glide_fall_speed (m/s down)...
+@export var glide_fall_speed: float = 2.5
+## ...at this rate (m/s per second), also used for vent lift.
+@export var glide_vertical_acceleration: float = 30.0
+## Forward speed along the glide heading, reached at glide_acceleration.
+@export var glide_speed: float = 9.0
+@export var glide_acceleration: float = 12.0
+## Forward speed with the stick released (drift), so a glider can ride a vent.
+@export var glide_idle_speed: float = 0.5
+## The heading turns toward the camera-relative stick at this rate (gentle).
+@export var glide_turn_speed_deg: float = 150.0
+## Rise speed in the full part of a SteamVent updraft while gliding.
+@export var glide_vent_rise_speed: float = 7.0
+## Upward acceleration (m/s^2) a vent gives a fox that is NOT gliding (a nudge).
+@export var vent_push_acceleration: float = 3.0
+## Hits with at least this knockback (or any upward knockback) fold the cloak.
+@export var glide_cancel_knockback: float = 1.0
+## Wing unfold / fold time (visual).
+@export var glide_unfold_time: float = 0.15
+
 @export_group("Weapon wheel")
 ## Game speed while the wheel is open.
 @export var wheel_time_scale: float = 0.1
