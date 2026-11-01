@@ -32,6 +32,10 @@ window/size/viewport_height=900
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/meshy-godot-plugin/plugin.cfg")
+
 [layer_names]
 
 3d_physics/layer_1="world"
