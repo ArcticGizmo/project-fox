@@ -11,11 +11,14 @@ signal slammed(at: Vector3)
 
 enum Phase { IDLE, SWING, SLAM_HOVER, SLAM_FALL, POUNCE, SLAM_RECOVER }
 
-const STAFF_COLOR := Color(0.55, 0.36, 0.18)
+const STAFF_SCENE: PackedScene = preload("res://assets/weapons/staff/Sunforged_Scepter.glb")
+## The staff model is authored upright (head at +Y), centred on its origin, this long.
+const STAFF_MODEL_LENGTH := 0.95166
 const SLAM_ACTIVE_TIME := 0.1
-## Staff tip and grip in pivot space (the staff mesh runs along -Z).
+## Staff tip and butt in pivot space (the staff runs along -Z from the grip at the origin).
 const STAFF_TIP_Z := -1.65
 const STAFF_GRIP_Z := 0.15
+const STAFF_LENGTH := STAFF_GRIP_Z - STAFF_TIP_Z
 
 var tuning: PlayerTuning
 var phase: Phase = Phase.IDLE
@@ -34,6 +37,11 @@ var _slam_shape: SphereShape3D
 var _pivot: Node3D
 ## The staff mesh material (the Conduit Gauntlet tints it while charged).
 var staff_material: StandardMaterial3D
+## Where the staff rides when it has a body to ride on: drawn into `hand_mount` while
+## attacking, slung on `back_mount` otherwise (FoxModel staff mounts; both frames have the
+## grip at the origin and the tip along -Z). Without mounts the pivot is posed in place.
+var hand_mount: Node3D
+var back_mount: Node3D
 
 
 func _ready() -> void:
@@ -65,20 +73,32 @@ func _ready() -> void:
 	_pivot.name = "StaffPivot"
 	_pivot.position = Vector3(0.3, 1.1, 0.0)
 	add_child(_pivot)
-	var staff := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.09, 0.09, 1.8)
-	staff.mesh = mesh
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = STAFF_COLOR
-	mat.emission_enabled = true
-	mat.emission = Color.BLACK
-	staff_material = mat
-	staff.material_override = mat
-	staff.position = Vector3(0, 0, -0.75)
-	_pivot.add_child(staff)
+	_pivot.add_child(_build_staff())
 	_set_swing_shape(0)
 	_pose(idle_pose())
+
+
+## The Sunforged Scepter laid along the pivot's -Z (head at the tip), scaled to the
+## gameplay staff length, with its own material copy so the gauntlet can tint it.
+func _build_staff() -> Node3D:
+	var staff := staff_visual()
+	var mesh := staff.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	staff_material = (mesh.mesh.surface_get_material(0) as StandardMaterial3D).duplicate() as StandardMaterial3D
+	staff_material.emission_enabled = true
+	staff_material.emission = Color.BLACK
+	mesh.set_surface_override_material(0, staff_material)
+	return staff
+
+
+## The staff model in pivot space (grip at the origin, tip along -Z), for anything that
+## shows the staff without a StaffMelee (contact sheets, showcase).
+static func staff_visual() -> Node3D:
+	var staff := STAFF_SCENE.instantiate() as Node3D
+	staff.name = "Staff"
+	var s := STAFF_LENGTH / STAFF_MODEL_LENGTH
+	# Upright (+Y) to lying along -Z, then centred between butt and tip.
+	staff.transform = Transform3D(Basis(Vector3.RIGHT, -PI * 0.5).scaled(Vector3.ONE * s), Vector3(0, 0, (STAFF_TIP_Z + STAFF_GRIP_Z) * 0.5))
+	return staff
 
 
 ## Pivot the staff mesh hangs from (staff runs along local -Z, tip at STAFF_TIP_Z).
@@ -222,6 +242,9 @@ func idle_pose() -> Vector3:
 
 
 func _update_pose() -> void:
+	if hand_mount != null and back_mount != null:
+		_ride(hand_mount if phase != Phase.IDLE else back_mount)
+		return
 	match phase:
 		Phase.SWING:
 			var t := ease(clampf(phase_time / tuning.melee_active_end, 0.0, 1.0), 0.4)
@@ -241,3 +264,17 @@ func _update_pose() -> void:
 
 func _pose(euler_deg: Vector3) -> void:
 	_pivot.basis = Basis.from_euler(Vector3(deg_to_rad(euler_deg.x), deg_to_rad(euler_deg.y), deg_to_rad(euler_deg.z)))
+
+
+## Moves the staff onto a mount (its frame already places and aims it), undoing any scale
+## the mount inherits so the staff keeps its gameplay length.
+func _ride(mount: Node3D) -> void:
+	if _pivot.get_parent() != mount:
+		_pivot.reparent(mount, false)
+	var inherited := mount.global_basis.get_scale()
+	_pivot.transform = Transform3D(Basis.from_scale(Vector3.ONE / inherited), Vector3.ZERO)
+
+
+## True while the staff is in the fox's hand (attacking) rather than slung on its back.
+func is_drawn() -> bool:
+	return hand_mount != null and _pivot.get_parent() == hand_mount

@@ -117,7 +117,9 @@ a generated set replaces one by dropping files in.
 - Folder: `assets/<category>/<name>/` (`characters`, `props`, `weapons`, `enemies`,
   `gameplay`, `textures`). Keep the Meshy export name inside the folder if useful.
 - Metres, Y up, origin at the base (feet / bottom centre), facing -Z (characters may face
-  +Z like Ember; the wrapper turns them).
+  +Z like Ember; the wrapper turns them). Held items (`weapons/`) instead have the origin at
+  the grip, anywhere along the model (the staff is upright and centred; `StaffMelee` lays it
+  along its grip frame).
 - One material per asset where possible; embedded texture extracted next to the GLB.
 - Collision is never the render mesh: gameplay keeps its Block/area shapes, props get one
   box or capsule if any.

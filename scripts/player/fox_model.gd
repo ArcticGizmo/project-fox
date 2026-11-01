@@ -84,6 +84,10 @@ const L_ARM := &"mixamorig_LeftArm"
 const R_ARM := &"mixamorig_RightArm"
 const L_FOREARM := &"mixamorig_LeftForeArm"
 const R_FOREARM := &"mixamorig_RightForeArm"
+const R_HAND := &"mixamorig_RightHand"
+## Wrist bend that turns the staff from across the fist (thumb side) to in line with the arm,
+## for overhead and slam moves (degrees about the T-pose vertical).
+const STAFF_IN_LINE := -85.0
 const L_THIGH := &"mixamorig_LeftUpLeg"
 const R_THIGH := &"mixamorig_RightUpLeg"
 const L_SHIN := &"mixamorig_LeftLeg"
@@ -98,6 +102,10 @@ var anim: AnimationPlayer
 var material: StandardMaterial3D
 ## Follows the right hand; its -Z runs along the forearm (the gun's barrel direction).
 var gun_mount: Node3D
+## Staff frames (grip at the origin, tip along -Z, see StaffMelee): in the right fist,
+## running out past the thumb; and slung diagonally across the back.
+var staff_hand_mount: Node3D
+var staff_back_mount: Node3D
 var aim_layer: FoxAimLayer
 var twist_layer: FoxTwistLayer
 
@@ -112,6 +120,7 @@ var _travel_yaw: float = 0.0
 var _backwards: bool = false
 var _was_on_floor: bool = true
 var _air_time: float = 0.0
+var _model_scale: float = 1.0
 var _thigh_length: float = 0.27
 var _shin_length: float = 0.23
 
@@ -122,6 +131,7 @@ func _init(height: float = MODEL_HEIGHT, tuning: PlayerTuning = null) -> void:
 	var model := SCENE.instantiate() as Node3D
 	# The GLB faces +Z; the player faces -Z.
 	model.rotation.y = PI
+	_model_scale = height / MODEL_HEIGHT
 	model.scale = Vector3.ONE * (height / MODEL_HEIGHT)
 	add_child(model)
 	skeleton = model.find_child("Skeleton3D") as Skeleton3D
@@ -187,6 +197,35 @@ func _build_gun_mount() -> void:
 	gun_mount.name = "GunMount"
 	gun_mount.transform = Transform3D(g.basis.inverse() * along_arm, g.basis.inverse() * Vector3(-0.07, -0.02, 0.0))
 	attach.add_child(gun_mount)
+	# The fist grips the staff across the palm; in the T-pose (palms down) the thumb, and
+	# so the staff, points forward (+Z).
+	staff_hand_mount = Node3D.new()
+	staff_hand_mount.name = "StaffHandMount"
+	staff_hand_mount.transform = Transform3D(g.basis.inverse() * Basis.looking_at(Vector3.BACK, Vector3.UP),
+			g.basis.inverse() * Vector3(-0.08, -0.03, 0.02))
+	attach.add_child(staff_hand_mount)
+	_build_back_mount()
+
+
+## The staff slung across the back on Spine2: butt low by the left hip, head up over the
+## right shoulder, held a hand's width off the cloak.
+func _build_back_mount() -> void:
+	var bone := skeleton.find_bone(SPINE2)
+	var attach := BoneAttachment3D.new()
+	attach.name = "Back"
+	attach.bone_name = SPINE2
+	skeleton.add_child(attach)
+	var g := skeleton.get_bone_global_rest(bone)
+	# Lengths in skeleton units (the model is scaled up to the player's height).
+	var unit := 1.0 / _model_scale
+	var along := Vector3(-0.55, 0.83, 0.0).normalized()  # toward the fox's right shoulder
+	var centre := Vector3(0.0, 0.82, -0.14)
+	var grip := centre - along * (StaffMelee.STAFF_LENGTH * 0.5 - StaffMelee.STAFF_GRIP_Z) * unit
+	staff_back_mount = Node3D.new()
+	staff_back_mount.name = "StaffBackMount"
+	staff_back_mount.transform = Transform3D(g.basis.inverse() * Basis.looking_at(along, Vector3.BACK),
+			g.basis.inverse() * (grip - g.origin))
+	attach.add_child(staff_back_mount)
 
 
 ## Called every frame. `speed` is horizontal ground speed, `vertical_speed` the body's
@@ -538,6 +577,7 @@ func _swing_overhead_pose(p: float, strike_end: float) -> Dictionary:
 	var elbow := lerpf(14.0, lerpf(40.0, 10.0, s), k)
 	var drop := lerpf(ARM_DROP, 88.0, k)
 	_set_arms(pose, swing, swing, elbow, elbow, drop, drop)
+	pose[R_HAND] = _yaw(STAFF_IN_LINE * k)
 	return pose
 
 
@@ -548,6 +588,7 @@ func _slam_rise_pose(p: float) -> Dictionary:
 	pose[SPINE] = _pitch(-10.0)
 	pose[HEAD] = _pitch(-6.0)
 	_set_arms(pose, 165.0 + w * 4.0, 165.0 + w * 4.0, 30.0, 30.0, 85.0, 85.0)
+	pose[R_HAND] = _yaw(STAFF_IN_LINE)
 	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 60.0, 95.0, 20.0)
 	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 50.0, 100.0, 20.0)
 	return pose
@@ -560,6 +601,7 @@ func _slam_fall_pose(p: float) -> Dictionary:
 	pose[SPINE] = _pitch(28.0)
 	pose[HEAD] = _pitch(10.0)
 	_set_arms(pose, 60.0 + w * 3.0, 60.0 + w * 3.0, 10.0, 10.0, 88.0, 88.0)
+	pose[R_HAND] = _yaw(STAFF_IN_LINE)
 	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, -6.0, 15.0, 25.0)
 	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -10.0, 20.0, 25.0)
 	return pose
@@ -574,6 +616,7 @@ func _slam_land_pose(p: float) -> Dictionary:
 	pose[HEAD] = _pitch(-12.0 * d)
 	var drop := lerpf(ARM_DROP, 88.0, d)
 	_set_arms(pose, 45.0 * d, 45.0 * d, lerpf(14.0, 10.0, d), lerpf(14.0, 10.0, d), drop, drop)
+	pose[R_HAND] = _yaw(STAFF_IN_LINE * d)
 	return pose
 
 
@@ -610,7 +653,7 @@ func _reel_pose(p: float) -> Dictionary:
 ## what they change and every clip drives the same tracks.
 func _stance() -> Dictionary:
 	var pose := {HIPS_OFFSET: Vector3.ZERO}
-	for bone: StringName in [HIPS, SPINE, SPINE1, SPINE2, NECK, HEAD, L_SHOULDER, R_SHOULDER]:
+	for bone: StringName in [HIPS, SPINE, SPINE1, SPINE2, NECK, HEAD, L_SHOULDER, R_SHOULDER, R_HAND]:
 		pose[bone] = Quaternion.IDENTITY
 	_set_arms(pose, 0.0, 0.0, 14.0, 14.0)
 	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 0.0, 0.0, 0.0)

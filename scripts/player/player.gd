@@ -118,6 +118,8 @@ var _flash: float = 0.0
 var _respawn_timer: float = -1.0
 var fox_model: FoxModel
 var _gun_material: StandardMaterial3D
+## The hand-held gun (hidden while the staff is drawn).
+var _gun: MeshInstance3D
 
 
 func _ready() -> void:
@@ -204,17 +206,20 @@ func _build_visual() -> void:
 	visual.add_child(muzzle)
 	_gun_material = _flat_material(Color.WHITE)
 	# The gun sits in the fox's right hand and points wherever the arm does.
-	var gun := MeshInstance3D.new()
+	_gun = MeshInstance3D.new()
 	var gun_box := BoxMesh.new()
 	gun_box.size = Vector3(0.13, 0.13, 0.42)
-	gun.mesh = gun_box
-	gun.material_override = _gun_material
-	gun.position = Vector3(0, 0.03, -0.12)
-	fox_model.gun_mount.add_child(gun)
+	_gun.mesh = gun_box
+	_gun.material_override = _gun_material
+	_gun.position = Vector3(0, 0.03, -0.12)
+	fox_model.gun_mount.add_child(_gun)
 
 	melee = StaffMelee.new()
 	melee.tuning = tuning
 	visual.add_child(melee)
+	# The staff rides in the hand while attacking, slung on the back otherwise.
+	melee.hand_mount = fox_model.staff_hand_mount
+	melee.back_mount = fox_model.staff_back_mount
 
 	grapple = GrappleTail.new()
 	grapple.player = self
@@ -981,6 +986,7 @@ func unlock_gadget(id: StringName) -> bool:
 
 func _update_visuals(_delta: float) -> void:
 	fox_model.flash(_flash)
+	_gun.visible = not melee.is_drawn()
 	fox_model.aim((_fire_facing > 0.0 or is_strafing()) and not melee.is_busy() and not grapple.is_active()
 			and not burrow.is_active(), rad_to_deg(asin(clampf(aim_direction.y, -1.0, 1.0))))
 	fox_model.set_travel(Vector3(velocity.x, 0.0, velocity.z))

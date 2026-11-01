@@ -377,6 +377,8 @@ func _capture_fox_anims() -> void:
 				[&"SwingLeft", 0.0], [&"SwingLeft", 0.3], [&"SwingOverhead", 0.0], [&"SwingOverhead", 0.3]]],
 		["fox_slam_aim.png", Vector3(8, 2.0, -3), Vector3.FORWARD, [[&"SlamRise", 0.0], [&"SlamFall", 0.0],
 				[&"SlamLand", 0.1], [&"Idle", 0.0, true], [&"Running", 0.3, true]]],
+		["fox_staff.png", Vector3(7.5, 1.6, -2.4), Vector3.FORWARD, [[&"Idle", 0.0], [&"SwingRight", 0.3],
+				[&"SwingOverhead", 0.0], [&"SwingOverhead", 0.3], [&"SlamRise", 0.0], [&"SlamFall", 0.0]]],
 		["fox_gadgets.png", Vector3(8, 2.0, -3), Vector3.FORWARD, [[&"Glide", 0.0], [&"Glide", 0.5], [&"Reel", 0.0],
 				[&"Walk", 0.0, true, 60.0], [&"Running", 0.0, true, -60.0]]],
 	]
@@ -393,6 +395,13 @@ func _capture_fox_anims() -> void:
 			gun.mesh = gun_box
 			gun.position = Vector3(0, 0.03, -0.12)
 			fox.gun_mount.add_child(gun)
+			# The staff in the fist for staff moves, slung on the back otherwise.
+			var clip := String(poses[i][0])
+			var mount := fox.staff_hand_mount if clip.begins_with("Swing") or clip.begins_with("Slam") else fox.staff_back_mount
+			var holder := Node3D.new()
+			holder.scale = Vector3.ONE / (Player.HEIGHT / FoxModel.MODEL_HEIGHT)
+			holder.add_child(StaffMelee.staff_visual())
+			mount.add_child(holder)
 			fox.position = row_dir * (float(i) - (poses.size() - 1) * 0.5) * 1.5
 			fox.anim.play(poses[i][0] as StringName)
 			fox.anim.seek(fox.anim.current_animation_length * float(poses[i][1]), true)

@@ -123,8 +123,11 @@ D-pad up/F2 · next wave D-pad down/F3.
 - **Time scale belongs to `GameFeel`.** Use `set_slowmo(source, scale)` / `clear_slowmo()`
   / `hit_stop()`; never write `Engine.time_scale` directly. Physics still ticks at 60 Hz
   real-time when slowed, so input read in `_physics_process` stays responsive.
-- **Melee** lives in `StaffMelee` (timing, hitboxes, pose); the player reads its `phase`
-  to drive movement. Tuning is in the Staff combo / Slam and pounce groups of `PlayerTuning`.
+- **Melee** lives in `StaffMelee` (timing, hitboxes, staff visual); the player reads its `phase`
+  to drive movement. The staff model (`assets/weapons/staff/`) rides `FoxModel.staff_back_mount`
+  when idle and `staff_hand_mount` while attacking (`is_drawn()`; the gun hides then); its pivot frame
+  is grip-at-origin, tip along -Z (`STAFF_TIP_Z`), which the conduit gauntlet builds on. Overhead and
+  slam clips bend the wrist (`STAFF_IN_LINE`) so the staff runs in line with the arm. Tuning is in the Staff combo / Slam and pounce groups of `PlayerTuning`.
 - **Hazards** extend `Hazard` (`scripts/hazards/`): neutral, so their HitBoxes use `HIT_MASK`
   (player AND enemy hurtboxes; kills credit no weapon). Same state machine + `state_log` as
   enemies; pressure plates use `make_trigger()` + `creatures_in()`. Instances live under

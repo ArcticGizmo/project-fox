@@ -77,7 +77,11 @@ func test_models_follow_the_conventions() -> void:
 				var bounds := _bounds(root)
 				root.free()
 				var reach := maxf(bounds.size.x, bounds.size.z)
-				assert_near(bounds.position.y, 0.0, maxf(0.05, bounds.size.y * 0.03), "%s: origin at its base" % label)
+				if category == "weapons":
+					# Held items: origin at the grip, so it must lie within the model.
+					assert_true(bounds.grow(0.02).has_point(Vector3.ZERO), "%s: origin (the grip) inside the model" % label)
+				else:
+					assert_near(bounds.position.y, 0.0, maxf(0.05, bounds.size.y * 0.03), "%s: origin at its base" % label)
 				assert_true(absf(bounds.get_center().x) <= reach * 0.25 + 0.05 and absf(bounds.get_center().z) <= reach * 0.25 + 0.05,
 						"%s: centred on its origin (centre %s)" % [label, bounds.get_center()])
 				assert_true(bounds.size.y > 0.03 and bounds.size.y < 30.0, "%s: plausible size in metres (%.2f m)" % [label, bounds.size.y])
