@@ -223,27 +223,46 @@ static func cmdline_level_path() -> String:
 
 # --- Environment ----------------------------------------------------------------
 
+## Sky, sun, haze, ambient occlusion and grading from the level's theme (the setting's mood).
 func _build_environment() -> void:
+	var theme := level_theme if level_theme != null else LevelTheme.default_theme()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.35, 0.45, 0.6)
-	sky_mat.sky_horizon_color = Color(0.85, 0.7, 0.5)
-	sky_mat.ground_horizon_color = Color(0.6, 0.5, 0.4)
+	sky_mat.sky_top_color = theme.sky_top
+	sky_mat.sky_horizon_color = theme.sky_horizon
+	sky_mat.ground_horizon_color = theme.ground_horizon
+	sky_mat.ground_bottom_color = theme.ground_bottom
 	sky.sky_material = sky_mat
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.8
+	env.ambient_light_energy = theme.ambient_energy
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.glow_enabled = true
+	# Contact shadows where blocks, props and characters meet.
+	env.ssao_enabled = true
+	env.ssao_radius = 1.2
+	env.ssao_intensity = theme.ssao_intensity
+	env.ssao_detail = 0.6
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	env.fog_light_color = theme.fog_color
+	env.fog_density = theme.fog_density
+	env.fog_sky_affect = theme.fog_sky_affect
+	env.fog_aerial_perspective = 0.25
+	env.adjustment_enabled = true
+	env.adjustment_saturation = theme.saturation
+	env.adjustment_contrast = 1.05
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
 	add_child(world_env)
 
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-55, 35, 0)
-	sun.light_energy = 1.2
-	sun.light_color = Color(1.0, 0.93, 0.8)
+	sun.rotation_degrees = Vector3(theme.sun_angle.x, theme.sun_angle.y, 0)
+	sun.light_energy = theme.sun_energy
+	sun.light_color = theme.sun_color
 	sun.shadow_enabled = true
+	sun.shadow_blur = 1.5
+	sun.directional_shadow_max_distance = 90.0
 	add_child(sun)

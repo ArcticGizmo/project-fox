@@ -27,7 +27,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
-| `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s; `storybook_town` is the default) |
+| `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s: surface styles + atmosphere (sky, sun, haze, SSAO, grading); `storybook_town` is the default) |
 | `assets/` | Art. `textures/<name>/albedo.png + normal.png` (seamless, green-up normal, imported with mipmaps and normal_map=1) |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
 | `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features), `gen_textures.gd` (procedural placeholder texture sets) |

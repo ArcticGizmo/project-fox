@@ -125,6 +125,9 @@ func _capture_slice(arena: Node, path: String) -> void:
 
 ## Top-down (orthographic) and high-angle overviews framed on the level's Blocks.
 func _capture_slice_overview(level: LevelRoot, cam: Camera3D) -> void:
+	# Overviews are for reading layout from far up: no distance haze.
+	var env := (level.find_children("*", "WorldEnvironment", false, false)[0] as WorldEnvironment).environment
+	env.fog_enabled = false
 	var bounds := AABB()
 	var first := true
 	for n: Node in level.find_children("*", "Block", true, false):
@@ -154,6 +157,7 @@ func _capture_slice_overview(level: LevelRoot, cam: Camera3D) -> void:
 	cam.look_at(center)
 	await get_tree().create_timer(0.1).timeout
 	await _capture("slice_overview_angle.png")
+	env.fog_enabled = true
 
 ## Fire each weapon for a moment and capture weapon_<id>.png (pass --weapons).
 func _capture_each_weapon(player: Player) -> void:
