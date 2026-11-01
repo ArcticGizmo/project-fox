@@ -404,6 +404,7 @@ func _move(delta: float) -> void:
 		elif _air_jumps_left > 0:
 			velocity.y = tuning.double_jump_velocity()
 			_air_jumps_left -= 1
+			fox_model.play_action(&"DoubleJump")
 			_jump_buffer = 0.0
 			_gadget_hop = false
 
@@ -916,6 +917,7 @@ func _on_hurt(info: DamageInfo) -> void:
 	_hurt_iframes = tuning.hurt_iframes
 	hurt_box.invulnerable = true
 	_flash = 1.0
+	fox_model.play_action(&"Hurt")
 	GameFeel.shake(0.5)
 	GameFeel.hit_stop(0.05)
 	# On the grapple line small hits are shrugged off; big ones knock you off it.
@@ -979,7 +981,8 @@ func unlock_gadget(id: StringName) -> bool:
 
 func _update_visuals(_delta: float) -> void:
 	fox_model.flash(_flash)
-	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor())
+	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y,
+			&"Dodge" if is_dodging() else &"")
 	grapple.update_rope()
 	cloak.update_visual(_delta)
 	burrow.update_visual(_delta)

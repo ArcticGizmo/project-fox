@@ -3,8 +3,8 @@ extends Node3D
 ## The fox's rigged mesh (Ember_the_Foxling.glb, Mixamo skeleton). Pure presentation:
 ## the player calls `update()` each frame with its ground speed and `flash` for hurt.
 ##
-## The GLB ships one in-place "Running" clip and a T-pose; "Idle" and "Walk" are baked
-## here from the rest pose. Poses are written as rotations about the model's own axes
+## The GLB ships one in-place "Running" clip and a T-pose; every other clip is baked here
+## from the rest pose (locomotion, air, actions: see the pose functions). Poses are written as rotations about the model's own axes
 ## (X = the fox's left, Y = up, Z = forward, as authored in the GLB) applied to each
 ## bone in its rest frame, so a child's rotation rides on its parent's:
 ##   pitch +  thigh/arm swings back, shin/forearm folds back, spine leans forward, toes point down
@@ -29,8 +29,22 @@ const RUN_ENTER_SPEED := 4.0
 const RUN_EXIT_SPEED := 3.2
 const BLEND_TIME := 0.2
 
+## Crossfade into one-shots and held states: short, so actions read immediately.
+const ACTION_BLEND_TIME := 0.06
+## Rising faster than this (m/s) shows the jump pose; slower, the fall.
+const APEX_SPEED := 1.5
+## Shorter hops land without the squash.
+const LAND_MIN_AIR_TIME := 0.3
+
 const IDLE_LENGTH := 3.2
 const WALK_LENGTH := 0.9
+const JUMP_LENGTH := 0.5
+const FALL_LENGTH := 0.8
+const DOUBLE_JUMP_LENGTH := 0.42
+const LAND_LENGTH := 0.32
+## Covers the dodge (0.22 s) plus a beat, so a dodge never runs out of clip.
+const DODGE_LENGTH := 0.3
+const HURT_LENGTH := 0.4
 ## Keys per baked cycle (plus a closing key).
 const SAMPLES := 32
 
@@ -62,6 +76,12 @@ var skeleton: Skeleton3D
 var anim: AnimationPlayer
 var material: StandardMaterial3D
 
+var _action: StringName = &""
+var _was_on_floor: bool = true
+var _air_time: float = 0.0
+var _thigh_length: float = 0.27
+var _shin_length: float = 0.23
+
 
 func _init(height: float = MODEL_HEIGHT) -> void:
 	name = "FoxModel"
@@ -84,21 +104,51 @@ func _init(height: float = MODEL_HEIGHT) -> void:
 	var run := anim.get_animation(&"Running").duplicate() as Animation
 	run.loop_mode = Animation.LOOP_LINEAR
 	lib.add_animation(&"Running", run)
+	var hip := skeleton.get_bone_global_rest(skeleton.find_bone(L_THIGH)).origin
+	var knee := skeleton.get_bone_global_rest(skeleton.find_bone(L_SHIN)).origin
+	var ankle := skeleton.get_bone_global_rest(skeleton.find_bone(L_FOOT)).origin
+	_thigh_length = hip.distance_to(knee)
+	_shin_length = knee.distance_to(ankle)
 	lib.add_animation(&"Idle", _bake(IDLE_LENGTH, _idle_pose))
 	lib.add_animation(&"Walk", _bake(WALK_LENGTH, _walk_pose))
+	lib.add_animation(&"Jump", _bake(JUMP_LENGTH, _jump_pose))
+	lib.add_animation(&"Fall", _bake(FALL_LENGTH, _fall_pose))
+	lib.add_animation(&"DoubleJump", _bake(DOUBLE_JUMP_LENGTH, _double_jump_pose, false))
+	lib.add_animation(&"Land", _bake(LAND_LENGTH, _land_pose, false))
+	lib.add_animation(&"Dodge", _bake(DODGE_LENGTH, _dodge_pose, false))
+	lib.add_animation(&"Hurt", _bake(HURT_LENGTH, _hurt_pose, false))
 	anim.remove_animation_library(&"")
 	anim.add_animation_library(&"", lib)
 	anim.play(&"Idle")
 
 
-## `speed` is horizontal ground speed; airborne poses fall back to idle for now.
-func update(speed: float, on_floor: bool) -> void:
-	var clip := &"Idle"
-	if on_floor and speed > IDLE_SPEED:
-		var running := anim.current_animation == &"Running"
-		clip = &"Running" if speed > (RUN_EXIT_SPEED if running else RUN_ENTER_SPEED) else &"Walk"
+## Called every frame. `speed` is horizontal ground speed, `vertical_speed` the body's
+## y velocity. `hold` names a clip the player's state demands for as long as it lasts
+## (e.g. &"Dodge"); it beats everything. Otherwise a one-shot from `play_action` runs to
+## its end, then ground locomotion or the air poses take over. Landing is detected here
+## from the motion; the player calls play_action for events only it knows (double jump, hurt).
+func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: StringName = &"") -> void:
+	if not on_floor:
+		_air_time += _dt()
+	elif not _was_on_floor:
+		if _air_time > LAND_MIN_AIR_TIME and speed < RUN_EXIT_SPEED:
+			play_action(&"Land")
+		_air_time = 0.0
+	_was_on_floor = on_floor
+
+	if _action != &"":
+		var finished := anim.current_animation != _action
+		var cancelled := (hold != &"") or (_action == &"Land" and (not on_floor or speed > RUN_ENTER_SPEED)) \
+				or (_action == &"DoubleJump" and on_floor)
+		if finished or cancelled:
+			_action = &""
+	var clip := hold
+	if clip == &"" and _action != &"":
+		return
+	if clip == &"":
+		clip = _locomotion_clip(speed, on_floor, vertical_speed)
 	if anim.current_animation != clip:
-		anim.play(clip, BLEND_TIME)
+		anim.play(clip, ACTION_BLEND_TIME if hold != &"" else BLEND_TIME)
 	match clip:
 		&"Running":
 			anim.speed_scale = clampf(speed / RUN_CLIP_SPEED, 0.6, 1.6)
@@ -106,6 +156,33 @@ func update(speed: float, on_floor: bool) -> void:
 			anim.speed_scale = clampf(speed / WALK_CLIP_SPEED, 0.5, 1.6)
 		_:
 			anim.speed_scale = 1.0
+
+
+## Plays a one-shot clip (Land, DoubleJump, Hurt, ...) over locomotion until it ends.
+func play_action(clip: StringName) -> void:
+	_action = clip
+	anim.speed_scale = 1.0
+	anim.play(clip, ACTION_BLEND_TIME)
+	# Restart even if this clip was already playing (a second hit, a re-landing).
+	anim.seek(0.0, true)
+
+
+func current_action() -> StringName:
+	return _action
+
+
+func _locomotion_clip(speed: float, on_floor: bool, vertical_speed: float) -> StringName:
+	if not on_floor:
+		# Jump eases into Fall around the top of the arc.
+		return &"Jump" if vertical_speed > APEX_SPEED else &"Fall"
+	if speed <= IDLE_SPEED:
+		return &"Idle"
+	var running := anim.current_animation == &"Running"
+	return &"Running" if speed > (RUN_EXIT_SPEED if running else RUN_ENTER_SPEED) else &"Walk"
+
+
+func _dt() -> float:
+	return get_physics_process_delta_time() if is_inside_tree() else 1.0 / 60.0
 
 
 func flash(amount: float) -> void:
@@ -192,12 +269,121 @@ func _set_leg(pose: Dictionary, thigh: StringName, shin: StringName, foot: Strin
 	pose[foot] = _pitch(ankle)
 
 
-## Drops both arms out of the T-pose. `swing_*` swings each arm forward (degrees),
-## `elbow_*` folds the forearm forward.
-func _set_arms(pose: Dictionary, swing_l: float, swing_r: float, elbow_l: float, elbow_r: float) -> void:
+## Rising: one knee driven up, the other leg trailing, arms pumping up and out; a small
+## flutter so the hold doesn't freeze.
+func _jump_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var pose := _stance()
+	pose[SPINE] = _pitch(-4.0)
+	pose[SPINE2] = _pitch(-3.0)
+	pose[HEAD] = _pitch(-6.0)
+	_set_arms(pose, 35.0 + w * 4.0, -15.0 - w * 4.0, 30.0, 30.0, 45.0, 45.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 55.0 + w * 3.0, 80.0, 20.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -12.0, 35.0, 25.0)
+	return pose
+
+
+## Dropping: legs reaching down for the floor, arms out for balance, head tipped to
+## watch the landing; a slow paddle of the limbs.
+func _fall_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var pose := _stance()
+	pose[SPINE] = _pitch(6.0)
+	pose[HEAD] = _pitch(8.0)
+	_set_arms(pose, 10.0 + w * 5.0, 10.0 - w * 5.0, 25.0, 25.0, 25.0 + w * 6.0, 25.0 - w * 6.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 20.0, 35.0 + w * 6.0, 10.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 8.0, 20.0 - w * 6.0, 10.0)
+	return pose
+
+
+## A tucked forward flip: curl in, rotate once around the hips, open out into the fall.
+func _double_jump_pose(p: float) -> Dictionary:
+	var tuck := sin(PI * p)
+	var spin := smoothstep(0.0, 1.0, p) * 360.0
+	var pose := _stance()
+	pose[HIPS_OFFSET] = Vector3(0, 0.22 * tuck, 0)
+	pose[HIPS] = _pitch(spin)
+	pose[SPINE] = _pitch(20.0 * tuck)
+	pose[SPINE1] = _pitch(10.0 * tuck)
+	pose[HEAD] = _pitch(20.0 * tuck)
+	var elbow := 25.0 + 70.0 * tuck
+	_set_arms(pose, 10.0 + 50.0 * tuck, 10.0 + 50.0 * tuck, elbow, elbow, 30.0 + 40.0 * tuck, 30.0 + 40.0 * tuck)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 20.0 + 75.0 * tuck, 30.0 + 95.0 * tuck, 20.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 10.0 + 80.0 * tuck, 20.0 + 100.0 * tuck, 20.0)
+	return pose
+
+
+## Impact squash: the knees soak it up fast (feet planted), arms swing forward for
+## balance, then the body rises back to standing.
+func _land_pose(p: float) -> Dictionary:
+	var d := lerpf(0.6, 1.0, smoothstep(0.0, 0.12, p)) if p < 0.12 else 1.0 - smoothstep(0.12, 1.0, p)
+	var pose := _stance()
+	_crouch(pose, 40.0 * d, 75.0 * d)
+	pose[SPINE] = _pitch(18.0 * d)
+	pose[HEAD] = _pitch(-10.0 * d)
+	_set_arms(pose, 25.0 * d, 25.0 * d, 14.0 + 20.0 * d, 14.0 + 20.0 * d, ARM_DROP - 30.0 * d, ARM_DROP - 30.0 * d)
+	return pose
+
+
+## A low forward dash: snaps into a lunge, chest down, arms swept back, eyes ahead.
+func _dodge_pose(p: float) -> Dictionary:
+	var d := smoothstep(0.0, 0.3, p)
+	var pose := _stance()
+	pose[HIPS_OFFSET] = Vector3(0, -_leg_drop(45.0 * d, 60.0 * d), 0)
+	pose[SPINE] = _pitch(22.0 * d)
+	pose[SPINE2] = _pitch(8.0 * d)
+	pose[HEAD] = _pitch(-15.0 * d)
+	_set_arms(pose, -45.0 * d, -45.0 * d, 10.0, 10.0, ARM_DROP - 10.0 * d, ARM_DROP - 10.0 * d)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 45.0 * d, 60.0 * d, (45.0 - 60.0) * d)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -35.0 * d, 25.0 * d, 30.0 * d)
+	return pose
+
+
+## Flinch: snaps back from the hit (chest and head thrown back, arms flung up), then
+## recovers. The knockback itself moves the body; this is the reaction on top.
+func _hurt_pose(p: float) -> Dictionary:
+	var d := smoothstep(0.0, 0.12, p) if p < 0.12 else 1.0 - smoothstep(0.12, 1.0, p)
+	var pose := _stance()
+	_crouch(pose, 15.0 * d, 25.0 * d)
+	pose[SPINE] = _pitch(-16.0 * d)
+	pose[SPINE2] = _pitch(-8.0 * d)
+	pose[HEAD] = _pitch(-14.0 * d) * _roll(6.0 * d)
+	_set_arms(pose, 25.0 * d, 25.0 * d, 14.0 + 30.0 * d, 14.0 + 30.0 * d, ARM_DROP - 35.0 * d, ARM_DROP - 35.0 * d)
+	return pose
+
+
+## Every animated bone at its plain standing pose (arms down), so key poses only list
+## what they change and every clip drives the same tracks.
+func _stance() -> Dictionary:
+	var pose := {HIPS_OFFSET: Vector3.ZERO}
+	for bone: StringName in [HIPS, SPINE, SPINE1, SPINE2, NECK, HEAD, L_SHOULDER, R_SHOULDER]:
+		pose[bone] = Quaternion.IDENTITY
+	_set_arms(pose, 0.0, 0.0, 14.0, 14.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 0.0, 0.0, 0.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 0.0, 0.0, 0.0)
+	return pose
+
+
+## Both legs bent the same with feet flat, and the hips lowered so the feet stay on the floor.
+func _crouch(pose: Dictionary, forward: float, knee: float) -> void:
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, forward, knee, forward - knee)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, forward, knee, forward - knee)
+	pose[HIPS_OFFSET] = Vector3(0, -_leg_drop(forward, knee), 0)
+
+
+## How far the hips sink when a leg swings `forward` and the knee folds `knee` (degrees).
+func _leg_drop(forward: float, knee: float) -> float:
+	var reach := _thigh_length * cos(deg_to_rad(forward)) + _shin_length * cos(deg_to_rad(forward - knee))
+	return _thigh_length + _shin_length - reach
+
+
+## Drops both arms out of the T-pose (`drop_*` degrees below horizontal). `swing_*`
+## swings each arm forward (degrees), `elbow_*` folds the forearm forward.
+func _set_arms(pose: Dictionary, swing_l: float, swing_r: float, elbow_l: float, elbow_r: float,
+		drop_l: float = ARM_DROP, drop_r: float = ARM_DROP) -> void:
 	# Lowered about Z, then swung about X so the swing is always fore/aft.
-	pose[L_ARM] = _pitch(-swing_l - 6.0) * _roll(-ARM_DROP)
-	pose[R_ARM] = _pitch(-swing_r - 6.0) * _roll(ARM_DROP)
+	pose[L_ARM] = _pitch(-swing_l - 6.0) * _roll(-drop_l)
+	pose[R_ARM] = _pitch(-swing_r - 6.0) * _roll(drop_r)
 	# Elbows bend in the T-pose frame (forearm toward +Z), which stays "forward" once lowered.
 	pose[L_FOREARM] = _yaw(-elbow_l)
 	pose[R_FOREARM] = _yaw(elbow_r)
@@ -205,16 +391,17 @@ func _set_arms(pose: Dictionary, swing_l: float, swing_r: float, elbow_l: float,
 
 # --- Baking -------------------------------------------------------------------------
 
-## Samples `pose` over one loop into rotation tracks (and a hips position track).
-func _bake(length: float, pose: Callable) -> Animation:
+## Samples `pose` over the clip (p from 0 to 1) into rotation tracks and a hips position
+## track. Looping clips wrap p = 1 back to 0; one-shots get their true end pose.
+func _bake(length: float, pose: Callable, loop: bool = true) -> Animation:
 	var a := Animation.new()
 	a.length = length
-	a.loop_mode = Animation.LOOP_LINEAR
+	a.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
 	var tracks := {}
 	for i: int in SAMPLES + 1:
 		var p := float(i) / SAMPLES
 		var time := length * p
-		var frame: Dictionary = pose.call(wrapf(p, 0.0, 1.0))
+		var frame: Dictionary = pose.call(wrapf(p, 0.0, 1.0) if loop else p)
 		for key: StringName in frame:
 			var bone := skeleton.find_bone(HIPS if key == HIPS_OFFSET else key)
 			if not tracks.has(key):

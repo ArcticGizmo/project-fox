@@ -329,7 +329,8 @@ func _hazard_camera(h: Hazard, offset: Vector3 = Vector3(0, 3.5, 7), look_height
 
 ## Contact sheets of the fox's clips on an empty stage, each fox frozen at a phase:
 ## fox_walk_side / fox_walk_front (contact, down, passing, up, then the other foot),
-## fox_run_side, fox_idle (quarter-loop steps, three-quarter view).
+## fox_run_side, fox_idle (quarter-loop steps), fox_air (jump, flip, fall, land),
+## fox_actions (dodge, hurt, land, three-quarter view).
 func _capture_fox_anims() -> void:
 	var stage := Node3D.new()
 	add_child(stage)
@@ -354,26 +355,32 @@ func _capture_fox_anims() -> void:
 	stage.add_child(cam)
 	cam.make_current()
 
-	var walk := [0.0, 0.125, 0.25, 0.375, 0.5, 0.75]
+	var side := Vector3(9, 1.0, 0)
+	var front := Vector3(0, 1.0, -9)
+	# Each sheet: file, camera position, row direction, [clip, phase] per fox.
 	var sheets: Array[Array] = [
-		["fox_walk_side.png", &"Walk", walk, Vector3(9, 1.0, 0), Vector3.FORWARD],
-		["fox_walk_front.png", &"Walk", walk, Vector3(0, 1.0, -9), Vector3.RIGHT],
-		["fox_run_side.png", &"Running", [0.0, 0.17, 0.33, 0.5, 0.67, 0.83], Vector3(9, 1.0, 0), Vector3.FORWARD],
-		["fox_idle.png", &"Idle", [0.0, 0.25, 0.5, 0.75], Vector3(5, 1.2, -6), Vector3.RIGHT],
+		["fox_walk_side.png", side, Vector3.FORWARD, _phases(&"Walk", [0.0, 0.125, 0.25, 0.375, 0.5, 0.75])],
+		["fox_walk_front.png", front, Vector3.RIGHT, _phases(&"Walk", [0.0, 0.125, 0.25, 0.375, 0.5, 0.75])],
+		["fox_run_side.png", side, Vector3.FORWARD, _phases(&"Running", [0.0, 0.17, 0.33, 0.5, 0.67, 0.83])],
+		["fox_idle.png", Vector3(5, 1.2, -6), Vector3.RIGHT, _phases(&"Idle", [0.0, 0.25, 0.5, 0.75])],
+		["fox_air.png", side, Vector3.FORWARD, [[&"Jump", 0.0], [&"DoubleJump", 0.25], [&"DoubleJump", 0.5],
+				[&"DoubleJump", 0.75], [&"Fall", 0.0], [&"Land", 0.12]]],
+		["fox_actions.png", Vector3(6, 1.2, -7), Vector3.RIGHT, [[&"Dodge", 0.6], [&"Hurt", 0.12], [&"Land", 0.12],
+				[&"Jump", 0.25], [&"Fall", 0.5]]],
 	]
 	for sheet: Array in sheets:
-		var phases: Array = sheet[2]
-		var row_dir: Vector3 = sheet[4]
+		var poses: Array = sheet[3]
+		var row_dir: Vector3 = sheet[2]
 		var foxes: Array[FoxModel] = []
-		for i: int in phases.size():
+		for i: int in poses.size():
 			var fox := FoxModel.new(Player.HEIGHT)
 			stage.add_child(fox)
-			fox.position = row_dir * (float(i) - (phases.size() - 1) * 0.5) * 1.5
-			fox.anim.play(sheet[1] as StringName)
-			fox.anim.seek(fox.anim.current_animation_length * float(phases[i]), true)
+			fox.position = row_dir * (float(i) - (poses.size() - 1) * 0.5) * 1.5
+			fox.anim.play(poses[i][0] as StringName)
+			fox.anim.seek(fox.anim.current_animation_length * float(poses[i][1]), true)
 			fox.anim.pause()
 			foxes.append(fox)
-		cam.position = sheet[3] as Vector3
+		cam.position = sheet[1] as Vector3
 		cam.look_at(Vector3(0, 0.85, 0))
 		await get_tree().process_frame
 		await _capture(sheet[0] as String)
@@ -690,3 +697,7 @@ func _place_player(player: Player, at: Vector3, look_at: Vector3) -> void:
 	player.visual.rotation.y = player.facing_yaw
 	player.camera_rig.yaw = player.facing_yaw
 	player.camera_rig.snap_to_target()
+
+
+func _phases(clip: StringName, phases: Array) -> Array:
+	return phases.map(func(p: float) -> Array: return [clip, p])
