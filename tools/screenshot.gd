@@ -5,6 +5,7 @@ extends Node
 ##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
+const SHOWCASE_PATH := "res://scenes/levels/anim_showcase.tscn"
 
 var out_dir: String = "res://screenshots"
 var wait: float = 2.5
@@ -27,6 +28,7 @@ func _ready() -> void:
 	# `--fox`: only the fox animation contact sheets.
 	if "--fox" in OS.get_cmdline_user_args():
 		await _capture_fox_anims()
+		await _capture_showcase()
 		get_tree().quit()
 		return
 	var arena := (load("res://scenes/main.tscn") as PackedScene).instantiate()
@@ -80,6 +82,7 @@ func _ready() -> void:
 	await _capture_slice(arena, SLICE_PATH)
 	arena.queue_free()
 	await _capture_fox_anims()
+	await _capture_showcase()
 	get_tree().quit()
 
 
@@ -377,6 +380,23 @@ func _capture_fox_anims() -> void:
 		for fox: FoxModel in foxes:
 			fox.queue_free()
 	stage.queue_free()
+
+
+## The animation showcase level: the player's view from spawn and an overview.
+func _capture_showcase() -> void:
+	var level := (load(SHOWCASE_PATH) as PackedScene).instantiate() as LevelRoot
+	add_child(level)
+	await get_tree().create_timer(2.0).timeout
+	await _capture("showcase_spawn.png")
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = Vector3(0, 26, 40)
+	cam.look_at(Vector3(0, 0, 10))
+	cam.make_current()
+	await get_tree().create_timer(0.1).timeout
+	await _capture("showcase_overview.png")
+	cam.queue_free()
+	level.queue_free()
 
 
 func _capture(file_name: String) -> void:
