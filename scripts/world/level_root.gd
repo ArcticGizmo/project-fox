@@ -21,6 +21,9 @@ const LEVELS_DIR := "res://scenes/levels"
 
 static var _cmdline_handled: bool = false
 
+## Surface textures for this level's Blocks (null: LevelTheme.DEFAULT_PATH).
+@export var level_theme: LevelTheme
+
 var player: Player
 var hud: Hud
 var pause_menu: PauseMenu

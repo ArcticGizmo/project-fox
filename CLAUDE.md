@@ -22,15 +22,16 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
-| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool coloured box with collision), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scenes/levels/` | Level scenes (`slice_01.tscn`; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
 | `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
-| `data/` | `player_tuning.tres`, `weapons/*.tres` |
+| `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s; `storybook_town` is the default) |
+| `assets/` | Art. `textures/<name>/albedo.png + normal.png` (seamless, green-up normal, imported with mipmaps and normal_map=1) |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
-| `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features) |
-| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`) |
+| `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features), `gen_textures.gd` (procedural placeholder texture sets) |
+| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`, `art-pipeline.md`: layout vs theming layers, style guide from Ember, asset list and conventions) |
 
 Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
 from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
@@ -48,6 +49,7 @@ godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes 
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
 godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 godot --path . res://tools/screenshot.tscn -- --fox        # only the fox animation contact sheets (fox_walk_side/front, fox_run_side, fox_idle) + showcase_*
+godot --headless --path . -s res://tools/gen_textures.gd [-- cobble ...]   # regenerate placeholder texture sets
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 
@@ -140,6 +142,10 @@ D-pad up/F2 · next wave D-pad down/F3.
   unless you mean it). Enemies have no pathfinding: keep homes, wander radii and routes in open
   ground, and set `leash_radius` so chases stay in their pocket. Enemies below
   `Enemy.KILL_PLANE_Y` die; the player's kill plane respawns at the last checkpoint.
+- **Surfaces**: give level Blocks a `surface` role (never recolour gameplay objects: gates, hazards and
+  gadget props stay GREYBOX in their colour language). A level picks its look with `LevelRoot.level_theme`
+  (null: `data/themes/storybook_town.tres`). New texture sets go in `assets/textures/<name>/` and must
+  tile and import as normal maps (`test_surfaces` checks every set). See `docs/art-pipeline.md`.
 - **Level metrics**: blockout limits live in `LevelMetrics` (`scripts/world/level_metrics.gd`),
   checked against real jumps by `test_jump_metrics`. Mark critical-path Blocks with group
   `critical_path` and a `path_index` meta in walking order; `test_slice` checks every step

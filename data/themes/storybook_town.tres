@@ -1,0 +1,68 @@
+[gd_resource type="Resource" script_class="LevelTheme" format=3]
+
+[ext_resource type="Script" path="res://scripts/world/level_theme.gd" id="1_theme"]
+[ext_resource type="Script" path="res://scripts/world/surface_style.gd" id="2_style"]
+[ext_resource type="Texture2D" path="res://assets/textures/turf/albedo.png" id="3_turf_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/turf/normal.png" id="4_turf_n"]
+[ext_resource type="Texture2D" path="res://assets/textures/dirt/albedo.png" id="5_dirt_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/dirt/normal.png" id="6_dirt_n"]
+[ext_resource type="Texture2D" path="res://assets/textures/cobble/albedo.png" id="7_cobble_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/cobble/normal.png" id="8_cobble_n"]
+[ext_resource type="Texture2D" path="res://assets/textures/stone_wall/albedo.png" id="9_wall_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/stone_wall/normal.png" id="10_wall_n"]
+[ext_resource type="Texture2D" path="res://assets/textures/planks/albedo.png" id="11_planks_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/planks/normal.png" id="12_planks_n"]
+[ext_resource type="Texture2D" path="res://assets/textures/brass_plate/albedo.png" id="13_brass_a"]
+[ext_resource type="Texture2D" path="res://assets/textures/brass_plate/normal.png" id="14_brass_n"]
+
+[sub_resource type="Resource" id="ground"]
+script = ExtResource("2_style")
+top_albedo = ExtResource("3_turf_a")
+top_normal = ExtResource("4_turf_n")
+side_albedo = ExtResource("5_dirt_a")
+side_normal = ExtResource("6_dirt_n")
+top_tint = Color(0.74, 0.77, 0.62, 1)
+tile_size = 2.5
+lip_depth = 0.3
+roughness = 0.95
+
+[sub_resource type="Resource" id="path"]
+script = ExtResource("2_style")
+top_albedo = ExtResource("7_cobble_a")
+top_normal = ExtResource("8_cobble_n")
+side_albedo = ExtResource("9_wall_a")
+side_normal = ExtResource("10_wall_n")
+tile_size = 2.5
+
+[sub_resource type="Resource" id="platform"]
+script = ExtResource("2_style")
+top_albedo = ExtResource("11_planks_a")
+top_normal = ExtResource("12_planks_n")
+side_albedo = ExtResource("9_wall_a")
+side_normal = ExtResource("10_wall_n")
+tile_size = 2.0
+
+[sub_resource type="Resource" id="wall"]
+script = ExtResource("2_style")
+top_albedo = ExtResource("9_wall_a")
+top_normal = ExtResource("10_wall_n")
+side_albedo = ExtResource("9_wall_a")
+side_normal = ExtResource("10_wall_n")
+tile_size = 2.0
+
+[sub_resource type="Resource" id="metal"]
+script = ExtResource("2_style")
+top_albedo = ExtResource("13_brass_a")
+top_normal = ExtResource("14_brass_n")
+side_albedo = ExtResource("13_brass_a")
+side_normal = ExtResource("14_brass_n")
+tile_size = 1.6
+roughness = 0.5
+
+[resource]
+script = ExtResource("1_theme")
+ground = SubResource("ground")
+path = SubResource("path")
+platform = SubResource("platform")
+wall = SubResource("wall")
+metal = SubResource("metal")
