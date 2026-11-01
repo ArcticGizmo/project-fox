@@ -144,6 +144,9 @@ func _ready() -> void:
 
 	_build_visual()
 	melee.hit_box.damage_modifier = _sneak_modifier
+	melee.swung.connect(func(index: int) -> void:
+		var times := tuning.melee_swing_time
+		fox_model.play_swing(index, melee.combo_length(), times[mini(index, times.size() - 1)]))
 	melee.hit_box.hit_landed.connect(_on_staff_hit)
 	melee.slam_box.hit_landed.connect(_on_staff_hit)
 	melee.hit_box.hit_landed.connect(conduit.on_staff_hit)
@@ -191,15 +194,23 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
-	fox_model = FoxModel.new(HEIGHT)
+	fox_model = FoxModel.new(HEIGHT, tuning)
 	visual.add_child(fox_model)
 
 	muzzle = Node3D.new()
 	muzzle.name = "Muzzle"
-	muzzle.position = Vector3(0.45, 1.2, -0.55)
+	# Where the hand-held gun's tip sits with the arm raised to aim (FoxModel aim pose).
+	muzzle.position = Vector3(0.21, 0.96, -0.85)
 	visual.add_child(muzzle)
 	_gun_material = _flat_material(Color.WHITE)
-	_add_box(Vector3(0.16, 0.16, 0.5), Vector3(0.45, 1.2, -0.3), _gun_material)
+	# The gun sits in the fox's right hand and points wherever the arm does.
+	var gun := MeshInstance3D.new()
+	var gun_box := BoxMesh.new()
+	gun_box.size = Vector3(0.13, 0.13, 0.42)
+	gun.mesh = gun_box
+	gun.material_override = _gun_material
+	gun.position = Vector3(0, 0.03, -0.12)
+	fox_model.gun_mount.add_child(gun)
 
 	melee = StaffMelee.new()
 	melee.tuning = tuning
@@ -224,17 +235,6 @@ func _build_visual() -> void:
 	conduit.player = self
 	conduit.tuning = tuning
 	add_child(conduit)
-
-
-func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = size
-	mi.mesh = box
-	mi.material_override = mat
-	mi.position = pos
-	visual.add_child(mi)
-	return mi
 
 
 func _flat_material(c: Color) -> StandardMaterial3D:
@@ -981,8 +981,9 @@ func unlock_gadget(id: StringName) -> bool:
 
 func _update_visuals(_delta: float) -> void:
 	fox_model.flash(_flash)
-	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y,
-			&"Dodge" if is_dodging() else &"")
+	fox_model.aim((_fire_facing > 0.0 or is_strafing()) and not melee.is_busy() and not grapple.is_active()
+			and not burrow.is_active(), rad_to_deg(asin(clampf(aim_direction.y, -1.0, 1.0))))
+	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, _anim_hold())
 	grapple.update_rope()
 	cloak.update_visual(_delta)
 	burrow.update_visual(_delta)
@@ -997,3 +998,17 @@ func _update_visuals(_delta: float) -> void:
 	visual.position.y = -HEIGHT * sink
 	if sink >= 1.0:
 		visual.visible = false
+
+
+## The clip the fox's current state pins (FoxModel `hold`), or none.
+func _anim_hold() -> StringName:
+	if is_dodging():
+		return &"Dodge"
+	match melee.phase:
+		StaffMelee.Phase.SLAM_HOVER, StaffMelee.Phase.POUNCE:
+			return &"SlamRise"
+		StaffMelee.Phase.SLAM_FALL:
+			return &"SlamFall"
+		StaffMelee.Phase.SLAM_RECOVER:
+			return &"SlamLand"
+	return &""

@@ -104,8 +104,13 @@ func _pedestal(at: Vector3, clip: StringName, speed_scale: float, title: String)
 	fox.anim.speed_scale = speed_scale
 	fox.anim.play(clip)
 	if fox.anim.get_animation(clip).loop_mode == Animation.LOOP_NONE:
-		fox.anim.animation_finished.connect(func(_name: StringName) -> void:
-			get_tree().create_timer(ONE_SHOT_GAP).timeout.connect(func() -> void: fox.anim.play(clip)))
+		# The timer lives under the fox, so it goes when the fox does.
+		var replay := Timer.new()
+		replay.one_shot = true
+		replay.wait_time = ONE_SHOT_GAP
+		fox.add_child(replay)
+		fox.anim.animation_finished.connect(func(_name: StringName) -> void: replay.start())
+		replay.timeout.connect(fox.anim.play.bind(clip))
 	_label(at + Vector3.UP * 2.5, title, 40)
 
 

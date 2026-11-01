@@ -1,12 +1,16 @@
 class_name FoxModel
 extends Node3D
 ## The fox's rigged mesh (Ember_the_Foxling.glb, Mixamo skeleton). Pure presentation:
-## the player calls `update()` each frame with its ground speed and `flash` for hurt.
+## the player calls `update()` each frame with its motion and state, `play_action()` for
+## one-shots, `aim()` for the gun arm, and `flash` for hurt. The gun rides in the right
+## hand (`gun_mount`); `FoxAimLayer` raises that arm over whatever clip is playing.
 ##
 ## The GLB ships one in-place "Running" clip and a T-pose; every other clip is baked here
-## from the rest pose (locomotion, air, actions: see the pose functions). Poses are written as rotations about the model's own axes
-## (X = the fox's left, Y = up, Z = forward, as authored in the GLB) applied to each
-## bone in its rest frame, so a child's rotation rides on its parent's:
+## from the rest pose (locomotion, air, actions, staff: see the pose functions). Clip
+## lengths that must match gameplay timing (swings, slam recovery) come from PlayerTuning.
+## Poses are written as rotations about the model's own axes (X = the fox's left, Y = up,
+## Z = forward, as authored in the GLB) applied to each bone in its rest frame, so a
+## child's rotation rides on its parent's:
 ##   pitch +  thigh/arm swings back, shin/forearm folds back, spine leans forward, toes point down
 ##   yaw   +  turns toward the fox's left
 ##   roll  +  tips the top of an upright bone toward the fox's right
@@ -45,6 +49,15 @@ const LAND_LENGTH := 0.32
 ## Covers the dodge (0.22 s) plus a beat, so a dodge never runs out of clip.
 const DODGE_LENGTH := 0.3
 const HURT_LENGTH := 0.4
+const SLAM_RISE_LENGTH := 0.4
+const SLAM_FALL_LENGTH := 0.3
+## Swing clips by combo step: the two alternating sweeps, then the overhead finisher.
+const SWINGS: Array[StringName] = [&"SwingRight", &"SwingLeft", &"SwingOverhead"]
+
+## How fast the gun arm rises to aim / drops back (influence per second).
+const AIM_RATE := 10.0
+## Re-solve the aim arm when the aim pitch moves this far (degrees).
+const AIM_PITCH_STEP := 2.0
 ## Keys per baked cycle (plus a closing key).
 const SAMPLES := 32
 
@@ -75,16 +88,26 @@ const HIPS_OFFSET := &"hips_offset"
 var skeleton: Skeleton3D
 var anim: AnimationPlayer
 var material: StandardMaterial3D
+## Follows the right hand; its -Z runs along the forearm (the gun's barrel direction).
+var gun_mount: Node3D
+var aim_layer: FoxAimLayer
 
+var _tuning: PlayerTuning
+## Clip last started (locomotion, hold or action), so held one-shots don't restart.
+var _playing: StringName = &""
 var _action: StringName = &""
+var _aim_target: float = 0.0
+var _aim_pitch: float = 0.0
+var _aim_solved_pitch: float = INF
 var _was_on_floor: bool = true
 var _air_time: float = 0.0
 var _thigh_length: float = 0.27
 var _shin_length: float = 0.23
 
 
-func _init(height: float = MODEL_HEIGHT) -> void:
+func _init(height: float = MODEL_HEIGHT, tuning: PlayerTuning = null) -> void:
 	name = "FoxModel"
+	_tuning = tuning if tuning != null else PlayerTuning.new()
 	var model := SCENE.instantiate() as Node3D
 	# The GLB faces +Z; the player faces -Z.
 	model.rotation.y = PI
@@ -117,9 +140,36 @@ func _init(height: float = MODEL_HEIGHT) -> void:
 	lib.add_animation(&"Land", _bake(LAND_LENGTH, _land_pose, false))
 	lib.add_animation(&"Dodge", _bake(DODGE_LENGTH, _dodge_pose, false))
 	lib.add_animation(&"Hurt", _bake(HURT_LENGTH, _hurt_pose, false))
+	for i: int in SWINGS.size():
+		lib.add_animation(SWINGS[i], _bake_swing(i))
+	lib.add_animation(&"SlamRise", _bake(SLAM_RISE_LENGTH, _slam_rise_pose))
+	lib.add_animation(&"SlamFall", _bake(SLAM_FALL_LENGTH, _slam_fall_pose))
+	lib.add_animation(&"SlamLand", _bake(_tuning.slam_recovery, _slam_land_pose, false))
 	anim.remove_animation_library(&"")
 	anim.add_animation_library(&"", lib)
 	anim.play(&"Idle")
+	_playing = &"Idle"
+	_build_gun_mount()
+	aim_layer = FoxAimLayer.new()
+	aim_layer.influence = 0.0
+	skeleton.add_child(aim_layer)
+
+
+## A BoneAttachment on the right hand with a child whose -Z runs down the arm (wrist to
+## fingertips), so a gun parented there points wherever the arm points.
+func _build_gun_mount() -> void:
+	var hand := skeleton.find_bone(&"mixamorig_RightHand")
+	var attach := BoneAttachment3D.new()
+	attach.name = "RightHand"
+	attach.bone_name = &"mixamorig_RightHand"
+	skeleton.add_child(attach)
+	var g := skeleton.get_bone_global_rest(hand)
+	# In the T-pose the right arm points along the model's -X.
+	var along_arm := Basis.looking_at(Vector3.LEFT, Vector3.UP)
+	gun_mount = Node3D.new()
+	gun_mount.name = "GunMount"
+	gun_mount.transform = Transform3D(g.basis.inverse() * along_arm, g.basis.inverse() * Vector3(-0.07, -0.02, 0.0))
+	attach.add_child(gun_mount)
 
 
 ## Called every frame. `speed` is horizontal ground speed, `vertical_speed` the body's
@@ -135,6 +185,7 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 			play_action(&"Land")
 		_air_time = 0.0
 	_was_on_floor = on_floor
+	_update_aim()
 
 	if _action != &"":
 		var finished := anim.current_animation != _action
@@ -147,8 +198,9 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 		return
 	if clip == &"":
 		clip = _locomotion_clip(speed, on_floor, vertical_speed)
-	if anim.current_animation != clip:
+	if clip != _playing:
 		anim.play(clip, ACTION_BLEND_TIME if hold != &"" else BLEND_TIME)
+		_playing = clip
 	match clip:
 		&"Running":
 			anim.speed_scale = clampf(speed / RUN_CLIP_SPEED, 0.6, 1.6)
@@ -158,17 +210,47 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 			anim.speed_scale = 1.0
 
 
-## Plays a one-shot clip (Land, DoubleJump, Hurt, ...) over locomotion until it ends.
-func play_action(clip: StringName) -> void:
+## Plays a one-shot clip (Land, DoubleJump, Hurt, a swing, ...) over locomotion until it
+## ends. `duration` > 0 stretches or squeezes the clip to last that long.
+func play_action(clip: StringName, duration: float = 0.0) -> void:
 	_action = clip
-	anim.speed_scale = 1.0
+	_playing = clip
 	anim.play(clip, ACTION_BLEND_TIME)
 	# Restart even if this clip was already playing (a second hit, a re-landing).
 	anim.seek(0.0, true)
+	anim.speed_scale = anim.current_animation_length / duration if duration > 0.0 else 1.0
+
+
+## The staff swing for combo step `index` (the last step is the overhead finisher).
+func play_swing(index: int, combo_length: int, duration: float) -> void:
+	var clip := SWINGS[2] if index == combo_length - 1 else SWINGS[index % 2]
+	play_action(clip, duration)
 
 
 func current_action() -> StringName:
 	return _action
+
+
+## Raise (or lower) the gun arm; `pitch_deg` tilts it up (+) or down (-) to the target.
+func aim(on: bool, pitch_deg: float = 0.0) -> void:
+	_aim_target = 1.0 if on else 0.0
+	_aim_pitch = clampf(pitch_deg, -45.0, 60.0)
+
+
+func _update_aim() -> void:
+	aim_layer.influence = move_toward(aim_layer.influence, _aim_target, AIM_RATE * _dt())
+	aim_layer.active = aim_layer.influence > 0.0
+	if absf(_aim_pitch - _aim_solved_pitch) < AIM_PITCH_STEP:
+		return
+	_aim_solved_pitch = _aim_pitch
+	# Right arm straight out ahead (dropped to hanging, swung up to horizontal, then the
+	# pitch), elbow almost locked, shoulder squared; local rotations for the layer.
+	var arm := _pitch(-(90.0 + _aim_pitch)) * _roll(90.0)
+	aim_layer.rotations = {
+		skeleton.find_bone(R_SHOULDER): _local_rotation(skeleton.find_bone(R_SHOULDER), _roll(-4.0)),
+		skeleton.find_bone(R_ARM): _local_rotation(skeleton.find_bone(R_ARM), arm),
+		skeleton.find_bone(R_FOREARM): _local_rotation(skeleton.find_bone(R_FOREARM), _yaw(6.0)),
+	}
 
 
 func _locomotion_clip(speed: float, on_floor: bool, vertical_speed: float) -> StringName:
@@ -349,6 +431,113 @@ func _hurt_pose(p: float) -> Dictionary:
 	pose[SPINE2] = _pitch(-8.0 * d)
 	pose[HEAD] = _pitch(-14.0 * d) * _roll(6.0 * d)
 	_set_arms(pose, 25.0 * d, 25.0 * d, 14.0 + 30.0 * d, 14.0 + 30.0 * d, ARM_DROP - 35.0 * d, ARM_DROP - 35.0 * d)
+	return pose
+
+
+## Staff swing for combo step `index`, timed off PlayerTuning: the strike lands over the
+## staff's own sweep (0 to melee_active_end, eased fast-out like the staff), holds the
+## follow-through, then eases back toward standing for the blend out.
+func _bake_swing(index: int) -> Animation:
+	var times := _tuning.melee_swing_time
+	var length := times[mini(index, times.size() - 1)] if index < 2 else times[times.size() - 1]
+	var strike_end := clampf(_tuning.melee_active_end / length, 0.1, 0.9)
+	var pose: Callable = [_swing_right_pose, _swing_left_pose, _swing_overhead_pose][index]
+	return _bake(length, pose.bind(strike_end), false)
+
+
+## (strike progress, how much of the pose is still held) for a swing at phase p.
+func _swing_curve(p: float, strike_end: float) -> Vector2:
+	var s := ease(clampf(p / strike_end, 0.0, 1.0), 0.4)
+	var hold := 1.0 - smoothstep(strike_end + 0.15, 1.0, p)
+	return Vector2(s, hold)
+
+
+## Forehand: wound up to the fox's right, the hips lead and the chest whips the staff
+## across to the left; the free arm swings back for balance, the head stays on target.
+func _swing_right_pose(p: float, strike_end: float) -> Dictionary:
+	var c := _swing_curve(p, strike_end)
+	return _sweep_pose(lerpf(-35.0, 40.0, c.x), lerpf(-20.0, 120.0, c.x), 25.0, c.y)
+
+
+## Backhand: the mirror, from across the body back out to the right.
+func _swing_left_pose(p: float, strike_end: float) -> Dictionary:
+	var c := _swing_curve(p, strike_end)
+	return _sweep_pose(lerpf(35.0, -40.0, c.x), lerpf(130.0, 10.0, c.x), lerpf(55.0, 15.0, c.x), c.y)
+
+
+## A horizontal staff sweep: `twist` turns hips and chest (+ = left), `arm` swings the
+## right arm about the vertical (+ = forward/across), `elbow` bends it; all scaled by `k`.
+func _sweep_pose(twist: float, arm: float, elbow: float, k: float) -> Dictionary:
+	var pose := _stance()
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 18.0 * k, 22.0 * k, -4.0 * k)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -12.0 * k, 14.0 * k, 26.0 * k)
+	pose[HIPS_OFFSET] = Vector3(0, -_leg_drop(18.0 * k, 22.0 * k), 0)
+	pose[HIPS] = _yaw(twist * 0.3 * k)
+	pose[SPINE] = _yaw(twist * 0.3 * k) * _pitch(6.0 * k)
+	pose[SPINE2] = _yaw(twist * 0.4 * k)
+	pose[HEAD] = _yaw(-twist * 0.6 * k)
+	_set_arms(pose, -20.0 * k * signf(twist), 0.0, 30.0, 14.0, ARM_DROP - 10.0 * k)
+	# The staff arm: near shoulder height, swung about the vertical.
+	pose[R_ARM] = _yaw(arm * k) * _roll(lerpf(ARM_DROP, 15.0, k))
+	pose[R_FOREARM] = _yaw(lerpf(14.0, elbow, k))
+	return pose
+
+
+## Finisher: staff raised two-handed overhead, then chopped down with a step and a
+## crunch through the chest.
+func _swing_overhead_pose(p: float, strike_end: float) -> Dictionary:
+	var c := _swing_curve(p, strike_end)
+	var s := c.x
+	var k := c.y
+	var pose := _stance()
+	var front := lerpf(10.0, 35.0, s) * k
+	var front_knee := lerpf(10.0, 55.0, s) * k
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, front, front_knee, front - front_knee)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, lerpf(-5.0, -22.0, s) * k, lerpf(5.0, 20.0, s) * k, 25.0 * s * k)
+	pose[HIPS_OFFSET] = Vector3(0, -_leg_drop(front, front_knee) + 0.05 * (1.0 - s) * k, 0)
+	pose[SPINE] = _pitch(lerpf(-12.0, 28.0, s) * k)
+	pose[SPINE2] = _pitch(lerpf(-4.0, 10.0, s) * k)
+	pose[HEAD] = _pitch(lerpf(-8.0, 6.0, s) * k)
+	var swing := lerpf(160.0, 50.0, s) * k
+	var elbow := lerpf(14.0, lerpf(40.0, 10.0, s), k)
+	var drop := lerpf(ARM_DROP, 88.0, k)
+	_set_arms(pose, swing, swing, elbow, elbow, drop, drop)
+	return pose
+
+
+## Hovering before the slam (or the pounce): knees tucked, staff hoisted overhead.
+func _slam_rise_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var pose := _stance()
+	pose[SPINE] = _pitch(-10.0)
+	pose[HEAD] = _pitch(-6.0)
+	_set_arms(pose, 165.0 + w * 4.0, 165.0 + w * 4.0, 30.0, 30.0, 85.0, 85.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, 60.0, 95.0, 20.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, 50.0, 100.0, 20.0)
+	return pose
+
+
+## Plunging: chest over the staff, arms driving it down ahead, legs trailing straight.
+func _slam_fall_pose(p: float) -> Dictionary:
+	var w := sin(TAU * p)
+	var pose := _stance()
+	pose[SPINE] = _pitch(28.0)
+	pose[HEAD] = _pitch(10.0)
+	_set_arms(pose, 60.0 + w * 3.0, 60.0 + w * 3.0, 10.0, 10.0, 88.0, 88.0)
+	_set_leg(pose, L_THIGH, L_SHIN, L_FOOT, -6.0, 15.0, 25.0)
+	_set_leg(pose, R_THIGH, R_SHIN, R_FOOT, -10.0, 20.0, 25.0)
+	return pose
+
+
+## Slam impact: a deep crouch with the staff driven into the ground, then rising.
+func _slam_land_pose(p: float) -> Dictionary:
+	var d := 1.0 - smoothstep(0.35, 1.0, p)
+	var pose := _stance()
+	_crouch(pose, 50.0 * d, 95.0 * d)
+	pose[SPINE] = _pitch(30.0 * d)
+	pose[HEAD] = _pitch(-12.0 * d)
+	var drop := lerpf(ARM_DROP, 88.0, d)
+	_set_arms(pose, 45.0 * d, 45.0 * d, lerpf(14.0, 10.0, d), lerpf(14.0, 10.0, d), drop, drop)
 	return pose
 
 

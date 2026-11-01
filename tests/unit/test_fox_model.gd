@@ -100,3 +100,57 @@ func test_player_double_jump_and_dodge_drive_the_model() -> void:
 	pad.next.dodge_pressed = true
 	await wait_frames(2)
 	assert_eq(player.fox_model.anim.current_animation, &"Dodge", "dodge pose while dodging")
+
+
+func _player() -> Array:
+	add_floor()
+	var pad := ScriptedInputProvider.new()
+	var player := Player.new()
+	player.input_provider = pad
+	player.position = Vector3(0, 0.05, 0)
+	add_child(player)
+	await wait_frames(10)
+	return [player, pad]
+
+
+func test_staff_combo_plays_each_swing_timed_to_the_tuning() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	var pad: ScriptedInputProvider = made[1]
+	var seen: Array[StringName] = []
+	for i: int in player.melee.combo_length():
+		pad.next.melee_pressed = true
+		await wait_frames(2)
+		seen.append(player.fox_model.anim.current_animation)
+		var expected := player.tuning.melee_swing_time[i]
+		var a := player.fox_model.anim
+		assert_near(a.current_animation_length / a.speed_scale, expected, 0.01, "swing %d lasts its swing time" % i)
+		await wait_until(func() -> bool: return player.melee.combo_index != i or not player.melee.is_busy(), 1.0)
+	assert_eq(seen, [&"SwingRight", &"SwingLeft", &"SwingOverhead"] as Array[StringName], "combo clips")
+
+
+func test_air_slam_holds_its_clips() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	var pad: ScriptedInputProvider = made[1]
+	pad.next.jump_pressed = true
+	pad.next.jump_held = true
+	await wait_frames(15)
+	pad.next.melee_pressed = true
+	await wait_frames(2)
+	assert_eq(player.fox_model.anim.current_animation, &"SlamRise", "hover")
+	assert_true(await wait_until(func() -> bool: return player.fox_model.anim.current_animation == &"SlamFall", 1.0), "plunge")
+	assert_true(await wait_until(func() -> bool: return player.fox_model.anim.current_animation == &"SlamLand", 2.0), "impact")
+
+
+func test_firing_raises_the_gun_arm_and_it_drops_after() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	var pad: ScriptedInputProvider = made[1]
+	assert_eq(player.fox_model.aim_layer.influence, 0.0, "arm down at rest")
+	pad.next.fire_held = true
+	await wait_seconds(0.3)
+	assert_near(player.fox_model.aim_layer.influence, 1.0, 0.01, "arm up while firing")
+	pad.next.fire_held = false
+	await wait_seconds(player.tuning.fire_facing_time + 0.3)
+	assert_eq(player.fox_model.aim_layer.influence, 0.0, "arm back down")
