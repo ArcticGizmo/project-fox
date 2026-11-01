@@ -116,7 +116,7 @@ var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
 var _respawn_timer: float = -1.0
-var _body_material: StandardMaterial3D
+var fox_model: FoxModel
 var _gun_material: StandardMaterial3D
 
 
@@ -191,27 +191,8 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
-	_body_material = StandardMaterial3D.new()
-	_body_material.albedo_color = BODY_COLOR
-	_body_material.emission_enabled = true
-	_body_material.emission = Color.BLACK
-
-	var body := MeshInstance3D.new()
-	var cap := CapsuleMesh.new()
-	cap.radius = RADIUS
-	cap.height = HEIGHT
-	body.mesh = cap
-	body.material_override = _body_material
-	body.position.y = HEIGHT * 0.5
-	visual.add_child(body)
-
-	# Snout, ears and tail so facing is obvious from any angle.
-	var white := _flat_material(Color(0.95, 0.92, 0.85))
-	_add_box(Vector3(0.3, 0.22, 0.35), Vector3(0, 1.45, -0.5), white)
-	_add_box(Vector3(0.14, 0.3, 0.1), Vector3(-0.22, 1.9, -0.05), _body_material)
-	_add_box(Vector3(0.14, 0.3, 0.1), Vector3(0.22, 1.9, -0.05), _body_material)
-	var tail := _add_box(Vector3(0.22, 0.22, 0.7), Vector3(0, 0.6, 0.65), white)
-	tail.rotation.x = -0.5
+	fox_model = FoxModel.new(HEIGHT, BODY_COLOR)
+	visual.add_child(fox_model)
 
 	muzzle = Node3D.new()
 	muzzle.name = "Muzzle"
@@ -997,7 +978,8 @@ func unlock_gadget(id: StringName) -> bool:
 
 
 func _update_visuals(_delta: float) -> void:
-	_body_material.emission = Color(1.0, 0.1, 0.1) * _flash
+	fox_model.flash(_flash)
+	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor())
 	grapple.update_rope()
 	cloak.update_visual(_delta)
 	burrow.update_visual(_delta)
