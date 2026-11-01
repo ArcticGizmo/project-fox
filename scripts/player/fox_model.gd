@@ -21,7 +21,7 @@ var anim: AnimationPlayer
 var material: StandardMaterial3D
 
 
-func _init(height: float = MODEL_HEIGHT, tint: Color = Color.WHITE) -> void:
+func _init(height: float = MODEL_HEIGHT) -> void:
 	name = "FoxModel"
 	var model := SCENE.instantiate() as Node3D
 	# The GLB faces +Z; the player faces -Z.
@@ -34,8 +34,6 @@ func _init(height: float = MODEL_HEIGHT, tint: Color = Color.WHITE) -> void:
 	# Own copy of the material so the hurt flash doesn't touch the imported resource.
 	var mesh := skeleton.find_children("*", "MeshInstance3D", false, false)[0] as MeshInstance3D
 	material = (mesh.mesh.surface_get_material(0) as StandardMaterial3D).duplicate() as StandardMaterial3D
-	# The current export has no texture or UVs, so the tint is the whole look.
-	material.albedo_color = tint
 	material.emission_enabled = true
 	material.emission = Color.BLACK
 	mesh.set_surface_override_material(0, material)

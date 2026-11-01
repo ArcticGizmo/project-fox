@@ -2,11 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vig6qyjon7rf"
-path.s3tc="res://.godot/imported/Ember_the_Foxling_1_Image_0.png-83ef52f0144ad73cd21b83bcc5d263e7.s3tc.ctex"
+uid="uid://g45j5a4q0hrj"
+path="res://.godot/imported/Ember_the_Foxling_Image_0.png-d034bb673e7371113e3aac3078ade3cf.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "c81be992133da725cb3730a9333efaa3"
@@ -14,12 +13,12 @@ generator_parameters={
 
 [deps]
 
-source_file="res://imported_models/Ember_the_Foxling_1/Ember_the_Foxling_1_Image_0.png"
-dest_files=["res://.godot/imported/Ember_the_Foxling_1_Image_0.png-83ef52f0144ad73cd21b83bcc5d263e7.s3tc.ctex"]
+source_file="res://imported_models/Ember_the_Foxling/Ember_the_Foxling_Image_0.png"
+dest_files=["res://.godot/imported/Ember_the_Foxling_Image_0.png-d034bb673e7371113e3aac3078ade3cf.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -41,4 +40,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

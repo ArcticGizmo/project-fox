@@ -191,7 +191,7 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	visual.name = "Visual"
 	add_child(visual)
-	fox_model = FoxModel.new(HEIGHT, BODY_COLOR)
+	fox_model = FoxModel.new(HEIGHT)
 	visual.add_child(fox_model)
 
 	muzzle = Node3D.new()
