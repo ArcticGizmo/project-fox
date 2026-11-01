@@ -2,8 +2,8 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://g45j5a4q0hrj"
-path="res://.godot/imported/Ember_the_Foxling_Image_0.png-d034bb673e7371113e3aac3078ade3cf.ctex"
+uid="uid://dtgosrtebo8v7"
+path="res://.godot/imported/Ember_the_Foxling_Image_0.png-ee9f4e4b962b02d160fea672f4eb6577.ctex"
 metadata={
 "vram_texture": false
 }
@@ -13,8 +13,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://imported_models/Ember_the_Foxling/Ember_the_Foxling_Image_0.png"
-dest_files=["res://.godot/imported/Ember_the_Foxling_Image_0.png-d034bb673e7371113e3aac3078ade3cf.ctex"]
+source_file="res://assets/characters/ember/Ember_the_Foxling_Image_0.png"
+dest_files=["res://.godot/imported/Ember_the_Foxling_Image_0.png-ee9f4e4b962b02d160fea672f4eb6577.ctex"]
 
 [params]
 

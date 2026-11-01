@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/brass_falcon.tscn" id="14_falcon"]
 [ext_resource type="Script" path="res://scripts/gadgets/soil_patch.gd" id="15_soil"]
 [ext_resource type="Script" path="res://scripts/gadgets/conduit_terminal.gd" id="16_terminal"]
+[ext_resource type="Script" path="res://scripts/world/prop.gd" id="17_prop"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
@@ -844,3 +845,35 @@ leash_radius = 14.0
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 12, 60)
 random_seed = 56
 leash_radius = 14.0
+
+[node name="Dressing" type="Node3D" parent="Level"]
+
+[node name="PadLanternSW" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3, 5)
+script = ExtResource("17_prop")
+placeholder = 2
+
+[node name="PadLanternSE" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3, 5)
+script = ExtResource("17_prop")
+placeholder = 2
+
+[node name="PadLanternNW" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3, -5)
+script = ExtResource("17_prop")
+placeholder = 2
+
+[node name="PadLanternNE" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 3, -5)
+script = ExtResource("17_prop")
+placeholder = 2
+
+[node name="PadPlanterW" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -5, 3, 1.5)
+script = ExtResource("17_prop")
+placeholder = 3
+
+[node name="PadPlanterS" type="Node3D" parent="Level/Dressing"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3, 5.1)
+script = ExtResource("17_prop")
+placeholder = 3

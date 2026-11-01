@@ -18,7 +18,7 @@ extends Node3D
 ## Locomotion picks a clip by ground speed (with hysteresis between walk and run) and
 ## scales its playback so the feet keep pace with the body.
 
-const SCENE: PackedScene = preload("res://imported_models/Ember_the_Foxling/Ember_the_Foxling.glb")
+const SCENE: PackedScene = preload("res://assets/characters/ember/Ember_the_Foxling.glb")
 const SKELETON_PATH := "SmartRigArmature/Skeleton3D:%s"
 ## Authored height of the GLB (ear tips), scaled up to the player's capsule.
 const MODEL_HEIGHT := 1.7

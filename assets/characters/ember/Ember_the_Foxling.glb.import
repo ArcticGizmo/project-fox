@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dny8v73s4hola"
-path="res://.godot/imported/Ember_the_Foxling.glb-88b14fcf767faa55786ec9717d7af86d.scn"
+uid="uid://d2vsvylbxr81h"
+path="res://.godot/imported/Ember_the_Foxling.glb-89be74cec5e486b714c742d6a54dff19.scn"
 
 [deps]
 
-source_file="res://imported_models/Ember_the_Foxling/Ember_the_Foxling.glb"
-dest_files=["res://.godot/imported/Ember_the_Foxling.glb-88b14fcf767faa55786ec9717d7af86d.scn"]
+source_file="res://assets/characters/ember/Ember_the_Foxling.glb"
+dest_files=["res://.godot/imported/Ember_the_Foxling.glb-89be74cec5e486b714c742d6a54dff19.scn"]
 
 [params]
 

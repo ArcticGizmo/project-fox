@@ -1,7 +1,7 @@
 # Art pipeline: layout, theming and what to generate
 
 Status: agreed 2026-11-01. Reference for building levels and dressing them, and for what
-assets to generate. Ember (`imported_models/Ember_the_Foxling/`) is the source of truth for
+assets to generate. Ember (`assets/characters/ember/`) is the source of truth for
 style and materials.
 
 ## Principle: layout and art are separate layers
@@ -14,7 +14,7 @@ made with real input). Art goes **over** that, never instead of it:
 |---|---|---|---|
 | Gameplay | `Block`s, `GadgetGate`s, hazards, checkpoints, enemies | yes | yes: metrics, jumps, gates |
 | Surface | Each Block's `surface` role, drawn with the level's `LevelTheme` | (same Block) | material assigned, gates keep their colours |
-| Dressing | Props, trims, plants, set pieces under `Level/Dressing` | rarely, simple shapes only | must not intrude on the critical path |
+| Dressing | `Prop`s (model or stand-in shape, optional single box) under `Level/Dressing` | rarely, simple shapes only | must not intrude on the critical path |
 | Backdrop | Sky panorama, distant silhouettes, fog | no | no |
 
 Consequences:
@@ -110,6 +110,10 @@ a generated set replaces one by dropping files in.
 
 ## Model conventions
 
+- Meshy imports land in `imported_models/<name>/`. Move each into `assets/<category>/<name>/`
+  with the editor's FileSystem dock (drag; it fixes references), or move the `.glb` alone and
+  let Godot reimport. `test_props` then checks every model under `assets/` (origin at the
+  base, centred, plausible size in metres).
 - Folder: `assets/<category>/<name>/` (`characters`, `props`, `weapons`, `enemies`,
   `gameplay`, `textures`). Keep the Meshy export name inside the folder if useful.
 - Metres, Y up, origin at the base (feet / bottom centre), facing -Z (characters may face
