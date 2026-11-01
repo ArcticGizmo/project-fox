@@ -184,3 +184,22 @@ func test_glide_holds_its_clip() -> void:
 	assert_true(await wait_until(func() -> bool: return player.is_gliding(), 2.0), "gliding")
 	await wait_frames(2)
 	assert_eq(player.fox_model.anim.current_animation, &"Glide", "glide pose")
+
+
+func test_staff_rides_the_back_and_is_drawn_to_attack() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	var pad: ScriptedInputProvider = made[1]
+	var pivot := player.melee.staff_pivot()
+	assert_eq(pivot.get_parent(), player.fox_model.staff_back_mount, "slung on the back at rest")
+	assert_true(player._gun.visible, "gun in hand")
+	pad.next.melee_pressed = true
+	await wait_frames(2)
+	assert_eq(pivot.get_parent(), player.fox_model.staff_hand_mount, "drawn for the swing")
+	assert_false(player._gun.visible, "gun away while the staff is out")
+	var tip := player.melee.staff_pivot().to_global(Vector3(0, 0, StaffMelee.STAFF_TIP_Z))
+	assert_near(tip.distance_to(pivot.global_position), -StaffMelee.STAFF_TIP_Z, 0.02, "staff keeps its gameplay length in the hand")
+	await wait_until(func() -> bool: return not player.melee.is_busy(), 2.0)
+	await wait_frames(2)
+	assert_eq(pivot.get_parent(), player.fox_model.staff_back_mount, "stowed again")
+	assert_true(player._gun.visible, "gun back")
