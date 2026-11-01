@@ -12,6 +12,8 @@ signal weapon_leveled(weapon: Weapon, level: int)
 signal died
 signal respawned
 signal wheel_toggled(open: bool)
+## A staff hit landed a Burrow Claws sneak attack (bonus damage) on `enemy`.
+signal sneak_attacked(enemy: Enemy)
 
 const RADIUS := 0.45
 const HEIGHT := 1.8
@@ -55,6 +57,8 @@ var melee: StaffMelee
 var grapple: GrappleTail
 ## Leaf-wing Cloak (gadget &"glide"): glide state, steering and the wings.
 var cloak: LeafCloak
+## Burrow Claws (gadget &"burrow"): dig into soil patches, tunnel, pop out.
+var burrow: BurrowClaws
 var weapons: Array[Weapon] = []
 var current_weapon_index: int = 0
 var spawn_point: Vector3 = Vector3.ZERO
@@ -87,15 +91,25 @@ var _dodge_iframes: float = 0.0
 var _hurt_iframes: float = 0.0
 ## Rising from launch_up(): releasing jump must not cut the arc short.
 var _launched: bool = false
-## Rising from a grapple release hop: releasing jump must not cut it short
+## Rising from a grapple release or burrow pop-out hop: releasing jump must not cut it short
 ## (unlike _launched, jumps and grapples stay allowed).
-var _grapple_hop: bool = false
+var _gadget_hop: bool = false
 ## After a grapple release: reduced air control so holding forward does not
 ## carry the fox off the small ledge it was reeled onto.
 var _grapple_settle: float = 0.0
 ## Set when the cloak is forced shut (dodge, grapple, hit): it stays shut until
 ## jump is released and held again.
 var _glide_needs_press: bool = false
+## Seconds left in which the next staff swing hit is a sneak attack (after popping out).
+var _sneak_left: float = 0.0
+## A sneak hit landed this frame: the window closes on the next tick.
+var _sneak_spent: bool = false
+## Seconds left after popping out during which enemies still can't see the fox.
+var _conceal_left: float = 0.0
+## In the air from a pop-out hop: a staff press waits for the landing (a swing,
+## not a slam), so a sneak attack is one press.
+var _burrow_hop: bool = false
+var _melee_after_hop: bool = false
 var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
@@ -127,6 +141,9 @@ func _ready() -> void:
 	add_child(cs)
 
 	_build_visual()
+	melee.hit_box.damage_modifier = _sneak_modifier
+	melee.hit_box.hit_landed.connect(_on_staff_hit)
+	melee.slam_box.hit_landed.connect(_on_staff_hit)
 
 	health = Health.new()
 	health.name = "Health"
@@ -214,6 +231,11 @@ func _build_visual() -> void:
 	cloak.tuning = tuning
 	visual.add_child(cloak)
 
+	burrow = BurrowClaws.new()
+	burrow.player = self
+	burrow.tuning = tuning
+	add_child(burrow)
+
 
 func _add_box(size: Vector3, pos: Vector3, mat: Material) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
@@ -258,7 +280,7 @@ func _physics_process(delta: float) -> void:
 	_handle_weapon_switch()
 	_update_camera_mode()
 	_update_aim()
-	grapple.update_target(has_gadget(Gadgets.GRAPPLE))
+	grapple.update_target(has_gadget(Gadgets.GRAPPLE) and not burrow.is_active())
 	_handle_melee(delta)
 	_move(delta)
 	_handle_fire()
@@ -279,6 +301,11 @@ func _update_timers(delta: float) -> void:
 	_hurt_iframes = maxf(0.0, _hurt_iframes - delta)
 	_fire_facing = maxf(0.0, _fire_facing - delta)
 	_grapple_settle = maxf(0.0, _grapple_settle - delta)
+	if _sneak_spent:
+		_sneak_left = 0.0
+		_sneak_spent = false
+	_sneak_left = maxf(0.0, _sneak_left - delta)
+	_conceal_left = maxf(0.0, _conceal_left - delta)
 	_flash = maxf(0.0, _flash - delta * 6.0)
 	hurt_box.invulnerable = is_invulnerable()
 	if input.jump_pressed:
@@ -309,6 +336,11 @@ func _move(delta: float) -> void:
 	# The left stick drives the weapon wheel while it is open, so stand still.
 	var wish := Vector3.ZERO if wheel_open else camera_relative(input.move)
 
+	# Burrow Claws: underground the claws own movement; jump / dodge pop out or tunnel.
+	if burrow.is_active():
+		_move_burrowed(delta, wish)
+		return
+
 	# Melee can be interrupted by dodge (always) or jump (after the hit lands).
 	if melee.is_busy() and melee.can_cancel():
 		var after_hit := melee.phase != StaffMelee.Phase.SWING or melee.phase_time > tuning.melee_active_end
@@ -324,6 +356,14 @@ func _move(delta: float) -> void:
 		if not on_floor:
 			_air_dodge_used = true
 			velocity.y = maxf(velocity.y, 0.0)
+
+	# A floor dodge on (or onto) a soil patch digs in.
+	if is_dodging() and on_floor and has_gadget(Gadgets.BURROW):
+		var soil := SoilPatch.at(get_tree(), global_position)
+		if soil != null:
+			_begin_burrow(soil)
+			_move_burrowed(delta, wish)
+			return
 
 	# Horizontal
 	var h := Vector3(velocity.x, 0.0, velocity.z) - _knockback
@@ -370,7 +410,7 @@ func _move(delta: float) -> void:
 			velocity.y = tuning.double_jump_velocity()
 			_air_jumps_left -= 1
 			_jump_buffer = 0.0
-			_grapple_hop = false
+			_gadget_hop = false
 
 	_update_glide(on_floor)
 	var lift := SteamVent.lift_in(get_tree(), global_position + Vector3.UP * 0.5)
@@ -389,8 +429,8 @@ func _move(delta: float) -> void:
 		if velocity.y < 0.0:
 			g *= tuning.fall_gravity_multiplier
 			_launched = false
-			_grapple_hop = false
-		elif not input.jump_held and not _launched and not _grapple_hop:
+			_gadget_hop = false
+		elif not input.jump_held and not _launched and not _gadget_hop:
 			g *= tuning.jump_release_gravity_multiplier
 		velocity.y = maxf(velocity.y - g * delta + lift * tuning.vent_push_acceleration * delta, -tuning.max_fall_speed)
 
@@ -432,17 +472,133 @@ func _reel(delta: float) -> void:
 	_knockback = Vector3.ZERO
 	velocity = grapple.reel(delta)
 	if grapple.just_released:
-		_grapple_hop = true
+		_gadget_hop = true
 		_grapple_settle = tuning.grapple_release_settle_time
 		_coyote = 0.0
 		_air_jumps_left = 1
 	move_and_slide()
 
 
+# --- Burrow -------------------------------------------------------------------
+
+func is_burrowed() -> bool:
+	return burrow.is_active()
+
+
+## Unseen by enemy perception: underground, or just popped out (conceal time).
+func is_hidden() -> bool:
+	return burrow.is_active() or _conceal_left > 0.0
+
+
+## The next staff swing hit is a sneak attack (window after popping out).
+func is_sneak_ready() -> bool:
+	return _sneak_left > 0.0
+
+
+func _begin_burrow(soil: SoilPatch) -> void:
+	_dodge_time = 0.0
+	_dodge_iframes = 0.0
+	_jump_buffer = 0.0
+	_knockback = Vector3.ZERO
+	_sneak_left = 0.0
+	_conceal_left = 0.0
+	_burrow_hop = false
+	_melee_after_hop = false
+	close_glide()
+	melee.cancel()
+	# No bumping into enemies down there (they walk over the mound).
+	collision_layer = 0
+	collision_mask = Layers.WORLD
+	burrow.start(soil)
+
+
+## One frame underground. Jump pops out; dodge tunnels to a linked patch (or
+## pops out of a standalone one). No firing, staff or grapple down here.
+func _move_burrowed(delta: float, wish: Vector3) -> void:
+	_jump_buffer = 0.0
+	_knockback = Vector3.ZERO
+	burrow.tick(delta)
+	if burrow.is_under():
+		if input.jump_pressed or (input.dodge_pressed and not burrow.start_tunnel()):
+			_end_burrow(true)
+			move_and_slide()
+			return
+	if burrow.phase == BurrowClaws.Phase.TUNNEL:
+		velocity = Vector3.ZERO
+		global_position = burrow.tunnel_position()
+		return
+	var h := burrow.move_velocity(delta, wish)
+	velocity.x = h.x
+	velocity.z = h.z
+	velocity.y = maxf(velocity.y - tuning.gravity * delta, -tuning.max_fall_speed)
+	move_and_slide()
+	burrow.confine()
+
+
+## Leave the ground. `hop` = the pop-out (sneak window, conceal, small hop);
+## false drops out quietly (death, respawn, launch).
+func _end_burrow(hop: bool) -> void:
+	if not burrow.is_active():
+		return
+	collision_layer = Layers.PLAYER
+	collision_mask = Layers.WORLD | Layers.ENEMY
+	if not hop:
+		burrow.cancel()
+		return
+	burrow.surface()
+	velocity.y = tuning.burrow_pop_velocity()
+	_gadget_hop = true
+	_coyote = 0.0
+	_air_jumps_left = 1
+	_sneak_left = tuning.burrow_sneak_window
+	_conceal_left = tuning.burrow_surface_conceal_time
+	_burrow_hop = true
+	_melee_after_hop = input.melee_pressed  # staff pressed with the pop: swing on landing
+
+
+## Death / respawn: out of the ground, no sneak window.
+func _reset_burrow() -> void:
+	_end_burrow(false)
+	_burrow_hop = false
+	_melee_after_hop = false
+	_sneak_left = 0.0
+	_conceal_left = 0.0
+
+
+## A staff hit landing ends the pop-out concealment (the victim, now aware,
+## must not lose track of the fox at once).
+func _on_staff_hit(_hb: HurtBox, _info: DamageInfo) -> void:
+	_conceal_left = 0.0
+
+
+## Staff swing damage_modifier: inside the sneak window an unaware enemy takes
+## burrow_sneak_multiplier (shown as a critical). Any enemy hit spends the window.
+func _sneak_modifier(hb: HurtBox, info: DamageInfo) -> void:
+	if _sneak_left <= 0.0:
+		return
+	var e := Enemy.from_hurt_box(hb)
+	if e == null or e.health.is_dead:
+		return
+	_sneak_spent = true
+	if not e.aware:
+		info.amount *= tuning.burrow_sneak_multiplier
+		info.is_critical = true
+		sneak_attacked.emit(e)
+
+
 # --- Melee --------------------------------------------------------------------
 
 func _handle_melee(delta: float) -> void:
-	if input.melee_pressed and not is_dodging() and not wheel_open and not grapple.is_active():
+	var pressed := input.melee_pressed
+	if _burrow_hop:
+		if is_on_floor():
+			_burrow_hop = false
+			pressed = pressed or _melee_after_hop
+			_melee_after_hop = false
+		elif pressed:
+			_melee_after_hop = true
+			pressed = false
+	if pressed and not is_dodging() and not wheel_open and not grapple.is_active() and not burrow.is_active():
 		var stick := camera_relative(input.move)
 		var started := melee.request_attack(is_on_floor(), stick)
 		match started:
@@ -565,7 +721,7 @@ func is_dodging() -> bool:
 
 
 func is_invulnerable() -> bool:
-	return _dodge_iframes > 0.0 or _hurt_iframes > 0.0
+	return _dodge_iframes > 0.0 or _hurt_iframes > 0.0 or burrow.is_active()
 
 
 # --- Aim and weapons ----------------------------------------------------------
@@ -605,9 +761,11 @@ func _handle_fire() -> void:
 	var w := current_weapon()
 	if w == null:
 		return
-	var firing := input.fire_held and not is_dodging() and not melee.is_busy() and not wheel_open and not grapple.is_active()
+	var firing := input.fire_held and not is_dodging() and not melee.is_busy() and not wheel_open \
+			and not grapple.is_active() and not burrow.is_active()
 	if firing:
 		_fire_facing = tuning.fire_facing_time
+		_conceal_left = 0.0  # shooting gives the fox away
 	w.trigger(firing, current_aim())
 
 
@@ -732,6 +890,8 @@ func launch_up(speed: float) -> void:
 	velocity.y = maxf(velocity.y, speed)
 	_launched = true
 	grapple.cancel()
+	_end_burrow(false)
+	_burrow_hop = false
 	close_glide(true)
 	_dodge_time = 0.0
 	_coyote = 0.0
@@ -773,6 +933,7 @@ func _on_died(_info: DamageInfo) -> void:
 	melee.cancel()
 	grapple.cancel()
 	close_glide()
+	_reset_burrow()
 	close_wheel(false)
 	visual.visible = false
 	GameFeel.impact(global_position + Vector3.UP, BODY_COLOR, 3.0, 0.5)
@@ -788,9 +949,10 @@ func respawn() -> void:
 	velocity = Vector3.ZERO
 	_knockback = Vector3.ZERO
 	_launched = false
-	_grapple_hop = false
+	_gadget_hop = false
 	grapple.cancel()
 	close_glide()
+	_reset_burrow()
 	health.reset()
 	_hurt_iframes = tuning.hurt_iframes
 	visual.visible = true
@@ -810,8 +972,14 @@ func _update_visuals(_delta: float) -> void:
 	_body_material.emission = Color(1.0, 0.1, 0.1) * _flash
 	grapple.update_rope()
 	cloak.update_visual(_delta)
+	burrow.update_visual(_delta)
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
 	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.
 	if is_zoomed() and camera_rig.camera.fov < tuning.camera_fov * 0.6:
+		visual.visible = false
+	# Burrowed: the fox sinks into the soil, then only the dirt mound shows.
+	var sink := burrow.sink()
+	visual.position.y = -HEIGHT * sink
+	if sink >= 1.0:
 		visual.visible = false

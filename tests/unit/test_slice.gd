@@ -311,3 +311,65 @@ func _glide_attempt(player: Player, pad: ScriptedInputProvider, gate: GadgetGate
 			break
 	pad.next = PlayerInputState.new()
 	return false
+
+
+## BurrowIn -> BurrowOut with real input: without the Burrow Claws a dodge on
+## the soil is just a dodge (the divider stays between them); with them, dodge
+## digs in, dodge tunnels under the divider and jump pops out on the south lane,
+## past the fire plates, sweeper and hammer.
+func test_burrow_patches_need_and_take_the_burrow() -> void:
+	var level := _load_level(true)
+	var player := level.player
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	await wait_frames(3)
+	var gate_in := level.get_node(^"Level/Yard/BurrowIn") as GadgetGate
+	var gate_out := level.get_node(^"Level/Yard/BurrowOut") as GadgetGate
+	var divider := level.get_node(^"Level/Yard/Divider") as Block
+	assert_true(gate_in.soil != null and gate_out.soil != null, "burrow gates have soil")
+	assert_eq(gate_in.soil.partner(), gate_out.soil, "BurrowIn tunnels to BurrowOut")
+	assert_eq(gate_out.soil.partner(), gate_in.soil, "and back")
+	assert_true(_top(divider) - _top(gate_in) > LevelMetrics.STEP_MAX, "the divider is no step")
+	assert_false(await _burrow_attempt(player, pad, gate_in, gate_out), "a dodge on the soil does not cross")
+	player.unlock_gadget(Gadgets.BURROW)
+	assert_true(await _burrow_attempt(player, pad, gate_in, gate_out), "the burrow crosses under the divider")
+
+
+func _burrow_attempt(player: Player, pad: ScriptedInputProvider, from: GadgetGate, to: GadgetGate) -> bool:
+	player.global_position = from.global_position + Vector3.UP * (from.size.y * 0.5 + 0.05)
+	player.velocity = Vector3.ZERO
+	player.camera_rig.yaw = PI  # south, at the divider
+	pad.next = PlayerInputState.new()
+	await wait_frames(5)
+	pad.next.dodge_pressed = true
+	await wait_frames(1)
+	var burrowed := await wait_until(func() -> bool: return player.burrow.is_under(), 1.0)
+	if burrowed:
+		pad.next.dodge_pressed = true  # tunnel
+		await wait_frames(1)
+		await wait_until(func() -> bool: return player.burrow.is_under(), 2.0)
+		pad.next.jump_pressed = true  # pop out
+		pad.next.jump_held = true
+		await wait_frames(1)
+		pad.next.jump_held = false
+	await wait_until(func() -> bool: return player.is_on_floor() and not player.is_burrowed() and not player.is_dodging(), 2.0)
+	await wait_frames(3)
+	var p := player.global_position
+	pad.next = PlayerInputState.new()
+	return player.is_on_floor() and _rect(to).has_point(Vector2(p.x, p.z)) and absf(p.y - _top(to)) < 0.3
+
+
+## Pocket A's optional ambush: a tunnel from the soil behind the cover by the
+## fence to a patch right behind the resting bull, close enough to swing at it.
+func test_ambush_tunnel_reaches_behind_the_bull() -> void:
+	var level := _load_level()
+	await wait_frames(2)
+	var from := level.get_node(^"Level/PocketA/AmbushSoil") as SoilPatch
+	var to := level.get_node(^"Level/PocketA/AmbushSoilBull") as SoilPatch
+	var bull := level.get_node(^"Enemies/PocketA/Bull") as Enemy
+	assert_eq(from.partner(), to, "linked")
+	var behind := (to.global_position - bull.global_position).normalized()
+	assert_true(behind.dot(bull.forward()) < -0.9, "the patch is behind the bull")
+	var reach := Enemy._flat_distance(to.global_position, bull.global_position) - (to.radius - BurrowClaws.EDGE_MARGIN) - bull.extents().z * 0.5
+	assert_true(reach < 1.5, "a swing from the patch edge reaches the bull (%.2f m)" % reach)
+	assert_true(reach > Player.RADIUS, "but the patch is not under it (%.2f m)" % reach)

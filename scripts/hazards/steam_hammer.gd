@@ -159,7 +159,7 @@ func _nearest_creature() -> Node3D:
 		if e != null and (e.flying or e.health.is_dead):
 			continue
 		var player := body as Player
-		if player != null and player.is_dead:
+		if player != null and (player.is_dead or player.is_burrowed()):
 			continue
 		var local := to_local(body.global_position)
 		if absf(local.z) > track_reach or absf(local.x) > rail_length * 0.5 + head_size:

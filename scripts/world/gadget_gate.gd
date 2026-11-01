@@ -6,8 +6,9 @@ extends Block
 ## `is_open_for()`.
 ##   grapple = a real GrappleRing (`ring`) RING_HEIGHT above the top: the
 ##             Grapple-Tail reels the fox onto this block.
-##   glide = pale green vent, burrow = brown soil mound, conduit = copper terminal
-##   (tasks 6-8).
+##   glide = a real SteamVent (`vent`) updraft on top.
+##   burrow = a real SoilPatch (`soil`) on top, tunnelling to the `link` gate.
+##   conduit = copper terminal (task 8).
 
 const GATE_COLORS: Dictionary = {
 	&"grapple": Color(0.78, 0.6, 0.25),
@@ -32,6 +33,15 @@ var ring: GrappleRing
 const VENT_LIFT_HEIGHT := 10.0
 ## The updraft built on a glide gate (null for other gadgets).
 var vent: SteamVent
+## Burrow gates: the partner gate (or SoilPatch) this one tunnels to. Either
+## side of a pair may set it.
+@export var link: NodePath:
+	set(value):
+		link = value
+		if soil != null:
+			soil.exit = value
+## The soil patch built on a burrow gate's top (null for other gadgets).
+var soil: SoilPatch
 var _deco: Node3D
 
 
@@ -48,6 +58,7 @@ func _decorate() -> void:
 		_deco.queue_free()
 	ring = null
 	vent = null
+	soil = null
 	_deco = Node3D.new()
 	_deco.name = "GateMarker"
 	_deco.position.y = size.y * 0.5
@@ -73,10 +84,13 @@ func _decorate() -> void:
 			vent.position.y = 0.1
 			_deco.add_child(vent)
 		&"burrow":
-			var mound := SphereMesh.new()
-			mound.radius = 0.9
-			mound.height = 0.6
-			_mesh_at(mound, Vector3(0, 0.1, 0), c.darkened(0.25))
+			# A real patch: the Burrow Claws dig in here (and tunnel to `link`).
+			soil = SoilPatch.new()
+			soil.name = "SoilPatch"
+			soil.radius = minf(size.x, size.z) * 0.5
+			soil.exit = link
+			soil.exit_owner = self
+			_deco.add_child(soil)
 		&"conduit":
 			_mesh_at(_cylinder(0.18, 1.0), Vector3(0, 0.5, 0), c.darkened(0.2))
 			var cap := SphereMesh.new()

@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/spitter_toad.tscn" id="12_toad"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/bombardier_gull.tscn" id="13_gull"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/brass_falcon.tscn" id="14_falcon"]
+[ext_resource type="Script" path="res://scripts/gadgets/soil_patch.gd" id="15_soil"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
@@ -141,6 +142,17 @@ script = ExtResource("2_block")
 size = Vector3(2, 4, 2)
 color = Color(0.66, 0.54, 0.3, 1)
 
+[node name="AmbushSoil" type="Node3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -21.3)
+script = ExtResource("15_soil")
+radius = 1.2
+exit = NodePath("../AmbushSoilBull")
+
+[node name="AmbushSoilBull" type="Node3D" parent="Level/PocketA"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -32.6)
+script = ExtResource("15_soil")
+radius = 1.2
+
 [node name="Traversal" type="Node3D" parent="Level"]
 
 [node name="T0Start" type="StaticBody3D" parent="Level/Traversal" groups=["critical_path"]]
@@ -247,6 +259,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 0.1, -2)
 script = ExtResource("4_gate")
 size = Vector3(3, 0.2, 3)
 requires = &"burrow"
+link = NodePath("../BurrowOut")
 
 [node name="BurrowOut" type="StaticBody3D" parent="Level/Yard" groups=["gadget_gates"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41, 0.1, 2)

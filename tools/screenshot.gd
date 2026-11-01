@@ -2,7 +2,7 @@ extends Node
 ## Renders the main scene (needs a GPU, so not --headless), waits, saves PNGs
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
-##   ... -- --slice     only the greybox slice shots (slice_*.png, grapple_*.png)
+##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 
@@ -107,6 +107,7 @@ func _capture_slice(arena: Node, path: String) -> void:
 	await _capture_slice_overview(level, cam)
 	cam.queue_free()
 	await _capture_grapple(level)
+	await _capture_burrow(level)
 	await _capture_glide(level)
 
 
@@ -457,6 +458,69 @@ func _capture_glide(level: LevelRoot) -> void:
 	cam.make_current()
 	await _capture("glide_gap_side.png")
 	get_tree().paused = false
+	cam.queue_free()
+	pad.next = PlayerInputState.new()
+	player.input_provider = DeviceInputProvider.new()
+
+
+## Burrow Claws at pocket A's ambush patches: tunnel from AmbushSoil (behind
+## the cover by the fence) to AmbushSoilBull behind the resting bull, then the
+## dirt mound moving with the AI debug view on (nobody sees it: burrow_mound),
+## the pop-out hop (burrow_pop) and the sneak swing (burrow_sneak).
+func _capture_burrow(level: LevelRoot) -> void:
+	var player := level.player
+	if player.is_dead:
+		player.respawn()
+	player.grapple.cancel()  # the grapple shots leave it mid-reel
+	var from := level.get_node(^"Level/PocketA/AmbushSoil") as SoilPatch
+	var to := level.get_node(^"Level/PocketA/AmbushSoilBull") as SoilPatch
+	var bull := level.get_node_or_null(^"Enemies/PocketA/Bull") as Enemy
+	var pad := ScriptedInputProvider.new()
+	player.input_provider = pad
+	player.unlock_gadget(Gadgets.BURROW)
+	player.global_position = from.global_position + Vector3.UP * 0.05
+	player.velocity = Vector3.ZERO
+	player.facing_yaw = 0.0
+	player.camera_rig.yaw = 0.0
+	player.camera_rig.pitch = deg_to_rad(-15.0)
+	player.camera_rig.snap_to_target()
+	player.camera_rig.camera.make_current()
+	await get_tree().create_timer(0.3).timeout
+	pad.next.dodge_pressed = true  # dig in
+	for _i: int in 60:
+		await get_tree().physics_frame
+		if player.burrow.is_under():
+			break
+	pad.next.dodge_pressed = true  # tunnel to the patch behind the bull
+	for _i: int in 120:
+		await get_tree().physics_frame
+		if player.burrow.is_under() and player.burrow.patch == to:
+			break
+	pad.next.move = Vector2(0.3, -1.0)  # creep up behind the bull
+	DebugSettings.show_ai = true
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = to.global_position + Vector3(6.5, 4.5, 3.5)
+	cam.look_at(to.global_position.lerp(bull.global_position if bull != null else to.global_position, 0.4))
+	cam.make_current()
+	for _i: int in 15:
+		await get_tree().physics_frame
+	await _capture("burrow_mound.png")
+	DebugSettings.show_ai = false
+	pad.next.move = Vector2.ZERO
+	pad.next.jump_pressed = true  # pop out (press staff during the hop: swings on landing)
+	await get_tree().physics_frame
+	pad.next.melee_pressed = true
+	for _i: int in 6:
+		await get_tree().physics_frame
+	await _capture("burrow_pop.png")
+	for _i: int in 40:
+		await get_tree().physics_frame
+		if player.melee.phase == StaffMelee.Phase.SWING and player.melee.phase_time > 0.2:
+			break
+	await _capture("burrow_sneak.png")
+	if bull != null:
+		print("burrow sneak: bull %.0f / %.0f hp, aware %s" % [bull.health.current, bull.health.max_health, bull.aware])
 	cam.queue_free()
 	pad.next = PlayerInputState.new()
 	player.input_provider = DeviceInputProvider.new()

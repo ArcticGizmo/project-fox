@@ -165,6 +165,27 @@ extends Resource
 ## Wing unfold / fold time (visual).
 @export var glide_unfold_time: float = 0.15
 
+@export_group("Burrow")
+## Burrow Claws (BurrowClaws). With the gadget, a floor dodge on a SoilPatch
+## dives underground: the fox sinks over burrow_dive_time (no control)...
+@export var burrow_dive_time: float = 0.2
+## ...then moves under the patch (never off it) at this speed.
+@export var burrow_move_speed: float = 3.5
+@export var burrow_acceleration: float = 30.0
+## Dodge on a linked patch tunnels to its partner at this speed, taking at least
+## burrow_tunnel_min_time (arrives still underground).
+@export var burrow_tunnel_speed: float = 9.0
+@export var burrow_tunnel_min_time: float = 0.45
+## Jump (or dodge on a standalone patch) pops out with a hop this high.
+@export var burrow_pop_hop_height: float = 0.7
+## After popping out the fox stays unseen this long (so a point-blank enemy does
+## not notice it before the sneak swing lands).
+@export var burrow_surface_conceal_time: float = 0.75
+## The first staff swing hit within this time of popping out...
+@export var burrow_sneak_window: float = 1.5
+## ...deals this much more damage to an unaware enemy.
+@export var burrow_sneak_multiplier: float = 2.5
+
 @export_group("Weapon wheel")
 ## Game speed while the wheel is open.
 @export var wheel_time_scale: float = 0.1
@@ -189,6 +210,10 @@ func jump_velocity() -> float:
 
 func double_jump_velocity() -> float:
 	return sqrt(2.0 * gravity * double_jump_height)
+
+
+func burrow_pop_velocity() -> float:
+	return sqrt(2.0 * gravity * burrow_pop_hop_height)
 
 
 func grapple_hop_velocity() -> float:

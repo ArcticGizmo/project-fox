@@ -18,7 +18,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `input/` (providers + `PlayerInputState`) |
-| `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column) |
+| `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
@@ -46,7 +46,7 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 .\tools\test.ps1 -Filter bull    # tests whose file/method name contains "bull"
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
-godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*.png, grapple_*.png, glide_*.png)
+godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*)
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
 
@@ -55,12 +55,13 @@ Run the test suite after every change. Use the screenshot tool to check anything
 chill vs frozen enemies, the two flyers (cruising and diving), an overview, and the slice in
 `_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
 framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`, `grapple_reel`,
-`grapple_reel_side`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`). Add a `_capture_<gadget>` step per gadget.
+`grapple_reel_side`, then `_capture_burrow` at pocket A's ambush tunnel: `burrow_mound` (AI view on), `burrow_pop`,
+`burrow_sneak`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`). Add a `_capture_<gadget>` step per gadget.
 
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space (air, ring highlighted: grapple; hold while falling after the double jump: glide) · dodge B/Shift · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
+jump A/Space (air, ring highlighted: grapple; hold while falling after the double jump: glide) · dodge B/Shift (on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default) · weapon wheel hold
 Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
@@ -160,6 +161,17 @@ D-pad up/F2 · next wave D-pad down/F3.
   close it (forced closes need a fresh press). Weapons fire while gliding; strafe is off.
   `SteamVent` (group `steam_vents`, `lift_at(pos)`) lifts a glider to near its column top and
   barely nudges anyone else; the glide `GadgetGate` builds one (`gate.vent`). Vents never damage.
+  Burrow: a floor dodge on (or onto) a `SoilPatch` (group `soil_patches`, `SoilPatch.at(tree, pos)`)
+  dives under it: fox hidden, dirt mound shown, body off (layer 0, mask WORLD), invulnerable,
+  `player.is_hidden()` true. Underground movement never leaves the patch; dodge on a linked patch
+  (`exit`, either side; burrow `GadgetGate`s build `gate.soil` and link via `link`) tunnels to its
+  partner (arrives still under), jump (or dodge on a standalone patch) pops out with a small hop.
+  No firing/staff/grapple underground. Enemies: `_resolve_target()` returns null for a hidden
+  player (`target_hidden`); aware enemies with `forget_time > 0` lose track (unaware, investigate
+  `last_seen_position`, suspicion `LOST_TRACK_SUSPICION`). After popping out the fox stays hidden
+  for `burrow_surface_conceal_time` (ended early by a staff hit or firing) and the first staff
+  swing hit within `burrow_sneak_window` does ×`burrow_sneak_multiplier` to an unaware enemy
+  (a staff press during the hop swings on landing). Keep patches away from lava.
 
 ## Testing gotchas
 

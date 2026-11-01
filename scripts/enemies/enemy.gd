@@ -55,6 +55,8 @@ const GROUP_ALERT_DELAY_MAX := 0.4
 const ARRIVE_DISTANCE := 0.7
 ## Leashed enemies walk home at this fraction of move_speed.
 const RETURN_SPEED_FACTOR := 0.75
+## Suspicion left when an aware enemy loses track of a hidden (burrowed) target.
+const LOST_TRACK_SUSPICION := 0.5
 ## Upward stretch of the alert pop (wind-ups squash, so this reads differently).
 const ALERT_POP_SCALE := Vector3(0.8, 1.4, 0.8)
 ## Enemies that fall below this (off a ledge into a pit) die.
@@ -209,6 +211,8 @@ var _look_left: float = -1.0
 var _patrol_index: int = 0
 ## Distance from the eye to the target on the last perception check.
 var perceived_distance: float = INF
+## True when the player is there but hidden (burrowed): target is null for it.
+var target_hidden: bool = false
 
 
 func _ready() -> void:
@@ -447,6 +451,8 @@ func _physics_process(delta: float) -> void:
 	_update_burn(delta)
 	_update_statuses(delta)
 	target = _resolve_target()
+	if aware and target_hidden and forget_time > 0.0 and not is_disabled():
+		_lose_track()
 
 	# The AI runs on its own clock: chill slows telegraphs and turning as well
 	# as movement; freeze and stagger stop it entirely.
@@ -620,6 +626,7 @@ static func in_radius(tree: SceneTree, center: Vector3, radius: float) -> Array[
 ## The closest lure (group "lures", property lure_radius) in range wins over
 ## the player.
 func _resolve_target() -> Node3D:
+	target_hidden = false
 	var best: Node3D = null
 	var best_dist := INF
 	for n: Node in get_tree().get_nodes_in_group(&"lures"):
@@ -634,10 +641,27 @@ func _resolve_target() -> Node3D:
 		return best
 	var p: Node3D = target if target != null and is_instance_valid(target) and target.is_in_group(&"player") else get_tree().get_first_node_in_group(&"player") as Node3D
 	# A dead player is no target: enemies stop attacking the corpse during the
-	# respawn delay (placed enemies are then reset by LevelRoot).
+	# respawn delay (placed enemies are then reset by LevelRoot). A hidden one
+	# (burrowed) can't be perceived at all: no sight, no point blank.
 	if p is Player and (p as Player).is_dead:
 		return null
+	if p is Player and (p as Player).is_hidden():
+		target_hidden = true
+		return null
 	return p
+
+
+## An aware enemy whose target vanished (burrowed) loses track: it goes unaware
+## and investigates where it last saw it, half suspicious. Always-aware enemies
+## (forget_time 0: waves, tests) just have no target until it reappears.
+func _lose_track() -> void:
+	aware = false
+	suspicion = LOST_TRACK_SUSPICION
+	unseen_time = 0.0
+	_alert_delay = -1.0
+	_interrupt()
+	investigate_point = last_seen_position
+	enter_state(INVESTIGATE)
 
 
 # --- Awareness ------------------------------------------------------------------

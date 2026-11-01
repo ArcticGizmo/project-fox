@@ -279,6 +279,63 @@ Done notes / deviations:
 - Screenshots: `glide_vent.png`, `glide_gap.png`, `glide_gap_side.png` (`_capture_glide`,
   after `_capture_grapple` in `_capture_slice`; it frees the level's enemies first).
 
+## Task 7: Burrow Claws (done)
+
+- `scripts/gadgets/`: `BurrowClaws` (component on the player: phases DIVE → UNDER ⇄ TUNNEL,
+  underground velocity, patch confinement, the dirt mound) and `SoilPatch` (@tool flat soil disc;
+  group `soil_patches`; `radius`, `contains()`, `confine()`, `SoilPatch.at()`; optional `exit`
+  NodePath to a partner patch or burrow gate, resolved from either side by `partner()`). No
+  collision: without the gadget a patch is ground decor. The burrow `GadgetGate` builds a real
+  patch on its top (`gate.soil`, radius = half the smaller side) and links it with `link`.
+- Controls (no new buttons): with `&"burrow"`, a **floor dodge on or onto a patch** digs in (the
+  check runs every dodge frame on the floor, so dodging onto one from 2–3 m away works).
+  Underground: stick moves the mound, **jump pops out**, **dodge tunnels** to a linked patch
+  (arriving still underground, so you pick the moment to pop) or pops out of a standalone one.
+  Decision: underground movement never leaves the patch (no free roaming); tunnels are authored
+  links. Keeps level design controllable and stops burrowing past gates or enemies' pockets.
+- Feel (`PlayerTuning` "Burrow"): dive 0.2 s (no control, fox sinks), underground speed 3.5 m/s
+  (accel 30), tunnel 9 m/s with a 0.45 s minimum, pop-out hop 0.7 m (not cut by releasing jump,
+  like the grapple hop; refunds the double jump), conceal 0.75 s after popping, sneak window
+  1.5 s, sneak ×2.5.
+- While burrowed: fox visual sinks then hides, a light fresh-earth mound with tumbling clods
+  follows it (dips mid-tunnel); body `collision_layer` 0 / mask WORLD (enemies walk over it);
+  hurtbox invulnerable (hazards on the surface, projectiles, everything); no fire, staff or
+  grapple; the steam hammer ignores a burrowed fox (it tracks creatures). Death, respawn and
+  `launch_up` drop out of the ground. Keep patches away from lava.
+- Awareness: `Player.is_hidden()` (burrowed, or within the conceal time after popping out).
+  `Enemy._resolve_target()` returns null for a hidden player and sets `target_hidden`, so sight
+  and point-blank both fail and suspicion drains. Aware enemies with `forget_time > 0` **lose
+  track** at once (`_lose_track`: hitboxes off, unaware, `investigate` at `last_seen_position`,
+  suspicion `LOST_TRACK_SUSPICION` 0.5); always-aware ones (waves, tests) just have no target
+  until the fox reappears. Deviation from "treat like lost sight": the existing lost-sight path
+  keeps attacking the target's live position for `forget_time`, which a burrow must not allow.
+- Sneak attack: the first staff **swing** hit within the window (`Player._sneak_modifier`, the
+  staff HitBox's `damage_modifier`) does ×2.5 to an enemy that is not `aware` (shown as a
+  crit); any enemy hit spends the window. Slams don't get it (they make noise). A staff press
+  during the pop hop (or on the pop frame) waits for the landing and swings, so the ambush is
+  jump + staff. The conceal time exists because point-blank (3 m) would otherwise notice the fox
+  before the swing lands; a staff hit landing or firing ends it, so the victim doesn't lose
+  track again. A sneak kill doesn't trigger the group alert (existing rule: a dead enemy never
+  alerts); a survivor (bull 160 hp) alerts its neighbours as usual.
+- Slice: `BurrowIn` links to `BurrowOut`: dodge, dodge, jump crosses under the divider past the
+  fire plates, sweeper and hammer (lightning door still ahead). Optional ambush in pocket A:
+  `Level/PocketA/AmbushSoil` (behind CoverA by the fence) tunnels to `AmbushSoilBull` right
+  behind the resting bull; one swing from its north edge reaches the bull (35 damage). Critical
+  path unchanged and completable without gadgets.
+- Tests: `tests/unit/test_burrow.gd` (locked / off-soil dodge is a dodge; dodge on and onto
+  soil; confined slow movement; hidden from a staring point-blank rat; suspicion drains; aware
+  bull loses track and investigates; tunnel under a wall; pop-out hop, conceal and visibility;
+  standalone dodge pops; no fire/staff; damage ignored; sneak ×2.5 on unaware; window expires;
+  no bonus on aware; sneak kill doesn't wake a neighbour; death digs out; staff with the pop
+  swings on landing) and `test_slice` (`BurrowIn → BurrowOut` with real input, needs the
+  gadget; ambush patch sits behind the bull within one swing).
+- Screenshots (`_capture_burrow`, between grapple and glide): `burrow_mound.png` (mound behind
+  the bull, AI view on: everyone resting at 0 suspicion), `burrow_pop.png`, `burrow_sneak.png`
+  (the "35!" crit).
+- Wants a hands-on pass: whether 0.75 s conceal feels fair, whether pocket A's ambush is
+  reachable before the rats notice you, and whether the mound should be visible to enemies
+  (e.g. raise suspicion slowly when it moves in their cone) for more tension.
+
 ## Tasks 5–8: Starter gadgets
 
 Each: gadget script under `scripts/gadgets/`, gate objects, tuning as data
@@ -290,7 +347,7 @@ in the slice.
    (X) on a light enemy at grapple range yanks it to you (later, if cheap).
 6. **Leaf-wing Cloak** (done, see Task 6 above). Hold jump while falling after the double jump → glide (capped fall
    speed, steerable). Steam vents give updrafts.
-7. **Burrow Claws.** Dodge onto a soil patch → burrow; move underground (unseen by the
+7. **Burrow Claws** (done, see Task 7 above). Dodge onto a soil patch → burrow; move underground (unseen by the
    awareness system); dodge again or reach the linked patch → pop out. Popping out behind
    an unaware enemy = sneak attack bonus on the next staff hit.
 8. **Copper Conduit Gauntlet.** Staff-hit a lightning barrier to absorb a charge (gauntlet
