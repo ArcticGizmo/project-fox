@@ -3,7 +3,7 @@ extends Node3D
 ## Brass Grapple-Tail (gadget &"grapple"). A component on the player, like
 ## StaffMelee: it picks and highlights the best GrappleRing, throws the tail,
 ## computes the reel velocity and draws the rope. The player owns the body:
-## it asks `update_target()` every frame, calls `start()` when jump is pressed
+## it asks `update_target()` every frame, calls `start()` when dodge is pressed
 ## in the air with a ring ready, and while `is_active()` uses `reel()` as its
 ## velocity instead of normal movement.
 ##
@@ -59,7 +59,7 @@ func is_active() -> bool:
 	return phase != Phase.IDLE
 
 
-## A ring is highlighted and jump would grapple to it (airborne).
+## A ring is highlighted and dodge would grapple to it (airborne).
 func is_ready() -> bool:
 	return target != null and phase == Phase.IDLE and not player.is_on_floor()
 

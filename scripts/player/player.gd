@@ -334,10 +334,12 @@ func _move(delta: float) -> void:
 		_grapple_settle = 0.0
 
 	# Grapple-Tail: the reel owns velocity; dodge lets go (and dodges).
+	var let_go := false
 	if grapple.is_active():
 		close_glide(true)
 		if input.dodge_pressed:
 			grapple.cancel()
+			let_go = true
 		else:
 			_reel(delta)
 			return
@@ -355,6 +357,13 @@ func _move(delta: float) -> void:
 		var after_hit := melee.phase != StaffMelee.Phase.SWING or melee.phase_time > tuning.melee_active_end
 		if input.dodge_pressed or (_jump_buffer > 0.0 and after_hit):
 			melee.cancel()
+
+	# Grapple: dodge with a ring highlighted (airborne) grapples instead of dodging.
+	if input.dodge_pressed and not let_go and not melee.is_busy() and grapple.is_ready():
+		close_glide(true)
+		grapple.start()
+		_reel(delta)
+		return
 
 	# Dodge
 	if input.dodge_pressed and not melee.is_busy() and _dodge_cooldown <= 0.0 and _dodge_time <= 0.0 and (on_floor or not _air_dodge_used):
@@ -411,10 +420,6 @@ func _move(delta: float) -> void:
 			velocity.y = tuning.jump_velocity()
 			_jump_buffer = 0.0
 			_coyote = 0.0
-		elif grapple.is_ready():
-			# A highlighted ring beats the double jump (which the release refunds).
-			grapple.start()
-			_jump_buffer = 0.0
 		elif _air_jumps_left > 0:
 			velocity.y = tuning.double_jump_velocity()
 			_air_jumps_left -= 1

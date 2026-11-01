@@ -61,7 +61,7 @@ framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`,
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space (air, ring highlighted: grapple; hold while falling after the double jump: glide) · dodge B/Shift (on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default; staff a live barrier: charge; staff a terminal: power; charged hit on an enemy: chain lightning) · weapon wheel hold
+jump A/Space (hold while falling after the double jump: glide) · dodge B/Shift (air, ring highlighted: grapple; on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default; staff a live barrier: charge; staff a terminal: power; charged hit on an enemy: chain lightning) · weapon wheel hold
 Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
@@ -153,8 +153,8 @@ D-pad up/F2 · next wave D-pad down/F3.
   actions on existing verbs (no new buttons) and read only `PlayerInputState` via the player.
   Grapple: `GrappleRing` (group `grapple_rings`) anywhere, ~1.4 m above the ledge it should
   land you on (`GadgetGate.RING_HEIGHT`); the body it is mounted under never blocks its own
-  line of sight. Jump in the air with a ring highlighted grapples (beats the double jump,
-  which the release refunds); dodge or a hit with knockback ≥ `grapple_cancel_knockback`
+  line of sight. Dodge in the air with a ring highlighted grapples (instead of the air dodge;
+  the release refunds the double jump); dodge or a hit with knockback ≥ `grapple_cancel_knockback`
   lets go; no firing or staff while reeling.
   Glide: `LeafCloak` opens while jump is held, falling, with the double jump spent (so a grapple
   release, which refunds it, needs jump, jump-and-hold); release/landing/dodge/grapple/knockback

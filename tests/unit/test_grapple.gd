@@ -78,12 +78,12 @@ func test_no_highlight_behind_camera() -> void:
 	assert_true(player.grapple.target == null, "ring behind the camera is ignored")
 
 
-func test_jump_grapples_and_lands_on_top() -> void:
+func test_dodge_grapples_and_lands_on_top() -> void:
 	player.unlock_gadget(Gadgets.GRAPPLE)
 	await _jump_and_rise()
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	await wait_frames(1)
-	assert_true(player.grapple.is_active(), "jump in the air grapples")
+	assert_true(player.grapple.is_active(), "dodge in the air grapples")
 	await wait_frames(int(player.tuning.grapple_throw_time / FRAME) + 3)
 	assert_eq(player.grapple.phase, GrappleTail.Phase.REEL, "reeling after the throw")
 	assert_true(player.velocity.length() > player.tuning.grapple_reel_start_speed * 0.9, "pulled toward the ring")
@@ -99,7 +99,7 @@ func test_jump_grapples_and_lands_on_top() -> void:
 func test_reel_speed_follows_tuning() -> void:
 	player.unlock_gadget(Gadgets.GRAPPLE)
 	await _jump_and_rise()
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	var top := 0.0
 	for _i: int in 90:
 		await get_tree().physics_frame
@@ -122,7 +122,7 @@ func test_double_jump_unchanged_without_ring_in_reach() -> void:
 func test_dodge_cancels_the_reel() -> void:
 	player.unlock_gadget(Gadgets.GRAPPLE)
 	await _jump_and_rise()
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	await wait_frames(int(player.tuning.grapple_throw_time / FRAME) + 4)
 	assert_true(player.grapple.is_active(), "reeling")
 	pad.next.move = Vector2(1, 0)
@@ -136,7 +136,7 @@ func test_dodge_cancels_the_reel() -> void:
 func _start_reel() -> void:
 	player.unlock_gadget(Gadgets.GRAPPLE)
 	await _jump_and_rise()
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	await wait_frames(int(player.tuning.grapple_throw_time / FRAME) + 3)
 
 
@@ -160,7 +160,7 @@ func test_no_firing_while_reeling() -> void:
 	var w := player.current_weapon()
 	var ammo := w.ammo
 	await _jump_and_rise()
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	await wait_frames(2)
 	pad.next.fire_held = true
 	await wait_frames(10)

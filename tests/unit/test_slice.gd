@@ -251,7 +251,10 @@ func _ledge_attempt(player: Player, pad: ScriptedInputProvider, from: Block, led
 	for _f: int in 240:
 		if not second and player.velocity.y <= 1.0 and not player.is_on_floor():
 			second = true
-			pad.next.jump_pressed = true
+			if player.grapple.is_ready():
+				pad.next.dodge_pressed = true
+			else:
+				pad.next.jump_pressed = true
 		await get_tree().physics_frame
 		var p := player.global_position
 		if second and player.is_on_floor() and lr.grow(-0.1).has_point(Vector2(p.x, p.z)) and absf(p.y - _top(ledge)) < 0.3:

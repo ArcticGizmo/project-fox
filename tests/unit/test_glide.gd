@@ -186,7 +186,7 @@ func test_grapple_release_then_glide() -> void:
 	pad.next.jump_pressed = true
 	pad.next.jump_held = true
 	await wait_frames(12)
-	pad.next.jump_pressed = true  # grapple; jump stays held through the release
+	pad.next.dodge_pressed = true  # grapple; jump stays held through the release
 	var released := await wait_until(func() -> bool: return player.grapple.just_released, 2.0)
 	assert_true(released, "reeled and released")
 	var falling := await wait_until(func() -> bool: return player.velocity.y < 0.0 or player.is_on_floor(), 1.0)

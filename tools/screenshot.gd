@@ -396,7 +396,7 @@ func _capture_grapple(level: LevelRoot) -> void:
 		if player.velocity.y <= 2.0:
 			break
 	await _capture("grapple_ready.png")
-	pad.next.jump_pressed = true
+	pad.next.dodge_pressed = true
 	for _i: int in 60:
 		await get_tree().physics_frame
 		if player.grapple.phase == GrappleTail.Phase.REEL and player.grapple.phase_time > 0.12:
