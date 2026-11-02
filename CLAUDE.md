@@ -49,6 +49,7 @@ hit for that activation (use `repeat_interval` for lingering hazards).
 godot --path . res://tools/screenshot.tscn -- --wait=4   # renders game, writes screenshots/*.png
 godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one shot per weapon firing
 godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
+godot --path . res://tools/screenshot.tscn -- --boss       # only the Furnace Stag arena shots (boss_intro, boss_rear, boss_shockwave, boss_phase2, boss_barrage, boss_lightning)
 godot --path . res://tools/screenshot.tscn -- --fox        # only the fox animation contact sheets (fox_walk_side/front, fox_run_side, fox_idle) + showcase_*
 godot --headless --path . -s res://tools/gen_textures.gd [-- cobble ...]   # regenerate placeholder texture sets
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
