@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://y6hg3emuc8fy"
-path.s3tc="res://.godot/imported/Dragon_bellows_0.png-7b3aa61b3b879deb29e6dda369b35d3e.s3tc.ctex"
+path.s3tc="res://.godot/imported/Dragon_bellows_0.png-fcbf68897fb78ade221ef2ffb6568f80.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -14,8 +14,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://imported_models/Dragon_bellows/Dragon_bellows_0.png"
-dest_files=["res://.godot/imported/Dragon_bellows_0.png-7b3aa61b3b879deb29e6dda369b35d3e.s3tc.ctex"]
+source_file="res://assets/weapons/dragon_bellows/Dragon_bellows_0.png"
+dest_files=["res://.godot/imported/Dragon_bellows_0.png-fcbf68897fb78ade221ef2ffb6568f80.s3tc.ctex"]
 
 [params]
 

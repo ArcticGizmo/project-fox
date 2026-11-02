@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dslko5y8poghx"
-path.s3tc="res://.godot/imported/Chrono_Chime_0.png-2291f5081d94ff3ee386fc954955e2e0.s3tc.ctex"
+uid="uid://sor18vtocxlk"
+path.s3tc="res://.godot/imported/Coal_Beetle_0.png-5295f74a452076822c9c344ec78d8c5f.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "78e3e33005c04d0d5aece8203b4e2069"
+"md5": "36994201eb445191a690922da676ae9f"
 }
 
 [deps]
 
-source_file="res://imported_models/Chrono_Chime/Chrono_Chime_0.png"
-dest_files=["res://.godot/imported/Chrono_Chime_0.png-2291f5081d94ff3ee386fc954955e2e0.s3tc.ctex"]
+source_file="res://assets/enemies/coal_beetle/Coal_Beetle_0.png"
+dest_files=["res://.godot/imported/Coal_Beetle_0.png-5295f74a452076822c9c344ec78d8c5f.s3tc.ctex"]
 
 [params]
 

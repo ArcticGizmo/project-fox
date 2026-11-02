@@ -169,6 +169,11 @@ var _knockback: Vector3 = Vector3.ZERO
 var _rift_drift: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
 var _material: StandardMaterial3D
+## Art: replaces the primitive body, snout and eyes when a subclass returns one from
+## _make_model() (see fit_model()). Lives under `visual`, faces -Z, base at the origin;
+## telegraphs and status glows light all of its materials.
+var model: Node3D
+var _model_materials: Array[StandardMaterial3D] = []
 var _label: Label3D
 var _burn_dps: float = 0.0
 var _burn_left: float = 0.0
@@ -354,16 +359,22 @@ func _build_body() -> void:
 	_material.albedo_color = color
 	_material.emission_enabled = true
 	_material.emission = Color.BLACK
-	var body := MeshInstance3D.new()
-	body.mesh = make_mesh(body_shape, body_size)
-	body.material_override = _material
-	body.position.y = e.y * 0.5
-	visual.add_child(body)
-	# Snout and eyes so facing (and therefore telegraphs) read clearly.
-	add_visual_box(Vector3(e.x * 0.4, e.y * 0.25, 0.2), Vector3(0, e.y * 0.5, -e.z * 0.5 - 0.08), color.darkened(0.45))
-	var eye := Vector3(0.12, 0.12, 0.06)
-	add_visual_box(eye, Vector3(-e.x * 0.22, e.y * 0.78, -e.z * 0.5 + 0.02), Color.WHITE)
-	add_visual_box(eye, Vector3(e.x * 0.22, e.y * 0.78, -e.z * 0.5 + 0.02), Color.WHITE)
+	model = _make_model()
+	if model != null:
+		model.name = "Model"
+		visual.add_child(model)
+		_model_materials = own_materials(model)
+	else:
+		var body := MeshInstance3D.new()
+		body.mesh = make_mesh(body_shape, body_size)
+		body.material_override = _material
+		body.position.y = e.y * 0.5
+		visual.add_child(body)
+		# Snout and eyes so facing (and therefore telegraphs) read clearly.
+		add_visual_box(Vector3(e.x * 0.4, e.y * 0.25, 0.2), Vector3(0, e.y * 0.5, -e.z * 0.5 - 0.08), color.darkened(0.45))
+		var eye := Vector3(0.12, 0.12, 0.06)
+		add_visual_box(eye, Vector3(-e.x * 0.22, e.y * 0.78, -e.z * 0.5 + 0.02), Color.WHITE)
+		add_visual_box(eye, Vector3(e.x * 0.22, e.y * 0.78, -e.z * 0.5 + 0.02), Color.WHITE)
 
 	var cs := CollisionShape3D.new()
 	cs.shape = make_shape(body_shape, body_size)
@@ -406,6 +417,52 @@ func _build_body() -> void:
 	ice_block.position = Vector3(0, (e.y + 0.25) * 0.5, -0.1)
 	ice_block.visible = false
 	visual.add_child(ice_block)
+
+
+## A static model scaled uniformly to fit inside `size` (width, height, length), base
+## centre on the origin, turned by `yaw` (Meshy models face +Z, enemies face -Z).
+static func fit_model(scene: PackedScene, size: Vector3, yaw: float = PI) -> Node3D:
+	var pivot := Node3D.new()
+	var inner := scene.instantiate() as Node3D
+	inner.rotation.y = yaw
+	pivot.add_child(inner)
+	var bounds := AABB()
+	var first := true
+	for mi: MeshInstance3D in inner.find_children("*", "MeshInstance3D", true, false):
+		var t := inner.transform
+		var n: Node = mi
+		var chain := Transform3D.IDENTITY
+		while n != inner:
+			chain = (n as Node3D).transform * chain
+			n = n.get_parent()
+		var box := t * chain * mi.get_aabb()
+		bounds = box if first else bounds.merge(box)
+		first = false
+	var k := minf(size.x / bounds.size.x, minf(size.y / bounds.size.y, size.z / bounds.size.z))
+	inner.scale = Vector3.ONE * k
+	inner.position = -Vector3(bounds.get_center().x, bounds.position.y, bounds.get_center().z) * k
+	return pivot
+
+
+## Gives every surface under `root` its own emissive StandardMaterial3D (surfaces that
+## already have an override, like FoxModel's, are taken as they are) and returns them.
+static func own_materials(root: Node) -> Array[StandardMaterial3D]:
+	var out: Array[StandardMaterial3D] = []
+	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for i: int in mi.mesh.get_surface_count():
+			var mat := mi.get_surface_override_material(i) as StandardMaterial3D
+			if mat == null:
+				var src := mi.mesh.surface_get_material(i) as StandardMaterial3D
+				if src == null:
+					continue
+				mat = src.duplicate() as StandardMaterial3D
+				mi.set_surface_override_material(i, mat)
+			mat.emission_enabled = true
+			mat.emission = Color.BLACK
+			out.append(mat)
+	return out
 
 
 func add_visual_box(size: Vector3, pos: Vector3, c: Color) -> MeshInstance3D:
@@ -1203,6 +1260,11 @@ func _update_visuals(delta: float) -> void:
 		glow += CHILL_GLOW * chill * (0.6 + 0.15 * sin(_age * 8.0))
 	_material.emission = glow
 	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.75)
+	if not _model_materials.is_empty():
+		var tint := Color.WHITE.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.75)
+		for m: StandardMaterial3D in _model_materials:
+			m.emission = glow
+			m.albedo_color = tint
 	_web.visible = is_rooted()
 	ice_block.visible = is_frozen() and not health.is_dead
 	_update_shield_bubble()
@@ -1234,6 +1296,12 @@ func age_seconds() -> float:
 
 
 # --- Virtuals -----------------------------------------------------------------
+
+## Return the art that replaces the primitive body (e.g. fit_model(...) or a FoxModel
+## built from a rigged scene), or null for primitives. Called before _setup().
+func _make_model() -> Node3D:
+	return null
+
 
 ## Build hitboxes, weak spots and extra visuals.
 func _setup() -> void:

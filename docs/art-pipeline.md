@@ -120,6 +120,12 @@ a generated set replaces one by dropping files in.
   +Z like Ember; the wrapper turns them). Held items (`weapons/`) instead have the origin at
   the grip, anywhere along the model (the staff is upright and centred; `StaffMelee` lays it
   along its grip frame).
+- Static Meshy exports arrive centred on their bounds, facing +Z, about 1 m across. For
+  enemies and props, set `import_script/path="res://tools/import/base_origin.gd"` in the
+  `.glb.import` to put the origin at the base. Meshy guns lie along X with the barrel at -X;
+  leave them centred and give their `WeaponData` a `model_grip` (see `HeldModel`).
+- Rigged Meshy characters (SmartRig, Mixamo bone names, T-pose, 1.7 m) can wear every
+  clip `FoxModel` bakes: `FoxModel.new(height, null, scene)` (the Raccoon Rogue does).
 - One material per asset where possible; embedded texture extracted next to the GLB.
 - Collision is never the render mesh: gameplay keeps its Block/area shapes, props get one
   box or capsule if any.

@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://sor18vtocxlk"
-path.s3tc="res://.godot/imported/Coal_Beetle_0.png-22c62ce0a5bb5b3d85fffab3c0f30fac.s3tc.ctex"
+uid="uid://bqhfqwovuvpsh"
+path.s3tc="res://.godot/imported/racoon_rouge_Image_0.png-100d90a8f71fdd5dfba01321d59a028e.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "36994201eb445191a690922da676ae9f"
+"md5": "7b188d5951930e57288c2c76d754fadd"
 }
 
 [deps]
 
-source_file="res://imported_models/Coal_Beetle/Coal_Beetle_0.png"
-dest_files=["res://.godot/imported/Coal_Beetle_0.png-22c62ce0a5bb5b3d85fffab3c0f30fac.s3tc.ctex"]
+source_file="res://assets/enemies/raccoon_rogue/racoon_rouge_Image_0.png"
+dest_files=["res://.godot/imported/racoon_rouge_Image_0.png-100d90a8f71fdd5dfba01321d59a028e.s3tc.ctex"]
 
 [params]
 

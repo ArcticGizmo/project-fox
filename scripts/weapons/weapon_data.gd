@@ -30,6 +30,14 @@ extends Resource
 @export var xp_to_next_level: PackedInt32Array = PackedInt32Array()
 @export var levels: Array[WeaponLevelStats] = []
 
+@export_group("Model")
+## Held in the fox's right hand (see HeldModel). null = a box in `color`.
+@export var model: PackedScene
+## Where the hand closes on it, in the model's own coordinates (barrel along its -X).
+@export var model_grip: Vector3 = Vector3.ZERO
+## Scaled so its length along the barrel is this many metres.
+@export var model_length: float = 0.5
+
 
 func max_level() -> int:
 	return levels.size()

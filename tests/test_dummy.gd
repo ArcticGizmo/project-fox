@@ -6,6 +6,8 @@ var health: Health
 var hurt_box: HurtBox
 var hits: Array[DamageInfo] = []
 var move_with_velocity: bool = false
+## Pocket money for thieves (Raccoon Rogue), like Player.glimmer.
+var glimmer: int = 0
 
 
 func _ready() -> void:
@@ -40,6 +42,13 @@ func _physics_process(_delta: float) -> void:
 
 func get_aim_point() -> Vector3:
 	return global_position + Vector3.UP
+
+
+func spend_glimmer(amount: int) -> bool:
+	if amount < 0 or amount > glimmer:
+		return false
+	glimmer -= amount
+	return true
 
 
 func damage_taken() -> float:

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dlhw7c3pv5oxm"
-path="res://.godot/imported/Chrono_Chime.glb-e20d41b6c012bd55dfa80af58225c381.scn"
+uid="uid://bd1wj26npqkej"
+path="res://.godot/imported/Dragon_bellows.glb-3a043384d8d9fdaf310c03a1c7302ab8.scn"
 
 [deps]
 
-source_file="res://imported_models/Chrono_Chime/Chrono_Chime.glb"
-dest_files=["res://.godot/imported/Chrono_Chime.glb-e20d41b6c012bd55dfa80af58225c381.scn"]
+source_file="res://assets/weapons/dragon_bellows/Dragon_bellows.glb"
+dest_files=["res://.godot/imported/Dragon_bellows.glb-3a043384d8d9fdaf310c03a1c7302ab8.scn"]
 
 [params]
 

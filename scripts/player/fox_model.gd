@@ -128,10 +128,12 @@ var _thigh_length: float = 0.27
 var _shin_length: float = 0.23
 
 
-func _init(height: float = MODEL_HEIGHT, tuning: PlayerTuning = null) -> void:
+## `scene` swaps in another Meshy SmartRig character (same Mixamo bone names, T-pose,
+## facing +Z, MODEL_HEIGHT tall, a "Running" clip): it gets every clip baked here.
+func _init(height: float = MODEL_HEIGHT, tuning: PlayerTuning = null, scene: PackedScene = SCENE) -> void:
 	name = "FoxModel"
 	_tuning = tuning if tuning != null else PlayerTuning.new()
-	var model := SCENE.instantiate() as Node3D
+	var model := scene.instantiate() as Node3D
 	# The GLB faces +Z; the player faces -Z.
 	model.rotation.y = PI
 	_model_scale = height / MODEL_HEIGHT

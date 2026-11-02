@@ -21,8 +21,8 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `FoxModel` (rigged GLB in `assets/characters/ember/`; bakes its clips from code; `update(speed, on_floor, vy, hold)` + `play_action(clip)` + `aim()`; gun on `gun_mount` in the right hand, `FoxAimLayer` raises the arm, `FoxTwistLayer` turns the hips toward travel; showcase level + `--fox` sheets show every clip), `input/` (providers + `PlayerInputState`) |
 | `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
-| `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`, `ScaleShard`, `Shockwave` (expanding ground ring you jump), `DelayedStrike` (marked spot that strikes after a delay). Boss: `FurnaceStag` (group `bosses`). Scenes in `scenes/enemies/` |
-| `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `SwallowDart`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
+| `scripts/enemies/` | `Enemy` base (statuses, flight, targeting, optional `model` via `_make_model()`), one script per enemy (`CoalBeetle` and `RaccoonRogue` wear imported models), `LobProjectile`, `ScaleShard`, `Shockwave` (expanding ground ring you jump), `DelayedStrike` (marked spot that strikes after a delay), `CoalEmber` (burning patch, DoT). Boss: `FurnaceStag` (group `bosses`). Scenes in `scenes/enemies/` |
+| `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, `HeldModel` (builds `WeaponData.model` for the hand), plus the things weapons leave behind (`Projectile`, `SwallowDart`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
 | `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select, save apply/autosave), `Arena`, `MagpiePeddler` (@tool vendor stall; staff the bell to trade), `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (@tool zone: pull along local -Y replaces gravity, `size.y` = length along the pull; lifts and currents), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scenes/levels/` | Level scenes (`slice_01.tscn` (Magpie stall on the pad, 2 Heartsprings, 6 jars under `Pickups`); `slice_02.tscn` = gadgets in combination (rift lift, grapple pillar to glide, rift current, burrow choke, conduit door) ending at the Furnace Stag, starts with all gadgets via `LevelRoot.starting_gadgets` and lends every weapon (`lend_all_weapons`); `boss_furnace_stag.tscn` = the boss arena on its own (also lends every weapon); `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
@@ -32,8 +32,8 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s: surface styles + atmosphere (sky, sun, haze, SSAO, grading); `storybook_town` is the default) |
 | `assets/` | Art. `textures/<name>/albedo.png + normal.png` (seamless, green-up normal, imported with mipmaps and normal_map=1) |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
-| `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features), `gen_textures.gd` (procedural placeholder texture sets) |
-| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`, `art-pipeline.md`: layout vs theming layers, style guide from Ember, asset list and conventions), `playtest-batch-2.md` (checklist for the next hands-on batch) |
+| `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features), `gen_textures.gd` (procedural placeholder texture sets), `import/base_origin.gd` (GLB import script: static Meshy exports to base origin) |
+| `docs/` | Design plans and decisions (`model-inventory.md`: every imported model and what it is bound to, `plan-awareness-slice-gadgets.md`, `gadgets.md`, `art-pipeline.md`: layout vs theming layers, style guide from Ember, asset list and conventions), `playtest-batch-2.md` (checklist for the next hands-on batch) |
 
 Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
 from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
@@ -53,6 +53,7 @@ godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox sl
 godot --path . res://tools/screenshot.tscn -- --boss       # only the Furnace Stag arena shots (boss_intro, boss_rear, boss_shockwave, boss_phase2, boss_barrage, boss_lightning)
 godot --path . res://tools/screenshot.tscn -- --fox        # only the fox animation contact sheets (fox_walk_side/front, fox_run_side, fox_idle) + showcase_*
 godot --path . res://tools/screenshot.tscn -- --shop       # only the glimmer / Magpie Peddler / pickup shots
+godot --path . res://tools/screenshot.tscn -- --models     # only the imported-model shots (held_<weapon id>, beetle_*, rogue_*)
 godot --headless --path . -s res://tools/gen_textures.gd [-- cobble ...]   # regenerate placeholder texture sets
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
@@ -191,6 +192,16 @@ D-pad up/F2 · next wave D-pad down/F3.
   (switching skips them). Saved pickup ids are their node paths from the level root, so don't rename
   pickups in a shipped level. Tests and the screenshot tool run `SaveGame.use_memory_only()`; the
   runner resets the profile per test.
+- **Imported models** (`docs/model-inventory.md` tracks every one): Meshy drops land in `imported_models/`;
+  move a model into `assets/<category>/<name>/` when something uses it (`test_props` checks it there).
+  Static exports come centred: enemies/props get `import_script/path="res://tools/import/base_origin.gd"`
+  in their `.glb.import`. Enemies override `_make_model()`: `fit_model(SCENE, body_size)` for a static
+  model (uniform scale into the body box, turned to face -Z), or `FoxModel.new(height, null, SCENE)`
+  for a rigged Meshy SmartRig character, which gets every clip FoxModel bakes (drive it with
+  `update()` / `play_action()` from `_after_move`; see `RaccoonRogue`). The model replaces the
+  primitive body; telegraph/status glows light all its materials. Gameplay shapes stay `body_size`.
+  Weapons: `WeaponData.model` + `model_grip` (grip point in model coordinates, barrel along the
+  model's -X as Meshy exports them) + `model_length`; without a model the hand holds a box in `color`.
 - **Dressing**: `Prop`s under `Level/Dressing` (group `dressing`); collision off unless the prop is cover
   (then `Collision.BOX`). `test_props` fails if colliding dressing sits on the critical path, and checks
   every model under `assets/<characters|props|weapons|enemies|gameplay>/` for the model conventions.

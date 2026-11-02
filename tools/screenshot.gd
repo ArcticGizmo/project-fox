@@ -3,6 +3,7 @@ extends Node
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
 ##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
+##   ... -- --models    only the imported-model shots (held_*, beetle_*, rogue_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 const BOSS_PATH := "res://scenes/levels/boss_furnace_stag.tscn"
@@ -41,6 +42,14 @@ func _ready() -> void:
 	# `--boss`: only the Furnace Stag arena shots.
 	if "--boss" in OS.get_cmdline_user_args():
 		await _capture_boss()
+		get_tree().quit()
+		return
+	# `--models`: only the shots of enemies and weapons wearing imported models.
+	if "--models" in OS.get_cmdline_user_args():
+		var sandbox := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+		add_child(sandbox)
+		await get_tree().create_timer(wait).timeout
+		await _capture_models(sandbox.get("player") as Player, sandbox.get_node("WaveManager") as WaveManager)
 		get_tree().quit()
 		return
 	# `--fox`: only the fox animation contact sheets.
@@ -95,6 +104,7 @@ func _ready() -> void:
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_pangolin(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_heron(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
+	await _capture_models(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_hazards(arena.get("player") as Player)
 	await _capture_awareness(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	# Overview from above to check layout and enemy scale.
@@ -1013,4 +1023,82 @@ func _capture_shop() -> void:
 	cam.make_current()
 	await get_tree().create_timer(0.3).timeout
 	await _capture("heartspring.png")
+	cam.queue_free()
+
+
+## Enemies and weapons wearing imported models: the fox holding each modelled weapon
+## (held_<id>), the Coal Beetle crawling over its embers, stoking, belching and
+## quenched, and the Raccoon Rogue darting in, winding up and fleeing with its loot.
+func _capture_models(player: Player, waves: WaveManager) -> void:
+	for e: Enemy in waves.alive.duplicate():
+		if is_instance_valid(e):
+			e.queue_free()
+	waves.set_physics_process(false)
+	player.god_mode = true
+	var base := player.global_position
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.make_current()
+	for i: int in player.weapons.size():
+		var w := player.weapons[i]
+		if w.data.model == null:
+			continue
+		w.owned = true
+		player.select_weapon(i)
+		cam.global_position = player.global_position + player.global_basis * Vector3(-1.6, 1.5, -1.8)
+		cam.look_at(player.global_position + Vector3.UP * 1.0)
+		Input.action_press(&"fire")
+		await get_tree().create_timer(0.25).timeout
+		await _capture("held_%s.png" % w.data.id)
+		Input.action_release(&"fire")
+		await get_tree().create_timer(0.3).timeout
+
+	var beetle := waves.spawn_enemy(&"beetle", base + Vector3(0, 0, -15)) as CoalBeetle
+	cam.global_position = base + Vector3(7, 4, -6)
+	cam.look_at(base + Vector3(0, 0.5, -11))
+	await get_tree().create_timer(2.2).timeout
+	await _capture("beetle_crawl.png")
+	for _i: int in 600:
+		if not is_instance_valid(beetle) or beetle.state == &"stoke" and beetle.state_time > beetle.stoke_time * 0.8:
+			break
+		await get_tree().physics_frame
+	cam.look_at(beetle.global_position + Vector3.UP * 0.5)
+	await _capture("beetle_stoke.png")
+	await get_tree().create_timer(0.35).timeout
+	cam.global_position = base + Vector3(9, 5, 2)
+	cam.look_at(base + Vector3(0, 1.5, -4))
+	await _capture("beetle_belch.png")
+	beetle.enter_state(&"stoke")
+	await get_tree().physics_frame
+	beetle.add_chill(beetle.quench_chill + 0.1, 2.0)
+	await get_tree().create_timer(0.3).timeout
+	cam.global_position = beetle.global_position + Vector3(4, 2.5, 3)
+	cam.look_at(beetle.global_position + Vector3.UP * 0.6)
+	await _capture("beetle_quenched.png")
+	beetle.queue_free()
+
+	player.add_glimmer(200)
+	var rogue := waves.spawn_enemy(&"rogue", base + Vector3(0, 0, -12)) as RaccoonRogue
+	cam.global_position = base + Vector3(5, 2.2, -4)
+	cam.look_at(base + Vector3(0, 0.8, -8))
+	await get_tree().create_timer(0.5).timeout
+	await _capture("rogue_dart.png")
+	for _i: int in 400:
+		if not is_instance_valid(rogue) or rogue.state == &"snatch_windup" and rogue.state_time > rogue.snatch_windup * 0.7:
+			break
+		await get_tree().physics_frame
+	cam.global_position = rogue.global_position + Vector3(3, 1.6, 1.5)
+	cam.look_at(rogue.global_position + Vector3.UP * 0.7)
+	await _capture("rogue_snatch_windup.png")
+	await get_tree().create_timer(0.15).timeout
+	await _capture("rogue_snatch.png")
+	rogue.loot = 40
+	rogue.enter_state(&"flee")
+	await get_tree().create_timer(0.7).timeout
+	cam.global_position = rogue.global_position + Vector3(4, 2.0, 2.5)
+	cam.look_at(rogue.global_position + Vector3.UP * 0.7)
+	await _capture("rogue_flee.png")
+	rogue.queue_free()
+	player.god_mode = false
+	waves.set_physics_process(true)
 	cam.queue_free()

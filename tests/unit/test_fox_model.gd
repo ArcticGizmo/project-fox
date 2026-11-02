@@ -203,3 +203,28 @@ func test_staff_rides_the_back_and_is_drawn_to_attack() -> void:
 	await wait_frames(2)
 	assert_eq(pivot.get_parent(), player.fox_model.staff_back_mount, "stowed again")
 	assert_true(player._gun.visible, "gun back")
+
+
+func test_weapons_with_a_model_hold_it_by_the_grip() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	for i: int in player.weapons.size():
+		var w := player.weapons[i]
+		w.owned = true
+		player._select_weapon(i)
+		await wait_frames(1)
+		if w.data.model == null:
+			assert_true(player._gun_box.visible, "%s: the box stands in" % w.data.id)
+			continue
+		assert_false(player._gun_box.visible, "%s: no box" % w.data.id)
+		var held := player._gun_models[w.data.id] as Node3D
+		assert_true(held.visible, "%s: model shown" % w.data.id)
+		var bounds := AABB()
+		var first := true
+		for mi: MeshInstance3D in held.find_children("*", "MeshInstance3D", true, false):
+			var box := held.global_transform.affine_inverse() * mi.global_transform * mi.get_aabb()
+			bounds = box if first else bounds.merge(box)
+			first = false
+		assert_near(bounds.size.z, w.data.model_length, 0.02, "%s: scaled to its length along the barrel" % w.data.id)
+		assert_true(bounds.grow(0.02).has_point(Vector3.ZERO), "%s: the grip (origin) is on the model" % w.data.id)
+		assert_true(bounds.get_center().z < 0.0, "%s: barrel points down the arm (-Z)" % w.data.id)

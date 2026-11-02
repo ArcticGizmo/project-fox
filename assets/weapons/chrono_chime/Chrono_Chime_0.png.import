@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bqhfqwovuvpsh"
-path.s3tc="res://.godot/imported/racoon_rouge_Image_0.png-7bdca030abdadd83eb42d4d17a5376fa.s3tc.ctex"
+uid="uid://dslko5y8poghx"
+path.s3tc="res://.godot/imported/Chrono_Chime_0.png-e2264634072f8a19ab215968229c5107.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "7b188d5951930e57288c2c76d754fadd"
+"md5": "78e3e33005c04d0d5aece8203b4e2069"
 }
 
 [deps]
 
-source_file="res://imported_models/racoon_rouge/racoon_rouge_Image_0.png"
-dest_files=["res://.godot/imported/racoon_rouge_Image_0.png-7bdca030abdadd83eb42d4d17a5376fa.s3tc.ctex"]
+source_file="res://assets/weapons/chrono_chime/Chrono_Chime_0.png"
+dest_files=["res://.godot/imported/Chrono_Chime_0.png-e2264634072f8a19ab215968229c5107.s3tc.ctex"]
 
 [params]
 

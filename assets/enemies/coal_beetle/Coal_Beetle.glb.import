@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c02mw68hr4aqi"
-path="res://.godot/imported/racoon_rouge.glb-90a1b1e38a8665e3f6c82ab1205c2ba7.scn"
+uid="uid://b53halarc31o6"
+path="res://.godot/imported/Coal_Beetle.glb-b5ea441180579bc3daa5c18b01165b9d.scn"
 
 [deps]
 
-source_file="res://imported_models/racoon_rouge/racoon_rouge.glb"
-dest_files=["res://.godot/imported/racoon_rouge.glb-90a1b1e38a8665e3f6c82ab1205c2ba7.scn"]
+source_file="res://assets/enemies/coal_beetle/Coal_Beetle.glb"
+dest_files=["res://.godot/imported/Coal_Beetle.glb-b5ea441180579bc3daa5c18b01165b9d.scn"]
 
 [params]
 
@@ -35,7 +35,7 @@ animation/fps=30
 animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
-import_script/path=""
+import_script/path="res://tools/import/base_origin.gd"
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""

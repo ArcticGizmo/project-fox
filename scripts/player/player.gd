@@ -138,8 +138,11 @@ var _flash: float = 0.0
 var _respawn_timer: float = -1.0
 var fox_model: FoxModel
 var _gun_material: StandardMaterial3D
-## The hand-held gun (hidden while the staff is drawn).
-var _gun: MeshInstance3D
+## The hand-held gun (hidden while the staff is drawn): the current weapon's model
+## (WeaponData.model, built on first use) or, without one, a box in its colour.
+var _gun: Node3D
+var _gun_box: MeshInstance3D
+var _gun_models: Dictionary = {}
 
 
 func _ready() -> void:
@@ -227,13 +230,16 @@ func _build_visual() -> void:
 	visual.add_child(muzzle)
 	_gun_material = _flat_material(Color.WHITE)
 	# The gun sits in the fox's right hand and points wherever the arm does.
-	_gun = MeshInstance3D.new()
+	_gun = Node3D.new()
+	_gun.name = "Gun"
+	fox_model.gun_mount.add_child(_gun)
+	_gun_box = MeshInstance3D.new()
 	var gun_box := BoxMesh.new()
 	gun_box.size = Vector3(0.13, 0.13, 0.42)
-	_gun.mesh = gun_box
-	_gun.material_override = _gun_material
-	_gun.position = Vector3(0, 0.03, -0.12)
-	fox_model.gun_mount.add_child(_gun)
+	_gun_box.mesh = gun_box
+	_gun_box.material_override = _gun_material
+	_gun_box.position = Vector3(0, 0.03, -0.12)
+	_gun.add_child(_gun_box)
 
 	melee = StaffMelee.new()
 	melee.tuning = tuning
@@ -927,7 +933,18 @@ func _select_weapon(index: int, force: bool = false) -> void:
 		other.visible = other == weapons[index]
 	var w := current_weapon()
 	_gun_material.albedo_color = w.data.color
+	_show_gun_model(w)
 	weapon_changed.emit(w)
+
+
+func _show_gun_model(w: Weapon) -> void:
+	if w.data.model != null and not _gun_models.has(w.data.id):
+		var held := HeldModel.build(w.data.model, w.data.model_grip, w.data.model_length)
+		_gun.add_child(held)
+		_gun_models[w.data.id] = held
+	for id: StringName in _gun_models:
+		(_gun_models[id] as Node3D).visible = id == w.data.id
+	_gun_box.visible = w.data.model == null
 
 
 func current_weapon() -> Weapon:

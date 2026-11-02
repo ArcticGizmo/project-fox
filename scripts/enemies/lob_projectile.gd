@@ -5,6 +5,9 @@ extends Node3D
 ## Passing through a REFLECTOR area (Hermit Bulwark) sends it back toward
 ## `source`, now hitting enemies and crediting the reflecting weapon.
 
+## Emitted on impact (before freeing), so throwers can leave something behind.
+signal landed(lob: LobProjectile, at: Vector3)
+
 const REFLECTED_COLOR := Color(1.0, 0.8, 0.3)
 ## Every enemy projectile in flight joins this group (LevelRoot clears it on reset).
 const GROUP := &"enemy_projectiles"
@@ -134,6 +137,7 @@ func reflect(new_damage: float, weapon: Weapon) -> void:
 
 func _explode() -> void:
 	Explosion.detonate(self, end + Vector3.UP * 0.5, radius, hit_mask, _make_damage)
+	landed.emit(self, end)
 	GameFeel.impact(end + Vector3.UP * 0.3, color, radius * 2.0, 0.3)
 	queue_free()
 
