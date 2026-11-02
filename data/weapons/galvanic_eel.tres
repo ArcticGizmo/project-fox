@@ -50,6 +50,7 @@ knockback = 1.5
 [resource]
 script = ExtResource("1_data")
 id = &"galvanic_eel"
+price = 1100
 fire_sound = &"shot_zap"
 fire_rumble = Vector3(0.5, 0.1, 0.12)
 display_name = "Galvanic Eel"

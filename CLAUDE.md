@@ -14,7 +14,8 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 
 | Path | What |
 |---|---|
-| `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, rumble, damage numbers, `impact()` puffs), `Sfx` (pooled sound playback, `play(id, at)`) |
+| `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, rumble, damage numbers, `impact()` puffs), `Sfx` (pooled sound playback, `play(id, at)`), `SaveGame` (the one save slot: `profile`, JSON at `user://save.json`; `use_memory_only()` for tests/tools) |
+| `scripts/progression/` | `Profile` (saved campaign state; `apply(player)` / `capture(player, lent...)`), `Glimmer` (currency mote; `spill(parent, at, amount)`), `Shop` (what a Magpie sells, buy/refill rules), `SavedPickup` base + `Heartspring` (+max health) and `GlimmerJar` (breakable, spills glimmer): taken once per save |
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR, CONDUCTOR (staff-strikeable sockets) |
 | `scripts/audio/` | `SfxBank`: placeholder sounds synthesised from recipes (swept tones + filtered noise); swap a recipe for a real stream later |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
@@ -23,9 +24,9 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`, `ScaleShard`, `Shockwave` (expanding ground ring you jump), `DelayedStrike` (marked spot that strikes after a delay). Boss: `FurnaceStag` (group `bosses`). Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `SwallowDart`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
-| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (@tool zone: pull along local -Y replaces gravity, `size.y` = length along the pull; lifts and currents), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
-| `scenes/levels/` | Level scenes (`slice_01.tscn`; `slice_02.tscn` = gadgets in combination (rift lift, grapple pillar to glide, rift current, burrow choke, conduit door) ending at the Furnace Stag, starts with all gadgets via `LevelRoot.starting_gadgets`; `boss_furnace_stag.tscn` = the boss arena on its own; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
-| `scripts/ui/` | `Hud`, `GadgetBar` (gadget slots: locked/unlocked/lit while in use, conduit charge pips), `PauseMenu`, `Reticle` (also charge arc), `WeaponWheel` (draws only; the player owns selection) |
+| `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select, save apply/autosave), `Arena`, `MagpiePeddler` (@tool vendor stall; staff the bell to trade), `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (@tool zone: pull along local -Y replaces gravity, `size.y` = length along the pull; lifts and currents), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
+| `scenes/levels/` | Level scenes (`slice_01.tscn` (Magpie stall on the pad, 2 Heartsprings, 6 jars under `Pickups`); `slice_02.tscn` = gadgets in combination (rift lift, grapple pillar to glide, rift current, burrow choke, conduit door) ending at the Furnace Stag, starts with all gadgets via `LevelRoot.starting_gadgets` and lends every weapon (`lend_all_weapons`); `boss_furnace_stag.tscn` = the boss arena on its own (also lends every weapon); `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
+| `scripts/ui/` | `Hud` (also the glimmer counter), `ShopMenu` (Magpie Peddler wares, pauses), `GadgetBar` (gadget slots: locked/unlocked/lit while in use, conduit charge pips), `PauseMenu`, `Reticle` (also charge arc), `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
 | `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s: surface styles + atmosphere (sky, sun, haze, SSAO, grading); `storybook_town` is the default) |
@@ -51,6 +52,7 @@ godot --path . res://tools/screenshot.tscn -- --wait=4 --weapons   # also one sh
 godot --path . res://tools/screenshot.tscn -- --slice      # only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 godot --path . res://tools/screenshot.tscn -- --boss       # only the Furnace Stag arena shots (boss_intro, boss_rear, boss_shockwave, boss_phase2, boss_barrage, boss_lightning)
 godot --path . res://tools/screenshot.tscn -- --fox        # only the fox animation contact sheets (fox_walk_side/front, fox_run_side, fox_idle) + showcase_*
+godot --path . res://tools/screenshot.tscn -- --shop       # only the glimmer / Magpie Peddler / pickup shots
 godot --headless --path . -s res://tools/gen_textures.gd [-- cobble ...]   # regenerate placeholder texture sets
 .\run.cmd / .\edit.cmd           # play / open editor (extra args pass through)
 ```
@@ -61,12 +63,12 @@ chill vs frozen enemies, the two flyers (cruising and diving), the pangolin (`pa
 `_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
 framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`, `grapple_reel`,
 `grapple_reel_side`, then `_capture_burrow` at pocket A's ambush tunnel: `burrow_mound` (AI view on), `burrow_pop`,
-`burrow_sneak`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`, then `_capture_conduit` on the shortcut: `conduit_barrier_live`, `conduit_absorb`, `conduit_charged`, `conduit_terminal_dead`, `conduit_powered`, `conduit_door_open`, `conduit_door_from_pad`). Add a `_capture_<gadget>` step per gadget.
+`burrow_sneak`, then `_capture_glide` at the GlideVent: `glide_vent`, `glide_gap`, `glide_gap_side`, then `_capture_conduit` on the shortcut: `conduit_barrier_live`, `conduit_absorb`, `conduit_charged`, `conduit_terminal_dead`, `conduit_powered`, `conduit_door_open`, `conduit_door_from_pad`), then `_capture_shop` (`--shop`): `shop_stall`, `shop_menu`, `wheel_locked`, `glimmer_spill`, `glimmer_collect`, `heartspring`). Add a `_capture_<gadget>` step per gadget.
 
 ## Controls (controller / keyboard+mouse)
 
 Move L-stick/WASD · camera R-stick/mouse · fire RT/LMB · strafe LT/RMB (scope on the rifle) ·
-jump A/Space (hold while falling after the double jump: glide) · dodge B/Shift (air, ring highlighted: grapple; on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default; staff a live barrier: charge; staff a terminal: power; charged hit on an enemy: chain lightning) · weapon wheel hold
+jump A/Space (hold while falling after the double jump: glide) · dodge B/Shift (air, ring highlighted: grapple; on soil: burrow; underground: jump pops out, dodge tunnels) · staff X/F (air: slam; pounce is off by default; staff a live barrier: charge; staff a terminal: power; staff a Magpie Peddler's bell: trade; charged hit on an enemy: chain lightning) · weapon wheel hold
 Y/Tab (select with L-stick/WASD/mouse) · cycle LB/RB, Q/E, 1-8 · pause Start/Esc/P · hitboxes Back/F1 · AI debug F4 (controller: pause menu) · level weapon
 D-pad up/F2 · next wave D-pad down/F3.
 
@@ -176,6 +178,19 @@ D-pad up/F2 · next wave D-pad down/F3.
   gadget props stay GREYBOX in their colour language). A level picks its look with `LevelRoot.level_theme`
   (null: `data/themes/storybook_town.tres`). New texture sets go in `assets/textures/<name>/` and must
   tile and import as normal maps (`test_surfaces` checks every set). See `docs/art-pipeline.md`.
+- **Progression and saving**: one save slot (`SaveGame.profile`, a `Profile`). Levels with
+  `LevelRoot.uses_save` (default; the arena and anim showcase turn it off) apply it to the new
+  player, free `SavedPickup`s already taken, start at the saved checkpoint if it's in this level,
+  and autosave at checkpoints, pickups, purchases, gadget unlocks, respawns and on leaving the tree
+  (restart clears this level's checkpoint first). `starting_gadgets` and `lend_all_weapons` are lent,
+  never saved as owned. Glimmer (`Player.glimmer`, `add_glimmer` / `spend_glimmer`) spills from every
+  enemy death (`Enemy.glimmer_value`, -1 = `xp_value * GLIMMER_PER_XP`), crates (`Crate.glimmer`) and
+  `GlimmerJar`s, and flies to the fox inside `PlayerTuning.glimmer_magnet_radius`. Weapons have
+  `Weapon.owned`: a new save owns `Profile.STARTER_WEAPONS`; the rest are bought at a `MagpiePeddler`
+  for `WeaponData.price`. Locked weapons stay in the wheel as empty sockets and can't be equipped
+  (switching skips them). Saved pickup ids are their node paths from the level root, so don't rename
+  pickups in a shipped level. Tests and the screenshot tool run `SaveGame.use_memory_only()`; the
+  runner resets the profile per test.
 - **Dressing**: `Prop`s under `Level/Dressing` (group `dressing`); collision off unless the prop is cover
   (then `Collision.BOX`). `test_props` fails if colliding dressing sits on the critical path, and checks
   every model under `assets/<characters|props|weapons|enemies|gameplay>/` for the model conventions.

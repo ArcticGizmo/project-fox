@@ -13,6 +13,8 @@ const TEST_DIR := "res://tests/unit"
 func _ready() -> void:
 	GameFeel.hit_stop_enabled = false
 	GameFeel.damage_numbers_enabled = false
+	# Never read or overwrite the real save (user://save.json).
+	SaveGame.use_memory_only()
 	await get_tree().process_frame
 	var filter := _get_filter()
 	var passed := 0
@@ -52,6 +54,7 @@ func _ready() -> void:
 			DebugSettings.show_boxes = false
 			GameFeel.reset()
 			Sfx.reset()
+			SaveGame.reset()
 			get_tree().paused = false
 
 	print("")

@@ -53,6 +53,7 @@ burn_duration = 4.0
 [resource]
 script = ExtResource("1_data")
 id = &"salamander_breath"
+price = 600
 fire_sound = &"shot_flame"
 fire_rumble = Vector3(0.25, 0, 0.08)
 noise_radius = 12.0

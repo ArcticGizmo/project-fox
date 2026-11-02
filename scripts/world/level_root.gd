@@ -12,6 +12,14 @@ extends Node3D
 ##
 ## Level select: `run.cmd -- --level=slice_01` loads res://scenes/levels/slice_01.tscn
 ## (`--level=arena` is scenes/main.tscn). The pause menu can switch levels too.
+##
+## Saving (`uses_save`, off for the arena): the SaveGame profile is applied to
+## the new player (glimmer, owned weapons and levels, gadgets, Heartsprings),
+## pickups it already took are removed, and if its last checkpoint is in this
+## level the fox starts there. It saves at checkpoints, pickups, purchases,
+## gadget unlocks, respawns and whenever the level leaves the tree (restart,
+## level change, quit). What a level only lends (`starting_gadgets`,
+## `lend_all_weapons`) is never saved as owned.
 
 signal placed_enemies_reset
 
@@ -25,10 +33,15 @@ static var _cmdline_handled: bool = false
 @export var level_theme: LevelTheme
 ## Gadgets the fox starts this level with (unlocked before the HUD binds, so no popups).
 @export var starting_gadgets: Array[StringName] = []
+## False: never loads or writes the save (the wave arena: a sandbox with every weapon).
+@export var uses_save: bool = true
+## Every weapon is owned while in this level but not saved as owned (test beds).
+@export var lend_all_weapons: bool = false
 
 var player: Player
 var hud: Hud
 var pause_menu: PauseMenu
+var shop_menu: ShopMenu
 var wave_manager: WaveManager
 var player_spawn: Marker3D
 ## One record per placed enemy: {node, scene, script, parent, name, transform, props, markers}.
@@ -36,6 +49,12 @@ var placed: Array[Dictionary] = []
 
 var _player_died: bool = false
 var _recorded: bool = false
+var _lent_weapons: Array[StringName] = []
+var _lent_gadgets: Array[StringName] = []
+## Saved pickup id -> SavedPickup.kind(), for every one placed in the level.
+var _pickup_kinds: Dictionary = {}
+## Saved pickup id -> true once taken (this visit or an earlier one).
+var _pickups_found: Dictionary = {}
 
 
 func _enter_tree() -> void:
@@ -62,9 +81,25 @@ func _ready() -> void:
 	if player_spawn != null:
 		player.position = player_spawn.position
 		player.rotation.y = player_spawn.rotation.y
+	var resume := saved_checkpoint()
+	if resume != null:
+		player.position = to_local(resume.spawn_position())
+		player.rotation.y = resume.global_rotation.y
 	add_child(player)
+	if uses_save:
+		SaveGame.profile.apply(player)
+	_register_pickups()
+	if resume != null:
+		resume.activate(player)
 	for id: StringName in starting_gadgets:
+		if not player.has_gadget(id):
+			_lent_gadgets.append(id)
 		player.unlock_gadget(id)
+	if lend_all_weapons:
+		for w: Weapon in player.weapons:
+			if not w.owned:
+				w.owned = true
+				_lent_weapons.append(w.data.id)
 	player.died.connect(func() -> void: _player_died = true)
 	player.respawned.connect(_on_player_respawned)
 	hud = Hud.new()
@@ -75,8 +110,110 @@ func _ready() -> void:
 	add_child(pause_menu)
 	pause_menu.restart_requested.connect(restart)
 	pause_menu.level_requested.connect(load_level)
+	pause_menu.save_reset_requested.connect(reset_save)
+	# After the pause menu, so it sees Start / Esc first while open.
+	shop_menu = ShopMenu.new()
+	add_child(shop_menu)
+	for n: Node in get_tree().get_nodes_in_group(MagpiePeddler.GROUP):
+		if is_ancestor_of(n):
+			(n as MagpiePeddler).trade_requested.connect(func(_p: MagpiePeddler) -> void: shop_menu.open(player))
+	if uses_save:
+		_connect_saving()
 	if wave_manager != null and wave_manager.autostart:
 		wave_manager.start()
+
+
+func _exit_tree() -> void:
+	save_progress()
+
+
+# --- Saving ---------------------------------------------------------------------
+
+## Copies the player into the save profile and writes it (no-op without uses_save).
+func save_progress() -> void:
+	if not uses_save or player == null or not is_instance_valid(player):
+		return
+	SaveGame.profile.capture(player, _lent_weapons, _lent_gadgets)
+	SaveGame.save()
+
+
+## The save's last checkpoint if it is in this level, else null.
+func saved_checkpoint() -> Checkpoint:
+	var p := SaveGame.profile
+	if not uses_save or p.checkpoint_level == "" or p.checkpoint_level != scene_file_path:
+		return null
+	return get_node_or_null(NodePath(p.checkpoint_node)) as Checkpoint
+
+
+## Key for this level's entries in Profile.collected.
+func save_key() -> String:
+	return level_name(scene_file_path) if scene_file_path != "" else String(name)
+
+
+func pickup_id(pickup: Node) -> String:
+	return str(get_path_to(pickup))
+
+
+## Saved pickups still in this level (not taken).
+func saved_pickups() -> Array[SavedPickup]:
+	var out: Array[SavedPickup] = []
+	for n: Node in get_tree().get_nodes_in_group(SavedPickup.GROUP):
+		var s := n as SavedPickup
+		if s != null and is_ancestor_of(s) and not s.is_taken and not s.is_queued_for_deletion():
+			out.append(s)
+	return out
+
+
+## Per pickup kind (SavedPickup.kind()): Vector2i(found, placed) in this level,
+## counting ones taken on earlier visits (from the save).
+func pickup_tally() -> Dictionary:
+	var out := {}
+	for id: String in _pickup_kinds:
+		var kind: StringName = _pickup_kinds[id]
+		var t: Vector2i = out.get(kind, Vector2i.ZERO)
+		out[kind] = t + Vector2i(1 if _pickups_found.has(id) else 0, 1)
+	return out
+
+
+## Records every saved pickup; frees the ones the save already took.
+func _register_pickups() -> void:
+	for s: SavedPickup in saved_pickups():
+		var id := pickup_id(s)
+		_pickup_kinds[id] = s.kind()
+		if uses_save and SaveGame.profile.has_collected(save_key(), id):
+			_pickups_found[id] = true
+			s.is_taken = true
+			s.remove_from_group(SavedPickup.GROUP)
+			s.queue_free()
+		else:
+			s.taken.connect(_on_pickup_taken)
+
+
+func _on_pickup_taken(s: SavedPickup) -> void:
+	var id := pickup_id(s)
+	_pickups_found[id] = true
+	if uses_save:
+		SaveGame.profile.mark_collected(save_key(), id)
+		save_progress()
+
+
+func _connect_saving() -> void:
+	for n: Node in get_tree().get_nodes_in_group(&"checkpoints"):
+		if is_ancestor_of(n):
+			var cp := n as Checkpoint
+			cp.activated.connect(func(_p: Player) -> void:
+				SaveGame.profile.set_checkpoint(scene_file_path, str(get_path_to(cp)))
+				save_progress())
+	player.gadgets.unlocked_gadget.connect(func(_id: StringName) -> void: save_progress())
+	player.respawned.connect(save_progress)
+	shop_menu.purchased.connect(func(_item: StringName) -> void: save_progress())
+
+
+## Pause menu Debug page: wipe the save and start this level over.
+func reset_save() -> void:
+	uses_save = false  # nothing from this run gets written on the way out
+	SaveGame.wipe()
+	restart()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -88,8 +225,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		player.debug_level_current_weapon()
 
 
-## Fresh level: new waves, full health and ammo, weapon levels reset.
+## Fresh level from its PlayerSpawn: new waves, full health and ammo. Saved
+## progress stays (in the arena, which never saves, weapon levels reset).
 func restart() -> void:
+	if uses_save and SaveGame.profile.checkpoint_level == scene_file_path:
+		SaveGame.profile.clear_checkpoint()
 	get_tree().paused = false
 	GameFeel.reset()
 	get_tree().reload_current_scene()

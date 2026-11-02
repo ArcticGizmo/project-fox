@@ -25,6 +25,12 @@ static func enemy_scene(kind: StringName) -> PackedScene:
 	return EXTRA_ENEMIES.get(kind) as PackedScene
 
 
+## Every weapon owned (as if bought; saved in levels that save).
+static func own_all_weapons(player: Player) -> void:
+	for w: Weapon in player.weapons:
+		player.grant_weapon(w.data.id)
+
+
 ## Every weapon to its max level (full ammo).
 static func max_all_weapons(player: Player) -> void:
 	for w: Weapon in player.weapons:

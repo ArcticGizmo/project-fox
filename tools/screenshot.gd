@@ -19,6 +19,7 @@ func _ready() -> void:
 			out_dir = arg.trim_prefix("--out=")
 		elif arg.begins_with("--wait="):
 			wait = arg.trim_prefix("--wait=").to_float()
+	SaveGame.use_memory_only()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(out_dir))
 	# Stop the editor importing screenshots as game assets.
 	FileAccess.open(out_dir.path_join(".gdignore"), FileAccess.WRITE)
@@ -30,6 +31,11 @@ func _ready() -> void:
 	# `--slice2`: only the second slice's shots.
 	if "--slice2" in OS.get_cmdline_user_args():
 		await _capture_slice2()
+		get_tree().quit()
+		return
+	# `--shop`: only the glimmer / Magpie Peddler / pickup shots.
+	if "--shop" in OS.get_cmdline_user_args():
+		await _capture_shop()
 		get_tree().quit()
 		return
 	# `--boss`: only the Furnace Stag arena shots.
@@ -103,6 +109,7 @@ func _ready() -> void:
 	await _capture_slice(arena, SLICE_PATH)
 	await _capture_boss()
 	await _capture_slice2()
+	await _capture_shop()
 	if is_instance_valid(arena):
 		arena.queue_free()
 	await _capture_fox_anims()
@@ -945,3 +952,65 @@ func _capture_slice2() -> void:
 	cam.queue_free()
 	level.queue_free()
 	await get_tree().process_frame
+
+
+## Glimmer, the Magpie Peddler and saved pickups in slice_01 (a fresh in-memory
+## save): the stall and its prompt from the pad (shop_stall), the shop open
+## (shop_menu), the wheel showing locked weapons (wheel_locked), a jar breaking
+## into glimmer (glimmer_spill), motes flying to the fox with the HUD counter
+## (glimmer_collect) and a Heartspring on the grapple ledge (heartspring).
+func _capture_shop() -> void:
+	for c: Node in get_children():
+		if c is LevelRoot:
+			c.queue_free()
+	await get_tree().process_frame
+	SaveGame.reset()
+	var level := (load(SLICE_PATH) as PackedScene).instantiate() as LevelRoot
+	add_child(level)
+	var player := level.player
+	player.god_mode = true
+	await get_tree().create_timer(1.5).timeout
+	var stall := get_tree().get_nodes_in_group(MagpiePeddler.GROUP)[0] as MagpiePeddler
+	_place_player(player, stall.global_position + Vector3(3.2, 0.05, 1.2), stall.global_position + Vector3(0, 0, -0.3))
+	player.camera_rig.camera.make_current()
+	await get_tree().create_timer(0.4).timeout
+	await _capture("shop_stall.png")
+	player.add_glimmer(1500)
+	stall.ring()
+	await get_tree().create_timer(0.2, true, false, true).timeout
+	await _capture("shop_menu.png")
+	level.shop_menu.close()
+	await get_tree().create_timer(0.2).timeout
+	# Wheel held, stick pushed right: page 1 shows the locked slots.
+	Input.action_press(&"weapon_wheel")
+	Input.action_press(&"move_right", 1.0)
+	await get_tree().create_timer(0.3, true, false, true).timeout
+	await _capture("wheel_locked.png")
+	Input.action_release(&"move_right")
+	await get_tree().create_timer(0.1, true, false, true).timeout
+	Input.action_release(&"weapon_wheel")
+	await get_tree().create_timer(0.3).timeout
+	# A jar in pocket A breaks into glimmer (the fox far away on the pad).
+	var jar := level.get_node(^"Pickups/JarCoverA") as GlimmerJar
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = jar.global_position + Vector3(2.4, 1.5, -2.6)
+	cam.look_at(jar.global_position + Vector3(0, 0.6, 0))
+	cam.make_current()
+	await get_tree().create_timer(0.2).timeout
+	var at := jar.global_position
+	jar.health.apply_damage(DamageInfo.create(5.0, at))
+	await get_tree().create_timer(0.45).timeout
+	await _capture("glimmer_spill.png")
+	await get_tree().create_timer(1.0).timeout
+	_place_player(player, at + Vector3(4.0, 0.05, -0.8), at)
+	player.camera_rig.camera.make_current()
+	await get_tree().create_timer(0.25).timeout
+	await _capture("glimmer_collect.png")
+	var heart := level.get_node(^"Pickups/HeartspringGrappleLedge") as Heartspring
+	cam.global_position = heart.global_position + Vector3(-2.5, 2.2, 2.5)
+	cam.look_at(heart.global_position + Vector3(0, 1.0, 0))
+	cam.make_current()
+	await get_tree().create_timer(0.3).timeout
+	await _capture("heartspring.png")
+	cam.queue_free()

@@ -16,6 +16,7 @@
 [node name="Slice02" type="Node3D"]
 script = ExtResource("1_level")
 starting_gadgets = Array[StringName]([&"grapple", &"glide", &"burrow", &"conduit"])
+lend_all_weapons = true
 
 [node name="Level" type="Node3D" parent="."]
 

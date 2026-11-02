@@ -56,6 +56,7 @@ knockback = 3.5
 [resource]
 script = ExtResource("1_data")
 id = &"clockwork_swallow"
+price = 1600
 fire_sound = &"shot_swallow"
 fire_rumble = Vector3(0.15, 0, 0.05)
 noise_radius = 12.0

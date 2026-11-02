@@ -17,6 +17,9 @@
 [ext_resource type="Script" path="res://scripts/gadgets/soil_patch.gd" id="15_soil"]
 [ext_resource type="Script" path="res://scripts/gadgets/conduit_terminal.gd" id="16_terminal"]
 [ext_resource type="Script" path="res://scripts/world/prop.gd" id="17_prop"]
+[ext_resource type="Script" path="res://scripts/world/magpie_peddler.gd" id="18_magpie"]
+[ext_resource type="Script" path="res://scripts/progression/heartspring.gd" id="19_heartspring"]
+[ext_resource type="Script" path="res://scripts/progression/glimmer_jar.gd" id="20_jar"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
@@ -877,3 +880,41 @@ placeholder = 3
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3, 5.1)
 script = ExtResource("17_prop")
 placeholder = 3
+
+[node name="MagpiePeddler" type="Node3D" parent="."]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -4.2, 3, -1.5)
+script = ExtResource("18_magpie")
+
+[node name="Pickups" type="Node3D" parent="."]
+
+[node name="HeartspringGrappleLedge" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30.2, 8, -41.2)
+script = ExtResource("19_heartspring")
+
+[node name="HeartspringBeyond" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 95)
+script = ExtResource("19_heartspring")
+
+[node name="JarPillar" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 4, -34)
+script = ExtResource("20_jar")
+
+[node name="JarCoverA" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -25.3)
+script = ExtResource("20_jar")
+
+[node name="JarOverlook" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43, 4.5, -17.5)
+script = ExtResource("20_jar")
+
+[node name="JarToadPlatform" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 3, 15.5)
+script = ExtResource("20_jar")
+
+[node name="JarSpine" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.8, 4.5, 44.5)
+script = ExtResource("20_jar")
+
+[node name="JarDais" type="Node3D" parent="Pickups"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 7.5, 66)
+script = ExtResource("20_jar")

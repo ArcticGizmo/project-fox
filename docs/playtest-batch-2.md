@@ -9,8 +9,8 @@ where they live.
 spawn any enemy in front of you, boss to phase 2 / 3, invulnerable, rumble and
 sound sliders. "Unlock All Gadgets" is on the main page. Hitboxes Back/F1, AI view F4.
 
-**Route:** 1-4 in the arena (`run.cmd`), 5-6 in `slice_01`, 7-9 in `slice_02`,
-10 in `boss_furnace_stag`, 11 anywhere.
+**Route:** 1-4 in the arena (`run.cmd`), 5-6 and 11 in `slice_01`, 7-9 in `slice_02`,
+10 in `boss_furnace_stag`, 12 anywhere.
 
 ---
 
@@ -102,7 +102,21 @@ sound sliders. "Unlock All Gadgets" is on the main page. Hitboxes Back/F1, AI vi
 - [ ] Beetle full charge during the rear-up topples it: did you discover it? Satisfying?
 - [ ] Boss bar and phase names helpful?
 
-## 11. Anything else
+## 11. Glimmer, Magpie Peddler and saving (slice_01)
+
+A new save owns three weapons (Repeater, Hornet Swarm, Mortar); the rest are bought. Debug page:
+"+1000 Glimmer", "Own All Weapons", "Reset Save" (asks twice). The arena never saves.
+
+- [ ] Glimmer motes popping out and flying to you: satisfying? Magnet radius (5 m, `glimmer_magnet_radius`) and speed?
+- [ ] Pickup chime with lots of motes at once: pleasant or grating? The HUD counter rolling up: readable?
+- [ ] Economy: enemies drop 3 glimmer per XP point (`Enemy.GLIMMER_PER_XP`), crates 8, jars 60. Prices 600-1800 (`WeaponData.price`). How many weapons could you afford after one run? Too slow, too fast?
+- [ ] Magpie stall on the pad: did you notice it? "Strike the bell" (staff) to trade: natural, or do you want a button?
+- [ ] Shop menu on a controller: navigation, focus, reading descriptions, buying. Is "Refill all ammo" worth having?
+- [ ] Locked wheel slots (empty sockets with the price): motivating or clutter?
+- [ ] Jars (one on the pocket A pillar you have to shoot, others off the path) and the two Heartsprings (grapple ledge, beyond the glide gap): fun to look for? Want a map/counter beyond the pause menu tally?
+- [ ] Quit and relaunch, then load slice_01: back at your last checkpoint with your glimmer, weapons and finds?
+
+## 12. Anything else
 
 - [ ] Anything that felt bad, confusing or broken that isn't above.
 - [ ] Your favourite and least favourite new thing.

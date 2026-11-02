@@ -13,6 +13,8 @@ var data: WeaponData
 var level: int = 1
 var xp: int = 0
 var ammo: int = 0
+## False: still for sale at a Magpie Peddler (locked on the wheel, can't be equipped).
+var owned: bool = true
 ## The body holding the weapon. Spawned projectiles go into its parent.
 var wielder: Node3D
 var hit_mask: int = Layers.WORLD | Layers.ENEMY_HURTBOX
@@ -65,6 +67,16 @@ func add_xp(amount: int) -> void:
 	if is_max_level():
 		xp = 0
 	xp_changed.emit(xp, xp_needed())
+
+
+## Sets level and XP directly (loading a save): no popups, full ammo.
+func set_progress(p_level: int, p_xp: int) -> void:
+	level = clampi(p_level, 1, data.max_level())
+	xp = 0 if is_max_level() else clampi(p_xp, 0, xp_needed() - 1)
+	ammo = max_ammo()
+	_on_level_changed()
+	xp_changed.emit(xp, xp_needed())
+	ammo_changed.emit(ammo, max_ammo())
 
 
 func add_ammo(amount: int) -> void:

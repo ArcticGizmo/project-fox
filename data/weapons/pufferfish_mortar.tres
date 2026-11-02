@@ -52,6 +52,7 @@ duration = 7.0
 [resource]
 script = ExtResource("1_data")
 id = &"pufferfish_mortar"
+price = 0
 fire_sound = &"shot_mortar"
 fire_rumble = Vector3(0.2, 0.6, 0.12)
 noise_radius = 22.0

@@ -52,6 +52,7 @@ crit_multiplier = 2.0
 [resource]
 script = ExtResource("1_data")
 id = &"kraken_lash"
+price = 750
 fire_sound = &"shot_lash"
 fire_rumble = Vector3(0.3, 0.3, 0.1)
 noise_radius = 10.0

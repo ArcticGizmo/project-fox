@@ -59,6 +59,7 @@ knockback = 3.0
 [resource]
 script = ExtResource("1_data")
 id = &"hornet_swarm"
+price = 0
 fire_sound = &"shot_hornet"
 fire_rumble = Vector3(0.2, 0, 0.06)
 noise_radius = 12.0

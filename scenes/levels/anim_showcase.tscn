@@ -6,6 +6,7 @@
 
 [node name="AnimShowcase" type="Node3D"]
 script = ExtResource("1_level")
+uses_save = false
 
 [node name="Floor" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 10)

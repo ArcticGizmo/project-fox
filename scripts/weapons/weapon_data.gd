@@ -25,6 +25,8 @@ extends Resource
 @export var fire_sound: StringName = &""
 ## Controller rumble per shot: (weak motor, strong motor, seconds).
 @export var fire_rumble: Vector3 = Vector3.ZERO
+## Glimmer it costs at a Magpie Peddler (Profile.STARTER_WEAPONS start owned and are never sold).
+@export var price: int = 1000
 @export var xp_to_next_level: PackedInt32Array = PackedInt32Array()
 @export var levels: Array[WeaponLevelStats] = []
 

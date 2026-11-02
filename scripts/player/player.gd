@@ -14,6 +14,11 @@ signal respawned
 signal wheel_toggled(open: bool)
 ## A staff hit landed a Burrow Claws sneak attack (bonus damage) on `enemy`.
 signal sneak_attacked(enemy: Enemy)
+## `delta` is what was just added (negative when spent).
+signal glimmer_changed(total: int, delta: int)
+## A locked weapon became owned (bought from a Magpie Peddler).
+signal weapon_granted(weapon: Weapon)
+signal heartspring_found(total: int)
 
 const RADIUS := 0.45
 const HEIGHT := 1.8
@@ -73,6 +78,10 @@ var spawn_point: Vector3 = Vector3.ZERO
 var spawn_yaw: float = 0.0
 ## Unlocked traversal gadgets (has_gadget / unlock_gadget).
 var gadgets: Gadgets = Gadgets.new()
+## Currency picked up from enemies, crates and jars; spent at Magpie Peddlers.
+var glimmer: int = 0
+## Heartsprings found (each adds tuning.heartspring_health max health).
+var heartsprings: int = 0
 ## Debug: never takes damage (pause menu Debug page).
 var god_mode: bool = false
 
@@ -884,17 +893,31 @@ func _handle_weapon_switch() -> void:
 	if input.weapon_slot >= 0 and slot < weapons.size():
 		_select_weapon(slot)
 	elif input.weapon_next:
-		_select_weapon((current_weapon_index + 1) % weapons.size())
+		_select_weapon(_next_owned(1))
 	elif input.weapon_prev:
-		_select_weapon((current_weapon_index - 1 + weapons.size()) % weapons.size())
+		_select_weapon(_next_owned(-1))
+
+
+## The next owned weapon index from the current one in `step` direction (wraps).
+func _next_owned(step: int) -> int:
+	var n := weapons.size()
+	for i: int in range(1, n + 1):
+		var index := posmod(current_weapon_index + step * i, n)
+		if weapons[index].owned:
+			return index
+	return current_weapon_index
 
 
 func select_weapon(index: int) -> void:
 	_select_weapon(index)
 
 
+## Locked weapons (not owned yet) can't be equipped.
 func _select_weapon(index: int, force: bool = false) -> void:
-	if weapons.is_empty() or (index == current_weapon_index and not force):
+	if weapons.is_empty() or index < 0 or index >= weapons.size() or (index == current_weapon_index and not force):
+		return
+	if not weapons[index].owned:
+		Sfx.play(&"locked")
 		return
 	var old := current_weapon()
 	if old != null:
@@ -916,6 +939,79 @@ func current_weapon() -> Weapon:
 func refill_ammo_fraction(fraction: float) -> void:
 	for w: Weapon in weapons:
 		w.add_ammo(ceili(w.max_ammo() * fraction))
+
+
+# --- Glimmer, owned weapons, Heartsprings -----------------------------------------
+
+func weapon_by_id(id: StringName) -> Weapon:
+	for w: Weapon in weapons:
+		if w.data.id == id:
+			return w
+	return null
+
+
+func owns_weapon(id: StringName) -> bool:
+	var w := weapon_by_id(id)
+	return w != null and w.owned
+
+
+## Returns true if this newly gave the fox the weapon (full ammo).
+func grant_weapon(id: StringName) -> bool:
+	var w := weapon_by_id(id)
+	if w == null or w.owned:
+		return false
+	w.owned = true
+	w.add_ammo(w.max_ammo())
+	weapon_granted.emit(w)
+	return true
+
+
+## After ownership changes: if the equipped weapon is locked, equip the first owned one.
+func ensure_owned_weapon_selected() -> void:
+	var w := current_weapon()
+	if w != null and w.owned:
+		return
+	for i: int in weapons.size():
+		if weapons[i].owned:
+			_select_weapon(i, true)
+			return
+
+
+func add_glimmer(amount: int) -> void:
+	if amount <= 0:
+		return
+	glimmer += amount
+	glimmer_changed.emit(glimmer, amount)
+
+
+## Spends `amount` if the fox has it. Returns whether it was spent.
+func spend_glimmer(amount: int) -> bool:
+	if amount < 0 or amount > glimmer:
+		return false
+	glimmer -= amount
+	glimmer_changed.emit(glimmer, -amount)
+	return true
+
+
+## Max health = tuning.max_health + one tuning.heartspring_health per Heartspring.
+func max_health_for(springs: int) -> float:
+	return tuning.max_health + springs * tuning.heartspring_health
+
+
+func refresh_max_health() -> void:
+	var before := health.max_health
+	health.max_health = max_health_for(heartsprings)
+	if health.max_health != before and not health.is_dead:
+		health.current = clampf(health.current + maxf(0.0, health.max_health - before), 0.0, health.max_health)
+		health.changed.emit(health.current, health.max_health)
+
+
+## A Heartspring: more max health, healed to full.
+func add_heartspring() -> void:
+	heartsprings += 1
+	refresh_max_health()
+	health.heal(health.max_health)
+	heartspring_found.emit(heartsprings)
 
 
 func debug_level_current_weapon() -> void:

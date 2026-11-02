@@ -54,6 +54,7 @@ duration = 1.5
 [resource]
 script = ExtResource("1_data")
 id = &"rhino_beetle_ram"
+price = 1800
 fire_sound = &"shot_beetle"
 fire_rumble = Vector3(0.3, 1, 0.25)
 noise_radius = 24.0

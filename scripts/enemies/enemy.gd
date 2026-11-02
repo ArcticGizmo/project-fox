@@ -17,6 +17,8 @@ signal died(enemy: Enemy)
 enum BodyShape { BOX, SPHERE, CAPSULE, CYLINDER }
 
 const TELEGRAPH_COLOR := Color(1.0, 0.85, 0.15)
+## Default glimmer spilled on death per point of xp_value (see glimmer_value).
+const GLIMMER_PER_XP := 3
 const BURN_COLOR := Color(1.0, 0.35, 0.0)
 const FLINCH := &"flinch"
 const BURN_TICK := 0.25
@@ -83,6 +85,8 @@ const UPEND_HOP := 6.0
 @export var acceleration: float = 30.0
 @export var turn_speed_deg: float = 360.0
 @export var xp_value: int = 10
+## Glimmer spilled on death; -1 = xp_value * GLIMMER_PER_XP.
+@export var glimmer_value: int = -1
 ## 0 = full knockback, 1 = immovable.
 @export_range(0.0, 1.0) var knockback_resistance: float = 0.0
 ## Interrupt the current (interruptible) state when damaged.
@@ -1154,6 +1158,10 @@ func _on_damaged(amount: float, info: DamageInfo) -> void:
 		enter_state(FLINCH)
 
 
+func glimmer_drop() -> int:
+	return glimmer_value if glimmer_value >= 0 else xp_value * GLIMMER_PER_XP
+
+
 func _on_died(info: DamageInfo) -> void:
 	_spread_poison()
 	if info != null and is_instance_valid(info.source_weapon):
@@ -1171,6 +1179,7 @@ func _on_died(info: DamageInfo) -> void:
 			(child as HurtBox).set_deferred(&"monitorable", false)
 	_label.visible = false
 	_on_death()
+	Glimmer.spill(get_parent(), get_aim_point(), glimmer_drop(), maxi(1, random_seed + 1))
 	Sfx.play(&"enemy_die", get_aim_point())
 	died.emit(self)
 	GameFeel.impact(get_aim_point(), color, extents().length() * 1.2, 0.3)

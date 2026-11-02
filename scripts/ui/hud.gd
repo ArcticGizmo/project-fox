@@ -2,7 +2,8 @@ class_name Hud
 extends CanvasLayer
 ## Prototype HUD: health, current weapon (level, XP, ammo), weapon wheel,
 ## crosshair, wave counter, gadget bar (GadgetBar), level-up and gadget-unlock
-## popups, the boss bar (group "bosses") and debug hints.
+## popups, the boss bar (group "bosses"), the glimmer counter (top right, rolls up
+## as motes land), Heartspring and purchase popups, and debug hints.
 
 const HELP_TEXT := "X / F: staff (in air: slam)    Y hold / Tab: weapon wheel (L-stick / mouse)    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave    F4 (or pause menu): AI debug"
 
@@ -26,6 +27,10 @@ var _popup_box: VBoxContainer
 var _popup_tween: Tween
 var _unlock_batch: Array[StringName] = []
 var _unlock_frame: int = -1
+var _glimmer_label: Label
+## The counter rolls toward the real total rather than jumping.
+var shown_glimmer: float = 0.0
+var _glimmer_pop: float = 0.0
 
 
 func _ready() -> void:
@@ -39,6 +44,13 @@ func _ready() -> void:
 	_hp_bar = _bar(top_left, Color(0.9, 0.25, 0.2), Vector2(300, 20))
 	_gadget_bar = GadgetBar.new()
 	top_left.add_child(_gadget_bar)
+
+	var top_right := _corner(root, Control.PRESET_TOP_RIGHT, Vector2(-24, 20))
+	top_right.alignment = BoxContainer.ALIGNMENT_END
+	_glimmer_label = _label(top_right, "", 28)
+	_glimmer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_glimmer_label.add_theme_color_override(&"font_color", ShopMenu.GLIMMER_COLOR)
+	_glimmer_label.pivot_offset = Vector2(120, 16)
 
 	var bottom_right := _corner(root, Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -20))
 	bottom_right.alignment = BoxContainer.ALIGNMENT_END
@@ -110,13 +122,21 @@ func bind(player: Player, waves: WaveManager) -> void:
 		w.xp_changed.connect(func(_x: int, _n: int) -> void: _refresh_weapon())
 	_on_health_changed(player.health.current, player.health.max_health)
 	_refresh_weapon()
+	shown_glimmer = player.glimmer
+	_glimmer_label.text = glimmer_text(player.glimmer)
+	player.glimmer_changed.connect(_on_glimmer_changed)
+	player.heartspring_found.connect(func(_total: int) -> void:
+		_show_popup("Heartspring!", "Max health +%d" % roundi(player.tuning.heartspring_health), 2.4))
+	player.weapon_granted.connect(func(w: Weapon) -> void:
+		_show_popup("%s!" % w.data.display_name, "Bought from the Magpie Peddler", 2.0))
 	if waves != null:
 		waves.wave_started.connect(func(n: int) -> void: _wave_label.text = "Wave %d" % n)
 		waves.wave_cleared.connect(func(n: int) -> void: _show_popup("Wave %d cleared!" % n))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _player != null:
+		_update_glimmer(delta)
 		_reticle.visible = not _player.wheel_open
 		_reticle.locked = _player.aim_target != null
 		_reticle.zoomed = _player.is_zoomed()
@@ -124,6 +144,28 @@ func _process(_delta: float) -> void:
 		var w := _player.current_weapon()
 		_reticle.charge = w.charge if w != null else 0.0
 	_update_boss_bar()
+
+
+static func glimmer_text(amount: int) -> String:
+	return "%d glimmer" % amount
+
+
+func _on_glimmer_changed(total: int, delta: int) -> void:
+	if delta < 0:
+		shown_glimmer = total  # spending snaps; earning rolls up
+		_glimmer_label.text = glimmer_text(total)
+	else:
+		_glimmer_pop = 1.0
+
+
+## Rolls the counter toward the real total (faster the further behind) and pops it.
+func _update_glimmer(delta: float) -> void:
+	var target := float(_player.glimmer)
+	if shown_glimmer < target:
+		shown_glimmer = minf(target, shown_glimmer + maxf(30.0, (target - shown_glimmer) * 6.0) * delta)
+		_glimmer_label.text = glimmer_text(floori(shown_glimmer))
+	_glimmer_pop = maxf(0.0, _glimmer_pop - delta * 5.0)
+	_glimmer_label.scale = Vector2.ONE * (1.0 + 0.15 * _glimmer_pop)
 
 
 func _on_health_changed(current: float, maximum: float) -> void:

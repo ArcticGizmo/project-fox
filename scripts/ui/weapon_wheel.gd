@@ -63,6 +63,13 @@ func _draw() -> void:
 		var pos := c + slot_direction(i, n) * RADIUS
 		var selected := first + i == hl
 		var r := SLOT_RADIUS * (1.2 if selected else 1.0)
+		if not w.owned:
+			# Locked: an empty socket with a keyhole; bought from a Magpie Peddler.
+			draw_circle(pos, r, Color(0.12, 0.11, 0.1, 0.9))
+			draw_arc(pos, r, 0.0, TAU, 48, Color(1, 1, 1, 0.6) if selected else Color(1, 1, 1, 0.18), 2.0 if selected else 1.0, true)
+			draw_circle(pos + Vector2(0, -6), 7.0, Color(1, 1, 1, 0.35))
+			draw_rect(Rect2(pos + Vector2(-3, -4), Vector2(6, 16)), Color(1, 1, 1, 0.35))
+			continue
 		var fill := w.data.color if selected else w.data.color.darkened(0.55)
 		draw_circle(pos, r, fill)
 		draw_arc(pos, r, 0.0, TAU, 48, Color.WHITE if selected else Color(1, 1, 1, 0.35), 3.0 if selected else 1.5, true)
@@ -75,6 +82,11 @@ func _draw() -> void:
 
 	var cw := player.weapons[hl]
 	var width := 300.0
+	if not cw.owned:
+		draw_string(font, c + Vector2(-width * 0.5, -22), cw.data.display_name, HORIZONTAL_ALIGNMENT_CENTER, width, 26, cw.data.color.darkened(0.3))
+		draw_string(font, c + Vector2(-width * 0.5, 6), "Locked", HORIZONTAL_ALIGNMENT_CENTER, width, 18, Color(1, 1, 1, 0.6))
+		draw_multiline_string(font, c + Vector2(-width * 0.5, 34), "%d glimmer from a Magpie Peddler" % cw.data.price, HORIZONTAL_ALIGNMENT_CENTER, width, 14, 4, ShopMenu.GLIMMER_COLOR)
+		return
 	draw_string(font, c + Vector2(-width * 0.5, -22), cw.data.display_name, HORIZONTAL_ALIGNMENT_CENTER, width, 26, cw.data.color)
 	draw_string(font, c + Vector2(-width * 0.5, 6), "Lv %d   Ammo %d / %d" % [cw.level, cw.ammo, cw.max_ammo()], HORIZONTAL_ALIGNMENT_CENTER, width, 18, Color.WHITE)
 	draw_multiline_string(font, c + Vector2(-width * 0.5, 34), cw.data.description, HORIZONTAL_ALIGNMENT_CENTER, width, 14, 4, Color(1, 1, 1, 0.75))

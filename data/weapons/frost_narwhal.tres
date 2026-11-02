@@ -58,6 +58,7 @@ duration = 3.5
 [resource]
 script = ExtResource("1_data")
 id = &"frost_narwhal"
+price = 1000
 fire_sound = &"shot_frost"
 fire_rumble = Vector3(0.2, 0.1, 0.06)
 noise_radius = 14.0

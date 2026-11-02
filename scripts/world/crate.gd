@@ -11,6 +11,8 @@ const SIZE := 1.0
 @export var respawn_time: float = 20.0
 @export var ammo_fraction: float = 0.3
 @export var heal_amount: float = 30.0
+## Glimmer spilled each time it breaks.
+@export var glimmer: int = 8
 
 var health: Health
 var hurt_box: HurtBox
@@ -71,6 +73,7 @@ func _on_broken(_info: DamageInfo) -> void:
 			player.refill_ammo_fraction(ammo_fraction)
 		else:
 			player.health.heal(heal_amount)
+	Glimmer.spill(get_parent(), global_position + Vector3.UP * 0.6, glimmer)
 	GameFeel.impact(global_position + Vector3.UP * 0.5, (_mesh.material_override as StandardMaterial3D).albedo_color, 2.0, 0.25)
 	_set_present(false)
 	_respawn_left = respawn_time

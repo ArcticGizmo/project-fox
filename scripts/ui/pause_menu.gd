@@ -5,10 +5,14 @@ extends CanvasLayer
 ## Restart and level changes are signals so the owning LevelRoot decides how.
 ## "Level" cycles the level selection; the restart button then loads it.
 ## "Debug..." opens a second page of testing shortcuts (DebugTools): max
-## weapons, spawn any enemy, boss phases, invulnerability, rumble and volume.
+## weapons, own every weapon, glimmer, spawn any enemy, boss phases,
+## invulnerability, rumble and volume, and wiping the save.
+## The main page shows glimmer and this level's Heartsprings and jars found.
 
 signal restart_requested
 signal level_requested(path: String)
+## Debug page "Reset Save": the LevelRoot wipes the save and restarts.
+signal save_reset_requested
 
 var is_open: bool = false
 ## Scene path of the level this menu belongs to (set by LevelRoot).
@@ -26,6 +30,10 @@ var _gadgets: Button
 var _quit: Button
 var _mouse_mode_before: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
 var _title: Label
+var _progress: Label
+var _reset_save: Button
+## "Reset Save" asks once ("Really?") before wiping.
+var _reset_armed: bool = false
 var _main_box: VBoxContainer
 var _debug_box: VBoxContainer
 var _debug_button: Button
@@ -72,6 +80,12 @@ func _ready() -> void:
 	title.add_theme_font_size_override(&"font_size", 40)
 	title.add_theme_color_override(&"font_color", Color(1, 0.85, 0.4))
 	box.add_child(title)
+
+	_progress = Label.new()
+	_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_progress.add_theme_font_size_override(&"font_size", 20)
+	_progress.add_theme_color_override(&"font_color", ShopMenu.GLIMMER_COLOR)
+	box.add_child(_progress)
 
 	_main_box = VBoxContainer.new()
 	_main_box.add_theme_constant_override(&"separation", 12)
@@ -179,6 +193,7 @@ func _refresh() -> void:
 	var p := get_tree().get_first_node_in_group(&"player") as Player
 	var all_unlocked := p != null and p.gadgets.unlocked.size() >= Gadgets.ALL.size()
 	_gadgets.text = "Gadgets: all unlocked" if all_unlocked else "Unlock All Gadgets"
+	_progress.text = progress_text(p)
 	_boxes.text = "Hitboxes: %s" % ("ON" if DebugSettings.show_boxes else "OFF")
 	_ai.text = "AI Debug: %s" % ("ON" if DebugSettings.show_ai else "OFF")
 	if _debug_box == null:
@@ -188,6 +203,22 @@ func _refresh() -> void:
 	var has_boss := DebugTools.boss(get_tree()) != null
 	_boss2.disabled = not has_boss
 	_boss3.disabled = not has_boss
+
+
+## "1234 glimmer  ·  Heartsprings 1/2  ·  Jars 3/5" (counts for this level's
+## saved pickups: found / placed).
+func progress_text(p: Player) -> String:
+	if p == null:
+		return ""
+	var parts := PackedStringArray(["%d glimmer" % p.glimmer])
+	var level := get_parent() as LevelRoot
+	if level != null:
+		var tally := level.pickup_tally()
+		for kind: StringName in [&"heartspring", &"jar"]:
+			if tally.has(kind):
+				var t: Vector2i = tally[kind]
+				parts.append("%s %d/%d" % ["Heartsprings" if kind == &"heartspring" else "Jars", t.x, t.y])
+	return "  ·  ".join(parts)
 
 
 func _button(parent: Control, text: String, action: Callable) -> Button:
@@ -214,34 +245,50 @@ func _build_debug_page(parent: Control) -> void:
 	title.add_theme_color_override(&"font_color", Color(1, 0.85, 0.4))
 	_debug_box.add_child(title)
 	_debug_back = _button(_debug_box, "Back", show_main_page)
-	_button(_debug_box, "Max All Weapons", func() -> void:
+	# Two columns so the page fits a 900 px tall screen.
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override(&"h_separation", 10)
+	grid.add_theme_constant_override(&"v_separation", 10)
+	_debug_box.add_child(grid)
+	_button(grid, "Max All Weapons", func() -> void:
 		var p := _player()
 		if p != null:
 			DebugTools.max_all_weapons(p))
-	_button(_debug_box, "Current Weapon +1 Level", func() -> void:
+	_button(grid, "Current Weapon +1 Level", func() -> void:
 		var p := _player()
 		if p != null:
 			p.debug_level_current_weapon())
-	_spawn_kind = _button(_debug_box, "", func() -> void:
+	_button(grid, "Own All Weapons", func() -> void:
+		var p := _player()
+		if p != null:
+			DebugTools.own_all_weapons(p))
+	_button(grid, "+1000 Glimmer", func() -> void:
+		var p := _player()
+		if p != null:
+			p.add_glimmer(1000)
+		_refresh())
+	_spawn_kind = _button(grid, "", func() -> void:
 		var kinds := DebugTools.enemy_kinds()
 		_spawn_index = (_spawn_index + 1) % kinds.size()
 		_refresh())
-	_button(_debug_box, "Spawn It", func() -> void:
+	_button(grid, "Spawn It", func() -> void:
 		var p := _player()
 		if p != null:
 			DebugTools.spawn_enemy(p, DebugTools.enemy_kinds()[_spawn_index])
 			close())
-	_boss2 = _button(_debug_box, "Boss to Phase 2", func() -> void:
+	_boss2 = _button(grid, "Boss to Phase 2", func() -> void:
 		if DebugTools.boss_to_phase(get_tree(), 2):
 			close())
-	_boss3 = _button(_debug_box, "Boss to Phase 3", func() -> void:
+	_boss3 = _button(grid, "Boss to Phase 3", func() -> void:
 		if DebugTools.boss_to_phase(get_tree(), 3):
 			close())
-	_god = _button(_debug_box, "", func() -> void:
+	_god = _button(grid, "", func() -> void:
 		var p := _player()
 		if p != null:
 			p.god_mode = not p.god_mode
 		_refresh())
+	_reset_save = _button(grid, "Reset Save", _on_reset_save)
 	_rumble = _slider(_debug_box, "Rumble", 0.0, 1.5, 0.05, GameFeel.rumble_strength, func(v: float) -> void:
 		GameFeel.rumble_strength = v
 		GameFeel.rumble(0.4 * v, 0.6 * v, 0.15))
@@ -250,8 +297,20 @@ func _build_debug_page(parent: Control) -> void:
 		Sfx.play(&"wheel_select"))
 
 
+func _on_reset_save() -> void:
+	if not _reset_armed:
+		_reset_armed = true
+		_reset_save.text = "Wipe it? Press again"
+		return
+	close()
+	save_reset_requested.emit()
+
+
 func show_debug_page() -> void:
+	_reset_armed = false
+	_reset_save.text = "Reset Save"
 	_main_box.visible = false
+	_progress.visible = false
 	_title.visible = false
 	_debug_box.visible = true
 	_refresh()
@@ -261,6 +320,7 @@ func show_debug_page() -> void:
 func show_main_page() -> void:
 	_debug_box.visible = false
 	_main_box.visible = true
+	_progress.visible = true
 	_title.visible = true
 	_debug_button.grab_focus()
 

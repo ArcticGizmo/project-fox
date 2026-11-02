@@ -55,6 +55,7 @@ knockback = 0.5
 [resource]
 script = ExtResource("1_data")
 id = &"silk_launcher"
+price = 900
 fire_sound = &"shot_silk"
 fire_rumble = Vector3(0.2, 0.1, 0.06)
 noise_radius = 8.0
