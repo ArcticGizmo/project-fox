@@ -32,7 +32,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `assets/` | Art. `textures/<name>/albedo.png + normal.png` (seamless, green-up normal, imported with mipmaps and normal_map=1) |
 | `tests/` | `test_runner.gd` (finds `tests/unit/test_*.gd`), `TestCase` helpers, `TestDummy` (player stand-in) |
 | `tools/` | `test.ps1`, `screenshot.gd` (add a `_capture_*` step for new visual features), `gen_textures.gd` (procedural placeholder texture sets) |
-| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`, `art-pipeline.md`: layout vs theming layers, style guide from Ember, asset list and conventions) |
+| `docs/` | Design plans and decisions (`plan-awareness-slice-gadgets.md`, `gadgets.md`, `art-pipeline.md`: layout vs theming layers, style guide from Ember, asset list and conventions), `playtest-batch-2.md` (checklist for the next hands-on batch) |
 
 Damage reactions: `Player._on_hurt` applies i-frames (`tuning.hurt_iframes`), knockback away
 from `info.source_position` and `velocity.y = max(velocity.y, info.knockback_up)`; DoT
