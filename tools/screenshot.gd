@@ -170,9 +170,18 @@ func _capture_each_weapon(player: Player) -> void:
 		player.select_weapon(i)
 		await get_tree().physics_frame
 		Input.action_press(&"fire")
-		await get_tree().create_timer(0.35).timeout
-		await _capture("weapon_%s.png" % player.weapons[i].data.id)
-		Input.action_release(&"fire")
+		var data := player.weapons[i].data
+		if data.charge_time > 0.0:
+			# Charge weapons: the full-charge reticle, then the shot after release.
+			await get_tree().create_timer(data.charge_time + 0.1).timeout
+			await _capture("weapon_%s_charged.png" % data.id)
+			Input.action_release(&"fire")
+			await get_tree().create_timer(0.12).timeout
+			await _capture("weapon_%s.png" % data.id)
+		else:
+			await get_tree().create_timer(0.35).timeout
+			await _capture("weapon_%s.png" % data.id)
+			Input.action_release(&"fire")
 		await get_tree().create_timer(0.3).timeout
 
 
@@ -277,6 +286,22 @@ func _capture_pangolin(player: Player, waves: WaveManager) -> void:
 	DebugSettings.show_boxes = false
 	if is_instance_valid(p):
 		p.queue_free()
+	# A Clockwork Swallow looping round a fresh pangolin to hit its back, from above.
+	var p2 := waves.spawn_enemy(&"pangolin", base + Vector3(0, 0, -10)) as BrassPangolin
+	p2.set_physics_process(false)
+	player.select_weapon(Player.DEFAULT_WEAPONS.find("res://data/weapons/clockwork_swallow.tres"))
+	cam.global_position = base + Vector3(0, 16, -5)
+	cam.look_at(base + Vector3(0, 0, -6), Vector3.FORWARD)
+	await get_tree().physics_frame
+	Input.action_press(&"fire")
+	await get_tree().create_timer(0.05).timeout
+	Input.action_release(&"fire")
+	await get_tree().create_timer(0.35).timeout
+	await _capture("swallow_curve.png")
+	await get_tree().create_timer(0.2).timeout
+	await _capture("swallow_hit.png")
+	if is_instance_valid(p2):
+		p2.queue_free()
 	cam.queue_free()
 
 

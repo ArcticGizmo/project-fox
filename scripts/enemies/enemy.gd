@@ -61,6 +61,8 @@ const LOST_TRACK_SUSPICION := 0.5
 const ALERT_POP_SCALE := Vector3(0.8, 1.4, 0.8)
 ## Enemies that fall below this (off a ledge into a pit) die.
 const KILL_PLANE_Y := -20.0
+## Upward speed of an upend hop (scaled by status_resistance).
+const UPEND_HOP := 6.0
 
 @export_group("Body")
 @export var display_name: String = "Enemy"
@@ -1005,6 +1007,16 @@ func stagger(duration: float) -> void:
 		return
 	staggered_left = maxf(staggered_left, duration * status_resistance)
 	_interrupt()
+
+
+## Knocked off its feet (a full-charge Rhino Beetle Ram): a hop plus a stagger.
+## Enemies with a better reaction override it (the pangolin flips onto its back).
+func upend(duration: float) -> void:
+	if status_resistance <= 0.0 or health.is_dead:
+		return
+	if is_on_floor() and not flying:
+		velocity.y = UPEND_HOP * status_resistance
+	stagger(duration)
 
 
 ## Takes EXPOSED_DAMAGE_MULTIPLIER damage for a while. Not affected by resistance.

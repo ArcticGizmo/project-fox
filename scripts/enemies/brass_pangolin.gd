@@ -350,3 +350,13 @@ func _hit_sound(info: DamageInfo) -> StringName:
 	var blocked := _last_hit_blocked
 	_last_hit_blocked = false
 	return &"clank" if blocked else super(info)
+
+
+## Upended: flipped onto its back, armour down, belly open (as after a dodged roll).
+func upend(_duration: float) -> void:
+	if health.is_dead or status_resistance <= 0.0:
+		return
+	_interrupt()
+	if is_on_floor():
+		velocity.y = UPEND_HOP * 0.6
+	enter_state(&"dizzy")

@@ -19,6 +19,9 @@ var hit_mask: int = Layers.WORLD | Layers.ENEMY_HURTBOX
 
 var _cooldown: float = 0.0
 var _trigger_held: bool = false
+## 0..1 while a charge weapon is held (see trigger); _fire reads it.
+var charge: float = 0.0
+var _charging: bool = false
 
 
 func setup(p_data: WeaponData, p_wielder: Node3D) -> void:
@@ -74,24 +77,55 @@ func can_fire() -> bool:
 
 
 ## Called every physics frame by the wielder while this weapon is equipped.
+## Charge weapons (data.charge_time > 0) build `charge` while held and fire on
+## release if it reached data.min_charge; everything else fires while held.
 func trigger(held: bool, aim: AimInfo) -> void:
 	_trigger_held = held
-	if held and can_fire():
-		ammo -= data.ammo_per_shot
-		_cooldown = stats().fire_interval
-		_fire(aim)
-		NoiseEvent.emit(global_position, data.noise_radius, self)
-		if wielder != null and wielder.is_in_group(&"player"):
-			if data.fire_sound != &"":
-				Sfx.play(data.fire_sound)
-			GameFeel.rumble(data.fire_rumble.x, data.fire_rumble.y, data.fire_rumble.z)
-		fired.emit()
-		ammo_changed.emit(ammo, max_ammo())
+	if data.charge_time > 0.0:
+		if held and can_fire():
+			_charging = true
+			var was_full := charge >= 1.0
+			charge = minf(1.0, charge + get_physics_process_delta_time() / data.charge_time)
+			if charge >= 1.0 and not was_full and _wielded_by_player():
+				Sfx.play(&"charge_ready")
+				GameFeel.rumble(0.3, 0.0, 0.08)
+		elif not held and _charging:
+			_charging = false
+			if charge >= data.min_charge and aim != null:
+				_shoot(aim)
+			charge = 0.0
+	elif held and can_fire():
+		_shoot(aim)
 	_trigger_update(held, aim)
+
+
+func _shoot(aim: AimInfo) -> void:
+	ammo -= data.ammo_per_shot
+	_cooldown = stats().fire_interval
+	_fire(aim)
+	NoiseEvent.emit(global_position, data.noise_radius, self)
+	if _wielded_by_player():
+		if data.fire_sound != &"":
+			Sfx.play(data.fire_sound)
+		GameFeel.rumble(data.fire_rumble.x, data.fire_rumble.y, data.fire_rumble.z)
+	fired.emit()
+	ammo_changed.emit(ammo, max_ammo())
+
+
+func _wielded_by_player() -> bool:
+	return wielder != null and wielder.is_in_group(&"player")
+
+
+## Drop a charge without firing (dodge, staff, wheel while the trigger is held).
+func cancel_charge() -> void:
+	_charging = false
+	charge = 0.0
 
 
 func on_unequipped() -> void:
 	_trigger_held = false
+	_charging = false
+	charge = 0.0
 	_trigger_update(false, null)
 
 

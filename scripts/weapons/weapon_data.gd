@@ -17,6 +17,10 @@ extends Resource
 @export var zoom_fov: float = 0.0
 ## How far each shot is heard by unaware enemies (NoiseEvent.emit). 0 = silent.
 @export var noise_radius: float = 16.0
+## > 0: a charge weapon. Hold to fill Weapon.charge over this many seconds,
+## release to fire (only if the charge reached min_charge).
+@export var charge_time: float = 0.0
+@export_range(0.0, 1.0) var min_charge: float = 0.15
 ## SfxBank id played (flat) each time the player fires it.
 @export var fire_sound: StringName = &""
 ## Controller rumble per shot: (weak motor, strong motor, seconds).

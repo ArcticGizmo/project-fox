@@ -27,13 +27,15 @@ const DEFAULT_WEAPONS: Array[String] = [
 	"res://data/weapons/pufferfish_mortar.tres",
 	"res://data/weapons/galvanic_eel.tres",
 	"res://data/weapons/tortoise_sentry.tres",
-	# Page 2: status-effect weapons
+	# Page 2: status, utility and anti-armour weapons
 	"res://data/weapons/frost_narwhal.tres",
 	"res://data/weapons/viper_spitter.tres",
 	"res://data/weapons/silk_launcher.tres",
 	"res://data/weapons/echo_horn.tres",
 	"res://data/weapons/moth_lantern.tres",
 	"res://data/weapons/hermit_bulwark.tres",
+	"res://data/weapons/clockwork_swallow.tres",
+	"res://data/weapons/rhino_beetle_ram.tres",
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5
@@ -787,6 +789,8 @@ func _handle_fire() -> void:
 	if firing:
 		_fire_facing = tuning.fire_facing_time
 		_conceal_left = 0.0  # shooting gives the fox away
+	if input.fire_held and not firing:
+		w.cancel_charge()
 	w.trigger(firing, current_aim())
 
 

@@ -21,7 +21,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `FoxModel` (rigged GLB in `assets/characters/ember/`; bakes its clips from code; `update(speed, on_floor, vy, hold)` + `play_action(clip)` + `aim()`; gun on `gun_mount` in the right hand, `FoxAimLayer` raises the arm, `FoxTwistLayer` turns the hips toward travel; showcase level + `--fox` sheets show every clip), `input/` (providers + `PlayerInputState`) |
 | `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
 | `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
-| `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
+| `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `SwallowDart`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
 | `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scenes/levels/` | Level scenes (`slice_01.tscn`; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
@@ -108,6 +108,11 @@ D-pad up/F2 · next wave D-pad down/F3.
   `signature` adds a behaviour, not just numbers (rifle crits stagger, lash tip exposes, stoked
   salamander, frost shatter, silk exposes, echo horn reflects projectiles, repeater ricochet);
   each script documents its signature and the stats it reads.
+  Charge weapons: `WeaponData.charge_time > 0` makes `Weapon.trigger` fill `charge` while held and fire
+  on release (`min_charge`); the reticle draws the charge; blocked firing (dodge, staff) calls
+  `cancel_charge()`. `Enemy.upend(duration)` (hop + stagger; the pangolin overrides it to flip dizzy)
+  is the Rhino Beetle Ram's full-charge effect. `SwallowDart` curves round its target and only
+  strikes it on the return leg, so the hit lands behind frontal armour.
 - **Area damage** goes through `Explosion.detonate()`; position-dependent melee damage uses
   `HitBox.damage_modifier`.
 - **Status effects live on `Enemy`**: `add_chill`/`freeze`, `root`, `stagger`, `expose`,
@@ -127,8 +132,8 @@ D-pad up/F2 · next wave D-pad down/F3.
   over the player by enemies in range. Give it a PLAYER_HURTBOX hurtbox so attacks land.
 - **Reflect**: areas on `Layers.REFLECTOR` whose parent has `reflect_damage` and `weapon`
   bounce `LobProjectile`s back at their `source`. New enemy projectiles should do the same.
-- **Wheel pages**: 8 weapons per page (`Player.WHEEL_PAGE_SIZE`); page 2 holds the
-  status/utility weapons.
+- **Wheel pages**: 8 weapons per page (`Player.WHEEL_PAGE_SIZE`); both pages are full. Page 2 holds the
+  status/utility weapons plus the anti-armour Clockwork Swallow and Rhino Beetle Ram.
 - **Rumble and sound.** `GameFeel.rumble(weak, strong, seconds)` (a weaker request never cuts a
   stronger one short); `shake()` and `hit_stop()` rumble on their own, so most impacts need nothing
   extra. Player rumbles are the `PlayerTuning` Rumble group; weapons set `WeaponData.fire_sound` and

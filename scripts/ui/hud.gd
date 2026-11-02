@@ -99,6 +99,8 @@ func _process(_delta: float) -> void:
 		_reticle.locked = _player.aim_target != null
 		_reticle.zoomed = _player.is_zoomed()
 		_reticle.grapple_ready = _player.grapple != null and _player.grapple.is_ready()
+		var w := _player.current_weapon()
+		_reticle.charge = w.charge if w != null else 0.0
 
 
 func _on_health_changed(current: float, maximum: float) -> void:

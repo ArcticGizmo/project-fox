@@ -14,6 +14,12 @@ var zoomed: bool = false:
 		if value != zoomed:
 			zoomed = value
 			queue_redraw()
+## 0..1 charge of the current weapon (0 hides the arc).
+var charge: float = 0.0:
+	set(value):
+		if not is_equal_approx(value, charge):
+			charge = value
+			queue_redraw()
 var grapple_ready: bool = false:
 	set(value):
 		if value != grapple_ready:
@@ -44,3 +50,7 @@ func _draw() -> void:
 	if grapple_ready:
 		draw_arc(c, 17.0, 0.0, TAU, 48, Color(0, 0, 0, 0.5), 5.0, true)
 		draw_arc(c, 17.0, 0.0, TAU, 48, GrappleRing.HIGHLIGHT_COLOR, 2.5, true)
+	if charge > 0.0:
+		var arc_col := Color(1, 1, 1) if charge >= 1.0 else Color(1, 1, 1, 0.6)
+		draw_arc(c, 24.0, -PI * 0.5, -PI * 0.5 + TAU * charge, 48, Color(0, 0, 0, 0.5), 6.0, true)
+		draw_arc(c, 24.0, -PI * 0.5, -PI * 0.5 + TAU * charge, 48, arc_col, 3.0, true)
