@@ -65,6 +65,7 @@ const LOST_TRACK_SUSPICION := 0.5
 const ALERT_POP_SCALE := Vector3(0.8, 1.4, 0.8)
 ## Enemies that fall below this (off a ledge into a pit) die.
 const KILL_PLANE_Y := -20.0
+const RIFT_DRIFT_DECAY := 8.0
 ## Upward speed of an upend hop (scaled by status_resistance).
 const UPEND_HOP := 6.0
 
@@ -160,6 +161,8 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _age: float = 0.0
 var _move_velocity: Vector3 = Vector3.ZERO
 var _knockback: Vector3 = Vector3.ZERO
+## Sideways pull from a GravityRift (decays outside it).
+var _rift_drift: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
 var _material: StandardMaterial3D
 var _label: Label3D
@@ -491,11 +494,21 @@ func _physics_process(delta: float) -> void:
 	_knockback = _knockback.move_toward(Vector3.ZERO, 25.0 * delta)
 	var m := move_multiplier()
 	var kb := 0.0 if is_frozen() or is_rooted() else 1.0
-	velocity.x = _move_velocity.x * m + _knockback.x * kb
-	velocity.z = _move_velocity.z * m + _knockback.z * kb
+	# A GravityRift replaces gravity for walkers; its sideways pull is drift.
+	var rift: GravityRift = null
+	if not flying:
+		rift = GravityRift.at(get_tree(), get_aim_point())
+	if rift != null:
+		var v := rift.accelerate(Vector3(_rift_drift.x, velocity.y, _rift_drift.z), delta)
+		_rift_drift = Vector3(v.x, 0.0, v.z)
+		velocity.y = v.y
+	else:
+		_rift_drift = _rift_drift.move_toward(Vector3.ZERO, RIFT_DRIFT_DECAY * delta)
+	velocity.x = _move_velocity.x * m + _knockback.x * kb + _rift_drift.x
+	velocity.z = _move_velocity.z * m + _knockback.z * kb + _rift_drift.z
 	if flying and not is_frozen():
 		velocity.y = _move_velocity.y * m
-	else:
+	elif rift == null:
 		velocity.y -= gravity * delta
 	move_and_slide()
 	_after_move(delta)

@@ -39,6 +39,9 @@ const DEFAULT_WEAPONS: Array[String] = [
 ]
 const BODY_COLOR := Color(0.95, 0.45, 0.12)
 const RESPAWN_DELAY := 1.5
+## How fast rift drift fades once out of the rift (m/s^2).
+const RIFT_DRIFT_DECAY_AIR := 3.0
+const RIFT_DRIFT_DECAY_GROUND := 20.0
 const KILL_PLANE_Y := -20.0
 const WHEEL_SLOWMO := &"weapon_wheel"
 const WHEEL_PAGE_SIZE := 8
@@ -120,6 +123,8 @@ var _burrow_hop: bool = false
 var _melee_after_hop: bool = false
 var _fire_facing: float = 0.0
 var _knockback: Vector3 = Vector3.ZERO
+## Sideways push from a GravityRift, on top of normal movement (decays outside).
+var _rift_drift: Vector3 = Vector3.ZERO
 var _flash: float = 0.0
 var _respawn_timer: float = -1.0
 var fox_model: FoxModel
@@ -379,7 +384,7 @@ func _move(delta: float) -> void:
 			return
 
 	# Horizontal
-	var h := Vector3(velocity.x, 0.0, velocity.z) - _knockback
+	var h := Vector3(velocity.x, 0.0, velocity.z) - _knockback - _rift_drift
 	if is_dodging():
 		h = _dodge_dir * tuning.dodge_speed
 	elif melee.phase == StaffMelee.Phase.SWING:
@@ -406,7 +411,7 @@ func _move(delta: float) -> void:
 			accel = tuning.ground_deceleration
 		h = h.move_toward(target_h, accel * delta)
 	_knockback = _knockback.move_toward(Vector3.ZERO, 30.0 * delta)
-	h += _knockback
+	h += _knockback + _rift_drift
 
 	# Jump
 	# (Not while rising from a hazard launch: any jump would be slower than it.)
@@ -427,6 +432,11 @@ func _move(delta: float) -> void:
 	_update_glide(on_floor)
 	var lift := SteamVent.lift_in(get_tree(), global_position + Vector3.UP * 0.5)
 
+	var rift := GravityRift.at(get_tree(), global_position + Vector3.UP * HEIGHT * 0.5)
+	var drift_before := _rift_drift
+	if rift == null:
+		_rift_drift = _rift_drift.move_toward(Vector3.ZERO, (RIFT_DRIFT_DECAY_GROUND if on_floor else RIFT_DRIFT_DECAY_AIR) * delta)
+
 	# Gravity (none during an air dodge so it reads as a dash; slams set it directly)
 	if cloak.is_open():
 		var v := cloak.glide_velocity(delta, wish, lift)
@@ -436,6 +446,13 @@ func _move(delta: float) -> void:
 		velocity.y = 0.0
 	elif melee.phase == StaffMelee.Phase.SLAM_FALL:
 		velocity.y = -tuning.slam_fall_speed
+	elif rift != null and not is_dodging():
+		# Rift: its pull replaces gravity; the sideways part becomes drift.
+		var v := rift.accelerate(Vector3(_rift_drift.x, velocity.y, _rift_drift.z), delta)
+		_rift_drift = Vector3(v.x, 0.0, v.z)
+		velocity.y = maxf(v.y, -tuning.max_fall_speed)
+		_launched = false
+		_gadget_hop = false
 	elif not (is_dodging() and not on_floor):
 		var g := tuning.gravity
 		if velocity.y < 0.0:
@@ -446,6 +463,7 @@ func _move(delta: float) -> void:
 			g *= tuning.jump_release_gravity_multiplier
 		velocity.y = maxf(velocity.y - g * delta + lift * tuning.vent_push_acceleration * delta, -tuning.max_fall_speed)
 
+	h += _rift_drift - drift_before
 	velocity.x = h.x
 	velocity.z = h.z
 	move_and_slide()
@@ -1012,6 +1030,7 @@ func respawn() -> void:
 	camera_rig.yaw = spawn_yaw
 	visual.rotation.y = spawn_yaw
 	velocity = Vector3.ZERO
+	_rift_drift = Vector3.ZERO
 	_knockback = Vector3.ZERO
 	_launched = false
 	_gadget_hop = false
