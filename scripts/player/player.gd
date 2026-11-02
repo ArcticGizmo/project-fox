@@ -22,6 +22,10 @@ signal heartspring_found(total: int)
 
 const RADIUS := 0.45
 const HEIGHT := 1.8
+## Where shots start with the arm raised to aim, for the stand-in box gun (whose tip is
+## BOX_TIP in the gun mount's frame). Modelled guns shift it by their own tip's offset.
+const MUZZLE_POSITION := Vector3(0.22, 0.88, -0.85)
+const BOX_TIP := Vector3(0, 0.03, -0.33)
 ## Loadout order = weapon wheel order (clockwise from the top) = number keys 1-8.
 const DEFAULT_WEAPONS: Array[String] = [
 	"res://data/weapons/woodpecker_repeater.tres",
@@ -143,6 +147,8 @@ var _gun_material: StandardMaterial3D
 var _gun: Node3D
 var _gun_box: MeshInstance3D
 var _gun_models: Dictionary = {}
+## 0..1: how far the held gun is kicked back (see PlayerTuning recoil_*).
+var recoil: float = 0.0
 
 
 func _ready() -> void:
@@ -212,6 +218,7 @@ func _ready() -> void:
 		w.setup(d, self)
 		muzzle.add_child(w)
 		w.leveled_up.connect(_on_weapon_leveled.bind(w))
+		w.fired.connect(_on_weapon_fired.bind(w))
 		weapons.append(w)
 	_select_weapon(0, true)
 
@@ -226,7 +233,7 @@ func _build_visual() -> void:
 	muzzle = Node3D.new()
 	muzzle.name = "Muzzle"
 	# Where the hand-held gun's tip sits with the arm raised to aim (FoxModel aim pose).
-	muzzle.position = Vector3(0.21, 0.96, -0.85)
+	muzzle.position = MUZZLE_POSITION
 	visual.add_child(muzzle)
 	_gun_material = _flat_material(Color.WHITE)
 	# The gun sits in the fox's right hand and points wherever the arm does.
@@ -937,6 +944,11 @@ func _select_weapon(index: int, force: bool = false) -> void:
 	weapon_changed.emit(w)
 
 
+func _on_weapon_fired(w: Weapon) -> void:
+	var kick := maxf(tuning.recoil_min_kick, maxf(w.data.fire_rumble.x, w.data.fire_rumble.y))
+	recoil = minf(1.0, recoil + kick)
+
+
 func _show_gun_model(w: Weapon) -> void:
 	if w.data.model != null and not _gun_models.has(w.data.id):
 		var held := HeldModel.build(w.data.model, w.data.model_grip, w.data.model_length)
@@ -945,6 +957,12 @@ func _show_gun_model(w: Weapon) -> void:
 	for id: StringName in _gun_models:
 		(_gun_models[id] as Node3D).visible = id == w.data.id
 	_gun_box.visible = w.data.model == null
+	muzzle.position = MUZZLE_POSITION
+	if w.data.model != null:
+		var tip := ((_gun_models[w.data.id] as Node3D).get_node(NodePath(HeldModel.TIP)) as Node3D).position
+		var d := tip - BOX_TIP
+		# Gun mount axes in the aim pose: +X down, +Y the fox's right, +Z back.
+		muzzle.position += Vector3(d.y, -d.x, d.z)
 
 
 func current_weapon() -> Weapon:
@@ -1165,17 +1183,21 @@ func unlock_gadget(id: StringName) -> bool:
 	return gadgets.unlock(id)
 
 
-func _update_visuals(_delta: float) -> void:
+func _update_visuals(delta: float) -> void:
 	fox_model.flash(_flash)
 	_gun.visible = not melee.is_drawn()
+	recoil = move_toward(recoil, 0.0, tuning.recoil_return * delta)
+	# The mount's +Z runs back up the arm; turning about its +Y tips the muzzle up.
+	_gun.position.z = recoil * tuning.recoil_distance
+	_gun.rotation.y = recoil * deg_to_rad(tuning.recoil_pitch_deg)
 	fox_model.aim((_fire_facing > 0.0 or is_strafing()) and not melee.is_busy() and not grapple.is_active()
 			and not burrow.is_active(), rad_to_deg(asin(clampf(aim_direction.y, -1.0, 1.0))))
 	fox_model.set_travel(Vector3(velocity.x, 0.0, velocity.z))
 	fox_model.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y, _anim_hold())
 	grapple.update_rope()
-	cloak.update_visual(_delta)
-	burrow.update_visual(_delta)
-	conduit.update_visual(_delta)
+	cloak.update_visual(delta)
+	burrow.update_visual(delta)
+	conduit.update_visual(delta)
 	# Blink during hurt i-frames (not dodge i-frames: dodging should look clean).
 	visual.visible = _hurt_iframes <= 0.0 or fmod(_hurt_iframes, 0.12) > 0.05
 	# Hide the fox once the scope is mostly zoomed in; at that FOV it fills the frame.

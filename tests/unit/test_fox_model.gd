@@ -235,3 +235,38 @@ func test_weapons_with_a_model_hold_it_by_the_grip() -> void:
 		var turn := (held.get_child(0) as Node3D).basis.orthonormalized()
 		assert_true((turn * Vector3.LEFT).is_equal_approx(Vector3.FORWARD), "%s: barrel (model -X) points down the arm (-Z)" % w.data.id)
 		assert_true((turn * Vector3.UP).is_equal_approx(Vector3.LEFT), "%s: top up in the aim pose (mount -X)" % w.data.id)
+
+
+func test_shots_leave_from_the_barrel_tip() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	for i: int in player.weapons.size():
+		var w := player.weapons[i]
+		w.owned = true
+		player._select_weapon(i)
+		player._fire_facing = 10.0
+		await wait_frames(20)
+		var tip: Vector3
+		if w.data.model == null:
+			tip = player._gun_box.to_global(Vector3(0, 0, -0.21))
+		else:
+			tip = ((player._gun_models[w.data.id] as Node3D).get_node(NodePath(HeldModel.TIP)) as Node3D).global_position
+		var gap := tip.distance_to(player.muzzle.global_position)
+		assert_true(gap < 0.06, "%s: muzzle at the barrel tip (%.2f m off)" % [w.data.id, gap])
+
+
+func test_firing_kicks_the_gun_back_and_it_settles() -> void:
+	var made: Array = await _player()
+	var player: Player = made[0]
+	var pad: ScriptedInputProvider = made[1]
+	var w := player.current_weapon()
+	pad.next.fire_held = true
+	await wait_frames(2)
+	pad.next.fire_held = false
+	assert_true(player.recoil > 0.0, "kicked")
+	assert_true(player._gun.position.z > 0.0, "slides back up the arm")
+	assert_true(player._gun.rotation.y > 0.0, "muzzle tips up")
+	var kick := maxf(player.tuning.recoil_min_kick, maxf(w.data.fire_rumble.x, w.data.fire_rumble.y))
+	await wait_seconds(kick / player.tuning.recoil_return + 0.1)
+	assert_near(player.recoil, 0.0, 0.001, "settled")
+	assert_near(player._gun.position.z, 0.0, 0.001, "back in the hand")

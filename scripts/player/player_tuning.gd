@@ -43,6 +43,13 @@ extends Resource
 @export var fire_facing_time: float = 0.4
 @export var aim_assist_angle_deg: float = 9.0
 @export var aim_max_range: float = 60.0
+## Held gun kick per shot: it slides back and tips up by these at full kick, then
+## settles at recoil_return (kick per second). A shot adds the weapon's strongest
+## fire_rumble motor (at least recoil_min_kick), capped at 1.
+@export var recoil_distance: float = 0.08
+@export var recoil_pitch_deg: float = 14.0
+@export var recoil_return: float = 7.0
+@export var recoil_min_kick: float = 0.25
 
 @export_group("Camera")
 @export var camera_distance: float = 5.5

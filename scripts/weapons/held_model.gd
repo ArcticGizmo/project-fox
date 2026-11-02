@@ -4,6 +4,9 @@ extends RefCounted
 ## Meshy gun exports are centred on their bounds with the barrel along -X; this turns the
 ## barrel to -Z, scales the model to `length` metres along it, and puts `grip` (a point in
 ## the model's own coordinates) on the mount's origin.
+## A "Tip" child marks the muzzle: the barrel's far (-X) end on the model's centre line.
+
+const TIP := &"Tip"
 
 
 static func build(scene: PackedScene, grip: Vector3, length: float) -> Node3D:
@@ -22,6 +25,10 @@ static func build(scene: PackedScene, grip: Vector3, length: float) -> Node3D:
 	var basis := (Basis(Vector3.BACK, PI * 0.5) * Basis(Vector3.UP, -PI * 0.5)).scaled(Vector3.ONE * k)
 	inner.transform = Transform3D(basis, -(basis * grip))
 	pivot.add_child(inner)
+	var tip := Node3D.new()
+	tip.name = TIP
+	tip.position = basis * (Vector3(bounds.position.x, 0.0, 0.0) - grip)
+	pivot.add_child(tip)
 	return pivot
 
 
