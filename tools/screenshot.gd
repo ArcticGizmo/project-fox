@@ -6,6 +6,7 @@ extends Node
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 const BOSS_PATH := "res://scenes/levels/boss_furnace_stag.tscn"
+const SLICE2_PATH := "res://scenes/levels/slice_02.tscn"
 const SHOWCASE_PATH := "res://scenes/levels/anim_showcase.tscn"
 
 var out_dir: String = "res://screenshots"
@@ -24,6 +25,11 @@ func _ready() -> void:
 	# `--slice`: only the greybox slice shots (quick layout iteration).
 	if "--slice" in OS.get_cmdline_user_args():
 		await _capture_slice(null, SLICE_PATH)
+		get_tree().quit()
+		return
+	# `--slice2`: only the second slice's shots.
+	if "--slice2" in OS.get_cmdline_user_args():
+		await _capture_slice2()
 		get_tree().quit()
 		return
 	# `--boss`: only the Furnace Stag arena shots.
@@ -96,6 +102,7 @@ func _ready() -> void:
 	cam.queue_free()
 	await _capture_slice(arena, SLICE_PATH)
 	await _capture_boss()
+	await _capture_slice2()
 	if is_instance_valid(arena):
 		arena.queue_free()
 	await _capture_fox_anims()
@@ -899,3 +906,42 @@ func _capture_heron(player: Player, waves: WaveManager) -> void:
 		if is_instance_valid(e):
 			e.queue_free()
 	cam.queue_free()
+
+
+## slice_02: a view per beat (choir courtyard, rift lift, grapple pillar, rift
+## current, burrow choke, boss door) and a top-down overview.
+func _capture_slice2() -> void:
+	for c: Node in get_children():
+		if c is LevelRoot:
+			c.queue_free()
+	await get_tree().process_frame
+	var level := (load(SLICE2_PATH) as PackedScene).instantiate() as LevelRoot
+	add_child(level)
+	level.player.god_mode = true
+	await get_tree().create_timer(1.5).timeout
+	await _capture("slice2_start.png")
+	var shots: Array[Array] = [
+		["slice2_choir.png", Vector3(12, 7, -24), Vector3(0, 0, -44)],
+		["slice2_lift.png", Vector3(-4, 5, -38), Vector3(8, 7, -54)],
+		["slice2_pillar.png", Vector3(9, 15, -62), Vector3(0, 14, -80)],
+		["slice2_current.png", Vector3(10, 12, -116), Vector3(0, 6, -140)],
+		["slice2_choke.png", Vector3(-8, 11, -140), Vector3(0, 6, -158)],
+		["slice2_door.png", Vector3(6, 9, -158), Vector3(0, 8, -168)],
+	]
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.make_current()
+	for s: Array in shots:
+		cam.global_position = s[1] as Vector3
+		cam.look_at(s[2] as Vector3)
+		await get_tree().create_timer(0.15).timeout
+		await _capture(s[0] as String)
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = 230.0
+	cam.global_position = Vector3(0, 80, -105)
+	cam.look_at(Vector3(0, 0, -105), Vector3.FORWARD)
+	await get_tree().create_timer(0.15).timeout
+	await _capture("slice2_overview.png")
+	cam.queue_free()
+	level.queue_free()
+	await get_tree().process_frame

@@ -23,6 +23,8 @@ static var _cmdline_handled: bool = false
 
 ## Surface textures for this level's Blocks (null: LevelTheme.DEFAULT_PATH).
 @export var level_theme: LevelTheme
+## Gadgets the fox starts this level with (unlocked before the HUD binds, so no popups).
+@export var starting_gadgets: Array[StringName] = []
 
 var player: Player
 var hud: Hud
@@ -61,6 +63,8 @@ func _ready() -> void:
 		player.position = player_spawn.position
 		player.rotation.y = player_spawn.rotation.y
 	add_child(player)
+	for id: StringName in starting_gadgets:
+		player.unlock_gadget(id)
 	player.died.connect(func() -> void: _player_died = true)
 	player.respawned.connect(_on_player_respawned)
 	hud = Hud.new()
