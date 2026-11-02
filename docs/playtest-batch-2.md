@@ -9,8 +9,8 @@ where they live.
 spawn any enemy in front of you, boss to phase 2 / 3, invulnerable, rumble and
 sound sliders. "Unlock All Gadgets" is on the main page. Hitboxes Back/F1, AI view F4.
 
-**Route:** 1-4 in the arena (`run.cmd`), 5-6 and 11 in `slice_01`, 7-9 in `slice_02`,
-10 in `boss_furnace_stag`, 12 anywhere.
+**Route:** 1-4 and 13 in the arena (`run.cmd`), 5-6, 11 and 14 in `slice_01`, 7-9 and 14 in `slice_02`,
+10 in `boss_furnace_stag`, 15 anywhere.
 
 ---
 
@@ -116,7 +116,27 @@ A new save owns three weapons (Repeater, Hornet Swarm, Mortar); the rest are bou
 - [ ] Jars (one on the pocket A pillar you have to shoot, others off the path) and the two Heartsprings (grapple ledge, beyond the glide gap): fun to look for? Want a map/counter beyond the pause menu tally?
 - [ ] Quit and relaunch, then load slice_01: back at your last checkpoint with your glimmer, weapons and finds?
 
-## 12. Anything else
+## 13. Held weapon models (arena; Debug → Own All Weapons)
+
+- [ ] Each of the 8 modelled guns: right size in her hand? Grip looks held, not floating? (`WeaponData.model_grip`, `model_length`)
+- [ ] Shots, flame and the horn blast start at the barrel tip now: noticeable improvement? Any that look off?
+- [ ] Recoil kick (8 cm back, 14° up at full kick, `PlayerTuning.recoil_*`; per weapon from its strongest `fire_rumble` motor): punchy, too much on the rapid-fire Repeater, too little on the Ram?
+- [ ] The Rhino Beetle Ram (Runic Gear Cannon) is held near its muzzle like a shoulder cannon: fine, or swap the grip?
+- [ ] Weapons still on a box (Owl Lens Rifle, Kraken Lash, Tortoise Sentry, Frost Narwhal, Silk, Moth Lantern, Bulwark, Swallow): jarring next to the models?
+
+## 14. New enemies (placed in the slices; arena waves 9-10; or Debug → Spawn)
+
+Placed: Coal Beetle in `slice_01`'s hazard yard (SE corner), Raccoon Rogue in the `slice_01` finale
+(NW corner), Ironhorn Sentinel on `slice_02`'s cliff terrace, three Clockwork Honeybees over island B.
+
+- [ ] **Coal Beetle** (110 hp): ember trail (4 dmg ticks every 0.5 s, 5 s) noticeable and worth avoiding? Belch (3 coals, 14 dmg, 0.9 s stoke) readable from the landing marks? Scorch up close (16 dmg) fair? Did you discover frost quenching it (steam, purple exposed glow)? Fire doing nothing: clear, or confusing?
+- [ ] **Raccoon Rogue** (45 hp): did it steal from you? Steal size (40, `steal_amount`) and escape (5 s and 14 m away): exciting chase or just annoying? Hits knocking glimmer loose (10 a hit): satisfying? In a walled space it can't get away: fine?
+- [ ] **Clockwork Honeybee** (18 hp): low hover (2.4 m) easy to hit with the staff and guns? One-at-a-time stings: do you read the rhythm? Dart (16 m/s, 0.55 s wind-up) dodgeable? Do they meet you well as you land from the glide?
+- [ ] **Ironhorn Sentinel** (220 hp): jab → hook → slam readable? Can you dodge each blow and jump the ring? Winded opening (1.6 s) long enough to punish? The slam on the cliff terrace knocking you off the edge: fun or cheap?
+- [ ] Rigged enemies (rogue, Sentinel) use the fox's animations: do they look right, or obviously borrowed?
+- [ ] Telegraph glows on textured models: still clear (the whole model lights yellow)?
+
+## 15. Anything else
 
 - [ ] Anything that felt bad, confusing or broken that isn't above.
 - [ ] Your favourite and least favourite new thing.

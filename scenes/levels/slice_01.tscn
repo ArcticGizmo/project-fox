@@ -20,6 +20,8 @@
 [ext_resource type="Script" path="res://scripts/world/magpie_peddler.gd" id="18_magpie"]
 [ext_resource type="Script" path="res://scripts/progression/heartspring.gd" id="19_heartspring"]
 [ext_resource type="Script" path="res://scripts/progression/glimmer_jar.gd" id="20_jar"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/coal_beetle.tscn" id="21_beetle"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/raccoon_rogue.tscn" id="22_rogue"]
 
 [node name="Slice01" type="Node3D"]
 script = ExtResource("1_level")
@@ -847,6 +849,16 @@ leash_radius = 14.0
 [node name="Falcon" parent="Enemies/Finale" instance=ExtResource("14_falcon")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 12, 60)
 random_seed = 56
+leash_radius = 14.0
+
+[node name="CoalBeetle" parent="Enemies/Yard" instance=ExtResource("21_beetle")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 52, 0, 9)
+random_seed = 23
+leash_radius = 12.0
+
+[node name="Rogue" parent="Enemies/Finale" instance=ExtResource("22_rogue")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 12, 6, 53)
+random_seed = 57
 leash_radius = 14.0
 
 [node name="Dressing" type="Node3D" parent="Level"]

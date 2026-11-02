@@ -148,3 +148,18 @@ func test_boss_door_opens_with_a_conduit_charge() -> void:
 	terminal.conduit_struck(player.conduit, true)
 	var open := await wait_until(func() -> bool: return door.is_open_for(player), 3.0)
 	assert_true(open, "powered door opens into the arena")
+
+
+## The terrace Sentinel and island B's bees wait unaware over their own floors while the
+## fox stands at the start.
+func test_terrace_and_skyway_guards_keep_home() -> void:
+	await _load(false)
+	var guards: Array[Enemy] = []
+	for path: String in ["Enemies/Terrace/Sentinel", "Enemies/Skyway/BeeW", "Enemies/Skyway/BeeE", "Enemies/Skyway/BeeS"]:
+		guards.append(level.get_node(NodePath(path)) as Enemy)
+	await wait_seconds(8.0)
+	for e: Enemy in guards:
+		assert_false(e.aware, "%s unaware" % e.name)
+		var off := Vector2(e.global_position.x - e.home_position.x, e.global_position.z - e.home_position.z).length()
+		assert_true(off < 1.5, "%s near home (%.1f m)" % [e.name, off])
+		assert_true(absf(e.global_position.y - e.home_position.y) < 1.0, "%s at its height (%.1f)" % [e.name, e.global_position.y])

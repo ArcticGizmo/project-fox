@@ -12,6 +12,8 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/chime_heron.tscn" id="10_heron"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/clockwork_rat.tscn" id="11_rat"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/furnace_stag.tscn" id="12_stag"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/ironhorn_sentinel.tscn" id="13_sentinel"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/clockwork_honeybee.tscn" id="14_bee"]
 
 [node name="Slice02" type="Node3D"]
 script = ExtResource("1_level")
@@ -295,6 +297,30 @@ leash_radius = 14.0
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 9, 0, -43)
 random_seed = 25
 leash_radius = 14.0
+
+[node name="Terrace" type="Node3D" parent="Enemies"]
+
+[node name="Sentinel" parent="Enemies/Terrace" instance=ExtResource("13_sentinel")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 12, -64)
+random_seed = 21
+leash_radius = 9.0
+
+[node name="Skyway" type="Node3D" parent="Enemies"]
+
+[node name="BeeW" parent="Enemies/Skyway" instance=ExtResource("14_bee")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -4, 8.4, -110)
+random_seed = 31
+leash_radius = 12.0
+
+[node name="BeeE" parent="Enemies/Skyway" instance=ExtResource("14_bee")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4, 8.4, -112)
+random_seed = 32
+leash_radius = 12.0
+
+[node name="BeeS" parent="Enemies/Skyway" instance=ExtResource("14_bee")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 8.4, -118)
+random_seed = 33
+leash_radius = 12.0
 
 [node name="Choke" type="Node3D" parent="Enemies"]
 

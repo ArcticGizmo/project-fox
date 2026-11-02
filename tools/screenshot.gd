@@ -940,7 +940,9 @@ func _capture_slice2() -> void:
 	var shots: Array[Array] = [
 		["slice2_choir.png", Vector3(12, 7, -24), Vector3(0, 0, -44)],
 		["slice2_lift.png", Vector3(-4, 5, -38), Vector3(8, 7, -54)],
+		["slice2_terrace.png", Vector3(9, 15, -53), Vector3(0, 12.5, -64)],
 		["slice2_pillar.png", Vector3(9, 15, -62), Vector3(0, 14, -80)],
+		["slice2_island_b.png", Vector3(8, 11, -100), Vector3(0, 7.5, -113)],
 		["slice2_current.png", Vector3(10, 12, -116), Vector3(0, 6, -140)],
 		["slice2_choke.png", Vector3(-8, 11, -140), Vector3(0, 6, -158)],
 		["slice2_door.png", Vector3(6, 9, -158), Vector3(0, 8, -168)],
