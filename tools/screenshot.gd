@@ -68,6 +68,7 @@ func _ready() -> void:
 	await get_tree().create_timer(0.5).timeout
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
+	await _capture_pangolin(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_hazards(arena.get("player") as Player)
 	await _capture_awareness(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	# Overview from above to check layout and enemy scale.
@@ -238,6 +239,40 @@ func _capture_flyers(player: Player, waves: WaveManager) -> void:
 		await get_tree().physics_frame
 	await get_tree().create_timer(0.12).timeout
 	await _capture("falcon_dive.png")
+	cam.queue_free()
+
+
+## A pangolin seen from the side: plates flared for a volley, shards in flight,
+## curled mid-roll, then dizzy on its back.
+func _capture_pangolin(player: Player, waves: WaveManager) -> void:
+	var base := player.global_position
+	var p := waves.spawn_enemy(&"pangolin", base + Vector3(0, 0, -9)) as BrassPangolin
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = base + Vector3(6, 2.5, -3)
+	cam.look_at(base + Vector3(0, 0.8, -6.5))
+	cam.make_current()
+	for _i: int in 400:
+		if not is_instance_valid(p) or p.state == &"volley_windup" and p.state_time > p.volley_windup_time * 0.8:
+			break
+		await get_tree().physics_frame
+	await _capture("pangolin_volley_windup.png")
+	await get_tree().create_timer(0.2).timeout
+	await _capture("pangolin_volley.png")
+	if is_instance_valid(p):
+		p.enter_state(&"curl")
+	await get_tree().create_timer(p.curl_time * 0.8).timeout
+	await _capture("pangolin_curl.png")
+	await get_tree().create_timer(0.35).timeout
+	await _capture("pangolin_roll.png")
+	if is_instance_valid(p):
+		p.enter_state(&"dizzy")
+		DebugSettings.show_boxes = true
+	await get_tree().create_timer(0.3).timeout
+	await _capture("pangolin_dizzy.png")
+	DebugSettings.show_boxes = false
+	if is_instance_valid(p):
+		p.queue_free()
 	cam.queue_free()
 
 

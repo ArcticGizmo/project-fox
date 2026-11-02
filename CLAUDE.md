@@ -55,7 +55,7 @@ godot --headless --path . -s res://tools/gen_textures.gd [-- cobble ...]   # reg
 
 Run the test suite after every change. Use the screenshot tool to check anything visual
 (it captures gameplay, scope, firing, weapon wheel, pause menu, hitboxes, a staff swing
-chill vs frozen enemies, the two flyers (cruising and diving), an overview, and the slice in
+chill vs frozen enemies, the two flyers (cruising and diving), the pangolin (`pangolin_*`: volley windup, shards, curl, roll, dizzy), an overview, and the slice in
 `_capture_slice`: pad view, in-level shots per beat, and top-down / AI-view / angled overviews
 framed on the level's Blocks, then the grapple at GrappleLedge: `grapple_ready`, `grapple_reel`,
 `grapple_reel_side`, then `_capture_burrow` at pocket A's ambush tunnel: `burrow_mound` (AI view on), `burrow_pop`,
@@ -91,6 +91,10 @@ D-pad up/F2 · next wave D-pad down/F3.
   Unaware enemies show an `AwarenessMarker` ("?" filling with suspicion, "!" on alert; pale, never
   yellow). `_idle_flavour(delta)` runs while resting: visual-only fidgets via `visual_pitch` /
   `visual_yaw` / `visual_scale` / `visual_offset`; no hitboxes, no telegraph glow, no lunge squash.
+- **Armour** (Brass Pangolin): override `_modify_incoming` (call `super`) and scale hits by where
+  `info.source_position` sits relative to the facing, so every damage path (hitscan, projectiles,
+  blasts, staff) respects it. DoT skips it. Enemy straight-line projectiles: `ScaleShard` (joins
+  `LobProjectile.GROUP`, reflects like lobs).
 - **Flyers** set `flying = true` (+ `hover_height`): gravity is off and `desired_velocity.y`
   steers vertically; use `hover_velocity(height)` to cruise. Frozen flyers fall and climb
   back after thawing. Lobbers share `LobProjectile.launch()` and `lead_target()`.
