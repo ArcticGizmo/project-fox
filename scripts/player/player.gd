@@ -70,6 +70,8 @@ var spawn_point: Vector3 = Vector3.ZERO
 var spawn_yaw: float = 0.0
 ## Unlocked traversal gadgets (has_gadget / unlock_gadget).
 var gadgets: Gadgets = Gadgets.new()
+## Debug: never takes damage (pause menu Debug page).
+var god_mode: bool = false
 
 var aim_target: Node3D = null
 var aim_point: Vector3 = Vector3.ZERO
@@ -744,7 +746,7 @@ func is_dodging() -> bool:
 
 
 func is_invulnerable() -> bool:
-	return _dodge_iframes > 0.0 or _hurt_iframes > 0.0 or burrow.is_active()
+	return god_mode or _dodge_iframes > 0.0 or _hurt_iframes > 0.0 or burrow.is_active()
 
 
 # --- Aim and weapons ----------------------------------------------------------

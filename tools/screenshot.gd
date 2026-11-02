@@ -60,6 +60,9 @@ func _ready() -> void:
 	menu.open()
 	await get_tree().create_timer(0.2).timeout
 	await _capture("pause.png")
+	menu.show_debug_page()
+	await get_tree().create_timer(0.1).timeout
+	await _capture("pause_debug.png")
 	menu.close()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	if "--weapons" in OS.get_cmdline_user_args():
