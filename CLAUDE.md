@@ -25,7 +25,7 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
 | `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
 | `scenes/levels/` | Level scenes (`slice_01.tscn`; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
-| `scripts/ui/` | `Hud`, `PauseMenu`, `Reticle`, `WeaponWheel` (draws only; the player owns selection) |
+| `scripts/ui/` | `Hud`, `GadgetBar` (gadget slots: locked/unlocked/lit while in use, conduit charge pips), `PauseMenu`, `Reticle` (also charge arc), `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
 | `data/` | `player_tuning.tres`, `weapons/*.tres`, `themes/*.tres` (`LevelTheme`s: surface styles + atmosphere (sky, sun, haze, SSAO, grading); `storybook_town` is the default) |
@@ -181,7 +181,8 @@ D-pad up/F2 · next wave D-pad down/F3.
   the plan doc for its beats and gates).
 - **Gadgets**: ids `Gadgets.ALL` (&"grapple", &"glide", &"burrow", &"conduit") on
   `player.gadgets`; gates are `GadgetGate` blocks with `requires` (`is_open_for(player)`).
-  Pause menu has "Unlock All Gadgets" for testing. Gadget code lives in `scripts/gadgets/`:
+  Pause menu has "Unlock All Gadgets" for testing. Each id needs `Gadgets.NAMES`/`SHORT_NAMES`/`HINTS`
+  (HUD bar + unlock popup) and a `GadgetGate.GATE_COLORS` entry; add its "lit" rule to `GadgetBar.is_lit`. Gadget code lives in `scripts/gadgets/`:
   a component node on the player (like `StaffMelee`) that the player asks each frame and
   that owns its own visuals; tuning in its own `PlayerTuning` group. Gadgets are context
   actions on existing verbs (no new buttons) and read only `PlayerInputState` via the player.

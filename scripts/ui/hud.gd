@@ -1,7 +1,8 @@
 class_name Hud
 extends CanvasLayer
 ## Prototype HUD: health, current weapon (level, XP, ammo), weapon wheel,
-## crosshair, wave counter, level-up popup and debug hints.
+## crosshair, wave counter, gadget bar (GadgetBar), level-up and gadget-unlock
+## popups and debug hints.
 
 const HELP_TEXT := "X / F: staff (in air: slam)    Y hold / Tab: weapon wheel (L-stick / mouse)    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave    F4 (or pause menu): AI debug"
 
@@ -11,6 +12,7 @@ var _hp_label: Label
 var _weapon_label: Label
 var _ammo_label: Label
 var _xp_bar: ProgressBar
+var _gadget_bar: GadgetBar
 var _wheel: WeaponWheel
 var _reticle: Reticle
 var _wave_label: Label
@@ -19,6 +21,8 @@ var _popup: Label
 var _popup_detail: Label
 var _popup_box: VBoxContainer
 var _popup_tween: Tween
+var _unlock_batch: Array[StringName] = []
+var _unlock_frame: int = -1
 
 
 func _ready() -> void:
@@ -30,6 +34,8 @@ func _ready() -> void:
 	var top_left := _corner(root, Control.PRESET_TOP_LEFT, Vector2(24, 20))
 	_hp_label = _label(top_left, "HP", 22)
 	_hp_bar = _bar(top_left, Color(0.9, 0.25, 0.2), Vector2(300, 20))
+	_gadget_bar = GadgetBar.new()
+	top_left.add_child(_gadget_bar)
 
 	var bottom_right := _corner(root, Control.PRESET_BOTTOM_RIGHT, Vector2(-24, -20))
 	bottom_right.alignment = BoxContainer.ALIGNMENT_END
@@ -80,6 +86,8 @@ func _ready() -> void:
 func bind(player: Player, waves: WaveManager) -> void:
 	_player = player
 	_wheel.player = player
+	_gadget_bar.player = player
+	player.gadgets.unlocked_gadget.connect(_on_gadget_unlocked)
 	player.health.changed.connect(_on_health_changed)
 	player.weapon_changed.connect(_on_weapon_changed)
 	player.weapon_leveled.connect(_on_weapon_leveled)
@@ -178,3 +186,19 @@ func _bar(parent: Control, fill: Color, min_size: Vector2) -> ProgressBar:
 	bar.add_theme_stylebox_override(&"fill", fg)
 	parent.add_child(bar)
 	return bar
+
+
+func _on_gadget_unlocked(id: StringName) -> void:
+	# Several in one frame (pause menu "Unlock All Gadgets"): one popup for the lot.
+	var frame := Engine.get_process_frames()
+	if frame != _unlock_frame:
+		_unlock_frame = frame
+		_unlock_batch.clear()
+	_unlock_batch.append(id)
+	if _unlock_batch.size() == 1:
+		_show_popup("%s!" % Gadgets.NAMES[id], Gadgets.HINTS[id], 3.0)
+	else:
+		var names: PackedStringArray = []
+		for g: StringName in _unlock_batch:
+			names.append(Gadgets.SHORT_NAMES[g])
+		_show_popup("%d gadgets unlocked!" % _unlock_batch.size(), ", ".join(names), 3.0)

@@ -922,6 +922,7 @@ func _connect_feedback() -> void:
 	burrow.dived.connect(dig)
 	burrow.tunnelled.connect(dig)
 	burrow.surfaced.connect(dig)
+	gadgets.unlocked_gadget.connect(func(_id: StringName) -> void: Sfx.play(&"level_up"))
 	conduit.absorbed.connect(func(_source: Node3D) -> void: Sfx.play(&"conduit_charge"))
 	conduit.discharged.connect(func(_chain: Array[Enemy]) -> void: Sfx.play(&"shot_zap", null, 4.0))
 

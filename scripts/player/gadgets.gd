@@ -10,6 +10,21 @@ const GLIDE := &"glide"
 const BURROW := &"burrow"
 const CONDUIT := &"conduit"
 const ALL: Array[StringName] = [GRAPPLE, GLIDE, BURROW, CONDUIT]
+const NAMES: Dictionary = {
+	GRAPPLE: "Brass Grapple-Tail",
+	GLIDE: "Leaf-wing Cloak",
+	BURROW: "Burrow Claws",
+	CONDUIT: "Copper Conduit Gauntlet",
+}
+## Short labels for the HUD gadget bar.
+const SHORT_NAMES: Dictionary = {GRAPPLE: "Grapple", GLIDE: "Glide", BURROW: "Burrow", CONDUIT: "Conduit"}
+## How to use it, shown when it unlocks.
+const HINTS: Dictionary = {
+	GRAPPLE: "In the air, dodge at a highlighted brass ring",
+	GLIDE: "After the double jump, hold jump to glide",
+	BURROW: "Dodge onto soil to dig in",
+	CONDUIT: "Staff a live barrier to charge, then a dead terminal to power it",
+}
 
 var unlocked: Array[StringName] = []
 
