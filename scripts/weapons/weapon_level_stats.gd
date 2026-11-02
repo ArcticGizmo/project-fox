@@ -31,3 +31,8 @@ extends Resource
 @export var upgrade_flag: bool = false
 ## Health of things the weapon deploys (decoys).
 @export var deploy_health: float = 0.0
+## Max-level signature perk: a new behaviour, not just bigger numbers. Each
+## weapon script documents its signature and which stats it reads.
+@export var signature: bool = false
+## What this level adds, shown when the weapon reaches it ("Pierces an extra enemy").
+@export var perk: String = ""

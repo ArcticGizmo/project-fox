@@ -104,6 +104,10 @@ D-pad up/F2 · next wave D-pad down/F3.
   kills by things the weapon leaves behind (mines, sentries): pass the weapon along and use
   `weapon.make_damage()`. Loadout order is `Player.DEFAULT_WEAPONS` (= wheel order = keys 1-8).
   `WeaponLevelStats` fields are generic; each weapon script documents which ones it reads.
+  Levels 2+ need a `perk` line (shown in the level-up popup; `validate()` checks it). A max-level
+  `signature` adds a behaviour, not just numbers (rifle crits stagger, lash tip exposes, stoked
+  salamander, frost shatter, silk exposes, echo horn reflects projectiles, repeater ricochet);
+  each script documents its signature and the stats it reads.
 - **Area damage** goes through `Explosion.detonate()`; position-dependent melee damage uses
   `HitBox.damage_modifier`.
 - **Status effects live on `Enemy`**: `add_chill`/`freeze`, `root`, `stagger`, `expose`,

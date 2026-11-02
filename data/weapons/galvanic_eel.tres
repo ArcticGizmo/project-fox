@@ -16,6 +16,7 @@ knockback = 1.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Chains to one more enemy"
 damage = 14.0
 fire_interval = 0.38
 max_ammo = 70
@@ -26,6 +27,7 @@ knockback = 1.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Chains further"
 damage = 16.0
 fire_interval = 0.35
 max_ammo = 80
@@ -36,6 +38,7 @@ knockback = 1.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Chains to six enemies"
 damage = 20.0
 fire_interval = 0.3
 max_ammo = 100

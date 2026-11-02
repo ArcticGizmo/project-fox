@@ -3,6 +3,7 @@ extends Weapon
 ## lands, rooting every enemy inside (they still turn and attack, but can't
 ## move). Crowd control that sets up the mortar, lash and slam.
 ## stats: area_radius = web radius, duration = root time, damage = glob hit.
+## Signature (max level): webbed enemies are also exposed for the root time.
 
 const WEB_COLOR := Color(1, 1, 1, 0.35)
 
@@ -29,6 +30,8 @@ func burst(at: Vector3, radius: float, duration: float) -> int:
 	var caught := 0
 	for e: Enemy in Enemy.in_radius(get_tree(), at, radius):
 		e.root(duration)
+		if stats().signature:
+			e.expose(duration)
 		caught += 1
 	_spawn_web(at, radius, duration)
 	DebugSettings.flash_sphere(at, radius, Color(1, 1, 1), 0.3)

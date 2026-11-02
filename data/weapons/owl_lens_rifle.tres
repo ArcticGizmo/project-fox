@@ -16,6 +16,7 @@ hit_stop = 0.04
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Bigger weak-spot crits"
 damage = 55.0
 fire_interval = 0.9
 max_ammo = 12
@@ -26,6 +27,7 @@ hit_stop = 0.04
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Pierces an extra enemy"
 damage = 65.0
 fire_interval = 0.85
 max_ammo = 14
@@ -37,6 +39,9 @@ hit_stop = 0.05
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Weak-spot crits stagger"
+signature = true
+duration = 0.6
 damage = 80.0
 fire_interval = 0.75
 max_ammo = 16

@@ -17,6 +17,7 @@ knockback = 0.5
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Wider webs"
 damage = 5.0
 fire_interval = 0.85
 max_ammo = 14
@@ -28,6 +29,7 @@ knockback = 0.5
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Longer roots"
 damage = 6.0
 fire_interval = 0.8
 max_ammo = 16
@@ -39,6 +41,8 @@ knockback = 0.5
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Webbed enemies are exposed"
+signature = true
 damage = 8.0
 fire_interval = 0.7
 max_ammo = 20

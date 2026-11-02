@@ -16,6 +16,7 @@ crit_multiplier = 1.5
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Longer lash"
 damage = 28.0
 fire_interval = 0.5
 max_ammo = 45
@@ -26,6 +27,7 @@ crit_multiplier = 1.6
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Pulls enemies in"
 damage = 34.0
 fire_interval = 0.5
 max_ammo = 50
@@ -36,6 +38,9 @@ crit_multiplier = 1.75
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Tip hits expose enemies"
+signature = true
+duration = 2.5
 damage = 42.0
 fire_interval = 0.45
 max_ammo = 60

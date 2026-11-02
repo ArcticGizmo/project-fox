@@ -4,6 +4,7 @@ extends Weapon
 ## stats.crit_multiplier damage. Negative stats.knockback pulls enemies in
 ## (used from level 3).
 ## stats.max_range = lash length, stats.area_radius = lash thickness.
+## Signature (max level): tip hits expose the enemy for stats.duration.
 
 const WINDUP := 0.06
 const ACTIVE := 0.1
@@ -106,3 +107,7 @@ func _apply_tip_bonus(hb: HurtBox, info: DamageInfo) -> void:
 	if lash_fraction(hb) >= 1.0 - TIP_FRACTION:
 		info.amount *= stats().crit_multiplier
 		info.is_critical = true
+		if stats().signature:
+			var e := Enemy.from_hurt_box(hb)
+			if e != null:
+				e.expose(stats().duration)

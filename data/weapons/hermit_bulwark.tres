@@ -15,6 +15,7 @@ duration = 8.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Wider wall, harder reflects"
 damage = 35.0
 fire_interval = 1.4
 max_ammo = 4
@@ -24,6 +25,7 @@ duration = 10.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Two walls out"
 damage = 45.0
 fire_interval = 1.3
 max_ammo = 5
@@ -33,6 +35,7 @@ duration = 12.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Widest wall, strongest reflects"
 damage = 60.0
 fire_interval = 1.2
 max_ammo = 6

@@ -17,6 +17,7 @@ knockback = 8.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Wider cone, longer stagger"
 damage = 12.0
 fire_interval = 1.1
 max_ammo = 12
@@ -28,6 +29,7 @@ knockback = 8.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Longer reach"
 damage = 14.0
 fire_interval = 1.0
 max_ammo = 14
@@ -39,6 +41,9 @@ knockback = 9.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Reflects enemy projectiles in the cone"
+signature = true
+crit_multiplier = 2.5
 damage = 18.0
 fire_interval = 0.9
 max_ammo = 16

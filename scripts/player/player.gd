@@ -929,6 +929,7 @@ func _rumble(r: Vector3) -> void:
 func _on_weapon_leveled(level: int, w: Weapon) -> void:
 	GameFeel.impact(global_position + Vector3.UP, w.data.color, 3.0, 0.4)
 	Sfx.play(&"level_up")
+	GameFeel.hit_stop(tuning.level_up_slowmo_time, tuning.level_up_slowmo_scale)
 	_rumble(tuning.rumble_level_up)
 	weapon_leveled.emit(w, level)
 

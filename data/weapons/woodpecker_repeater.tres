@@ -16,6 +16,7 @@ knockback = 0.8
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Faster rivets, tighter bloom"
 damage = 7.0
 fire_interval = 0.1
 max_ammo = 150
@@ -26,6 +27,7 @@ knockback = 0.8
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Even faster, longer reach"
 damage = 8.0
 fire_interval = 0.09
 max_ammo = 180
@@ -36,6 +38,9 @@ knockback = 1.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Twin barrels; rivets ricochet into a second enemy"
+signature = true
+area_radius = 8.0
 damage = 8.0
 fire_interval = 0.09
 max_ammo = 220

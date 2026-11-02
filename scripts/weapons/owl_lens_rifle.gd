@@ -1,6 +1,7 @@
 extends Weapon
 ## Owl-Lens Rifle: slow, heavy hitscan. Weak-spot hits crit (stats.crit_multiplier);
 ## pierces extra enemies at higher levels.
+## Signature (max level): weak-spot crits stagger the target for stats.duration.
 
 const MAX_RAY_STEPS := 16
 
@@ -35,6 +36,10 @@ func _fire(aim: AimInfo) -> void:
 		if not hb.receive(info):
 			continue
 		GameFeel.impact(pos, data.color, 0.9)
+		if s.signature and hb.is_weak_spot:
+			var e := Enemy.from_hurt_box(hb)
+			if e != null:
+				e.stagger(s.duration)
 		GameFeel.hit_stop(s.hit_stop)
 		if pierce_left <= 0:
 			beam_end = pos

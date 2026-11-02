@@ -242,5 +242,8 @@ func grapple_hop_velocity() -> float:
 @export var rumble_land: Vector3 = Vector3(0.1, 0.45, 0.1)
 @export var land_rumble_full_air_time: float = 1.2
 @export var rumble_level_up: Vector3 = Vector3(0.6, 0.6, 0.35)
+## Real seconds of slow motion (at level_up_slowmo_scale) when a weapon levels up.
+@export var level_up_slowmo_time: float = 0.25
+@export var level_up_slowmo_scale: float = 0.3
 @export var rumble_grapple: Vector3 = Vector3(0.3, 0.25, 0.1)
 @export var rumble_burrow: Vector3 = Vector3(0.2, 0.5, 0.2)

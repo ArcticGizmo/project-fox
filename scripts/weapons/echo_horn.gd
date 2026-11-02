@@ -4,9 +4,13 @@ extends Weapon
 ## exposed (takes extra damage for a while).
 ## stats: max_range = cone length, area_radius = cone end radius,
 ## duration = stagger time, status_power = exposed time.
+## Signature (max level): enemy projectiles (lobs, shards) inside the cone are
+## reflected back at their throwers for stats.damage x stats.crit_multiplier.
 
 const CONE_COLOR := Color(0.55, 0.65, 1.0, 0.35)
 
+## Enemy projectiles reflected by the last blast (for tests and debugging).
+var last_reflected: int = 0
 ## Enemies hit by the last blast (for tests and debugging).
 var last_hits: Array[Enemy] = []
 
@@ -33,6 +37,7 @@ func _fire(aim: AimInfo) -> void:
 		e.stagger(s.duration)
 		e.expose(s.status_power)
 		last_hits.append(e)
+	last_reflected = reflect_in_cone(aim.origin, dir, s) if s.signature else 0
 	_flash_cone(aim.origin, dir, s.max_range, s.area_radius)
 	GameFeel.shake(0.2)
 
@@ -59,3 +64,20 @@ func _flash_cone(origin: Vector3, dir: Vector3, length: float, radius: float) ->
 	tw.tween_property(mat, "albedo_color:a", 0.0, 0.25)
 	tw.tween_callback(cone.queue_free)
 	DebugSettings.flash_line(origin, origin + dir * length, Color(0.5, 0.6, 1.0), 0.3)
+
+
+## Sends every unreflected enemy projectile inside the cone back at its thrower.
+func reflect_in_cone(origin: Vector3, dir: Vector3, s: WeaponLevelStats) -> int:
+	var half_angle := atan2(s.area_radius, s.max_range)
+	var count := 0
+	for n: Node in get_tree().get_nodes_in_group(LobProjectile.GROUP):
+		var p := n as Node3D
+		if p == null or bool(p.get(&"reflected")) or not p.has_method(&"reflect"):
+			continue
+		var to := p.global_position - origin
+		var dist := to.length()
+		if dist > s.max_range or (dist > 0.01 and dir.angle_to(to / dist) > half_angle):
+			continue
+		p.call(&"reflect", s.damage * s.crit_multiplier, self)
+		count += 1
+	return count

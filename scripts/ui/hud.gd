@@ -15,6 +15,9 @@ var _wheel: WeaponWheel
 var _reticle: Reticle
 var _wave_label: Label
 var _popup: Label
+## Second popup line: what the new weapon level adds.
+var _popup_detail: Label
+var _popup_box: VBoxContainer
 var _popup_tween: Tween
 
 
@@ -53,15 +56,25 @@ func _ready() -> void:
 	_wave_label.offset_top = 16
 	root.add_child(_wave_label)
 
+	# Centred two-line popup (title + detail) that fades as one.
+	_popup_box = VBoxContainer.new()
+	_popup_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_popup_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_popup_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_popup_box.offset_top = 220
+	_popup_box.modulate.a = 0.0
+	root.add_child(_popup_box)
 	_popup = Label.new()
 	_popup.add_theme_font_size_override(&"font_size", 40)
 	_popup.add_theme_color_override(&"font_color", Color(1, 0.85, 0.3))
 	_popup.add_theme_constant_override(&"outline_size", 8)
 	_popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_popup.offset_top = -160
-	_popup.modulate.a = 0.0
-	root.add_child(_popup)
+	_popup_box.add_child(_popup)
+	_popup_detail = Label.new()
+	_popup_detail.add_theme_font_size_override(&"font_size", 26)
+	_popup_detail.add_theme_constant_override(&"outline_size", 6)
+	_popup_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_popup_box.add_child(_popup_detail)
 
 
 func bind(player: Player, waves: WaveManager) -> void:
@@ -99,7 +112,8 @@ func _on_weapon_changed(_w: Weapon) -> void:
 
 
 func _on_weapon_leveled(w: Weapon, level: int) -> void:
-	_show_popup("%s  Lv %d!" % [w.data.display_name, level])
+	var top := "%s  MAX LEVEL!" % w.data.display_name if w.is_max_level() else "%s  Lv %d!" % [w.data.display_name, level]
+	_show_popup(top, w.stats().perk, 2.4)
 	_refresh_weapon()
 
 
@@ -117,14 +131,16 @@ func _refresh_weapon() -> void:
 	_xp_bar.value = w.xp_needed() if w.is_max_level() else w.xp
 
 
-func _show_popup(text: String) -> void:
+func _show_popup(text: String, detail: String = "", hold: float = 1.2) -> void:
 	_popup.text = text
+	_popup_detail.text = detail
 	if _popup_tween != null:
 		_popup_tween.kill()
-	_popup.modulate.a = 1.0
+	_popup_detail.visible = detail != ""
+	_popup_box.modulate.a = 1.0
 	_popup_tween = create_tween()
-	_popup_tween.tween_interval(1.2)
-	_popup_tween.tween_property(_popup, "modulate:a", 0.0, 0.5)
+	_popup_tween.tween_interval(hold)
+	_popup_tween.tween_property(_popup_box, "modulate:a", 0.0, 0.5)
 
 
 func _corner(root: Control, preset: Control.LayoutPreset, offset: Vector2) -> VBoxContainer:

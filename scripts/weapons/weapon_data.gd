@@ -47,6 +47,8 @@ func validate() -> PackedStringArray:
 		if s == null:
 			problems.append("%s: level %d is null" % [id, i + 1])
 			continue
+		if i > 0 and s.perk.strip_edges() == "":
+			problems.append("%s: level %d has no perk text" % [id, i + 1])
 		if s.damage <= 0.0 or s.fire_interval <= 0.0 or s.max_ammo <= 0:
 			problems.append("%s: level %d has non-positive damage/fire_interval/max_ammo" % [id, i + 1])
 	return problems

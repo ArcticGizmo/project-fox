@@ -16,6 +16,7 @@ duration = 5.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Bigger blast"
 damage = 50.0
 fire_interval = 0.85
 max_ammo = 10
@@ -26,6 +27,7 @@ duration = 6.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Two puffers per shot"
 damage = 50.0
 fire_interval = 0.85
 max_ammo = 12
@@ -37,6 +39,7 @@ duration = 6.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Three puffers, bigger blast"
 damage = 65.0
 fire_interval = 0.8
 max_ammo = 14

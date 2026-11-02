@@ -16,6 +16,7 @@ deploy_health = 40.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Tougher lantern"
 damage = 40.0
 fire_interval = 1.0
 max_ammo = 4
@@ -26,6 +27,7 @@ deploy_health = 60.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Two lanterns out"
 damage = 50.0
 fire_interval = 0.9
 max_ammo = 5
@@ -36,6 +38,7 @@ deploy_health = 80.0
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Bigger burst, wider lure"
 damage = 70.0
 fire_interval = 0.8
 max_ammo = 6

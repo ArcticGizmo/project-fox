@@ -66,6 +66,10 @@ func _ready() -> void:
 	Input.action_release(&"melee")
 	await _capture("melee.png")
 	await get_tree().create_timer(0.5).timeout
+	# Level-up popup: weapon name plus what the level adds.
+	(arena.get("player") as Player).debug_level_current_weapon()
+	await get_tree().create_timer(0.4).timeout
+	await _capture("level_up.png")
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_pangolin(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)

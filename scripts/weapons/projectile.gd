@@ -151,3 +151,8 @@ func _die(at: Vector3) -> void:
 func _orient() -> void:
 	if direction.length_squared() > 0.0001:
 		look_at(global_position + direction, Vector3.UP if absf(direction.y) < 0.99 else Vector3.RIGHT)
+
+
+## Never hit this hurtbox's entity (e.g. a ricochet leaving the enemy it bounced off).
+func ignore(hb: HurtBox) -> void:
+	_hit_entities[hb.entity_id()] = true

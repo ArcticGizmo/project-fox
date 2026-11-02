@@ -17,6 +17,7 @@ status_power = 1.0
 
 [sub_resource type="Resource" id="Lv2"]
 script = ExtResource("2_stats")
+perk = "Bigger puddles"
 damage = 12.0
 fire_interval = 0.75
 max_ammo = 24
@@ -28,6 +29,7 @@ status_power = 1.0
 
 [sub_resource type="Resource" id="Lv3"]
 script = ExtResource("2_stats")
+perk = "Contagious: poison spreads on death"
 damage = 14.0
 fire_interval = 0.7
 max_ammo = 28
@@ -40,6 +42,7 @@ upgrade_flag = true
 
 [sub_resource type="Resource" id="Lv4"]
 script = ExtResource("2_stats")
+perk = "Faster spitting, bigger puddles"
 damage = 18.0
 fire_interval = 0.6
 max_ammo = 32
