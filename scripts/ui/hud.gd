@@ -2,7 +2,7 @@ class_name Hud
 extends CanvasLayer
 ## Prototype HUD: health, current weapon (level, XP, ammo), weapon wheel,
 ## crosshair, wave counter, gadget bar (GadgetBar), level-up and gadget-unlock
-## popups and debug hints.
+## popups, the boss bar (group "bosses") and debug hints.
 
 const HELP_TEXT := "X / F: staff (in air: slam)    Y hold / Tab: weapon wheel (L-stick / mouse)    LB/RB, Q/E, 1-8: switch\nLT / RMB: strafe (rifle: scope)    B / Shift: dodge    Start / Esc: pause\nBack / F1: hitboxes    D-pad Up / F2: level weapon    D-pad Down / F3: next wave    F4 (or pause menu): AI debug"
 
@@ -13,6 +13,9 @@ var _weapon_label: Label
 var _ammo_label: Label
 var _xp_bar: ProgressBar
 var _gadget_bar: GadgetBar
+var _boss_box: VBoxContainer
+var _boss_label: Label
+var _boss_bar: ProgressBar
 var _wheel: WeaponWheel
 var _reticle: Reticle
 var _wave_label: Label
@@ -62,6 +65,17 @@ func _ready() -> void:
 	_wave_label.offset_top = 16
 	root.add_child(_wave_label)
 
+	# Boss bar: top centre while an aware boss (group "bosses") is alive.
+	_boss_box = VBoxContainer.new()
+	_boss_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_boss_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_boss_box.offset_top = 52
+	_boss_box.visible = false
+	root.add_child(_boss_box)
+	_boss_label = _label(_boss_box, "", 22)
+	_boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_bar = _bar(_boss_box, Color(1.0, 0.45, 0.1), Vector2(520, 16))
+
 	# Centred two-line popup (title + detail) that fades as one.
 	_popup_box = VBoxContainer.new()
 	_popup_box.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -109,6 +123,7 @@ func _process(_delta: float) -> void:
 		_reticle.grapple_ready = _player.grapple != null and _player.grapple.is_ready()
 		var w := _player.current_weapon()
 		_reticle.charge = w.charge if w != null else 0.0
+	_update_boss_bar()
 
 
 func _on_health_changed(current: float, maximum: float) -> void:
@@ -202,3 +217,23 @@ func _on_gadget_unlocked(id: StringName) -> void:
 		for g: StringName in _unlock_batch:
 			names.append(Gadgets.SHORT_NAMES[g])
 		_show_popup("%d gadgets unlocked!" % _unlock_batch.size(), ", ".join(names), 3.0)
+
+
+## The first aware, living boss, or null.
+func current_boss() -> Enemy:
+	for n: Node in get_tree().get_nodes_in_group(&"bosses"):
+		var e := n as Enemy
+		if e != null and e.aware and not e.health.is_dead:
+			return e
+	return null
+
+
+func _update_boss_bar() -> void:
+	var boss := current_boss()
+	_boss_box.visible = boss != null
+	if boss == null:
+		return
+	var phase_text := String(boss.call(&"phase_name")) if boss.has_method(&"phase_name") else ""
+	_boss_label.text = boss.display_name if phase_text == "" else "%s  -  %s" % [boss.display_name, phase_text]
+	_boss_bar.max_value = boss.health.max_health
+	_boss_bar.value = boss.health.current

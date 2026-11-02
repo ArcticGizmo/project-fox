@@ -1,0 +1,82 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/level_root.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/world/block.gd" id="2_block"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/furnace_stag.tscn" id="3_stag"]
+
+[node name="BossFurnaceStag" type="Node3D"]
+script = ExtResource("1_level")
+
+[node name="Level" type="Node3D" parent="."]
+
+[node name="Floor" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+script = ExtResource("2_block")
+surface = 1
+size = Vector3(44, 1, 44)
+color = Color(0.46, 0.44, 0.4, 1)
+
+[node name="WallNorth" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -22.5)
+script = ExtResource("2_block")
+surface = 4
+size = Vector3(46, 5, 1)
+color = Color(0.5, 0.45, 0.4, 1)
+
+[node name="WallSouth" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 22.5)
+script = ExtResource("2_block")
+surface = 4
+size = Vector3(46, 5, 1)
+color = Color(0.5, 0.45, 0.4, 1)
+
+[node name="WallEast" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 2.5, 0)
+script = ExtResource("2_block")
+surface = 4
+size = Vector3(1, 5, 44)
+color = Color(0.5, 0.45, 0.4, 1)
+
+[node name="WallWest" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 2.5, 0)
+script = ExtResource("2_block")
+surface = 4
+size = Vector3(1, 5, 44)
+color = Color(0.5, 0.45, 0.4, 1)
+
+[node name="PillarNE" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 3, -10)
+script = ExtResource("2_block")
+surface = 5
+size = Vector3(2.5, 6, 2.5)
+color = Color(0.6, 0.5, 0.35, 1)
+
+[node name="PillarNW" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 3, -10)
+script = ExtResource("2_block")
+surface = 5
+size = Vector3(2.5, 6, 2.5)
+color = Color(0.6, 0.5, 0.35, 1)
+
+[node name="PillarSE" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 3, 8)
+script = ExtResource("2_block")
+surface = 5
+size = Vector3(2.5, 6, 2.5)
+color = Color(0.6, 0.5, 0.35, 1)
+
+[node name="PillarSW" type="StaticBody3D" parent="Level"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 3, 8)
+script = ExtResource("2_block")
+surface = 5
+size = Vector3(2.5, 6, 2.5)
+color = Color(0.6, 0.5, 0.35, 1)
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 18)
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="FurnaceStag" parent="Enemies" instance=ExtResource("3_stag")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -8)
+random_seed = 7

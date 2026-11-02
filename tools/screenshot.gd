@@ -5,6 +5,7 @@ extends Node
 ##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
+const BOSS_PATH := "res://scenes/levels/boss_furnace_stag.tscn"
 const SHOWCASE_PATH := "res://scenes/levels/anim_showcase.tscn"
 
 var out_dir: String = "res://screenshots"
@@ -23,6 +24,11 @@ func _ready() -> void:
 	# `--slice`: only the greybox slice shots (quick layout iteration).
 	if "--slice" in OS.get_cmdline_user_args():
 		await _capture_slice(null, SLICE_PATH)
+		get_tree().quit()
+		return
+	# `--boss`: only the Furnace Stag arena shots.
+	if "--boss" in OS.get_cmdline_user_args():
+		await _capture_boss()
 		get_tree().quit()
 		return
 	# `--fox`: only the fox animation contact sheets.
@@ -85,6 +91,7 @@ func _ready() -> void:
 	await _capture("overview.png")
 	cam.queue_free()
 	await _capture_slice(arena, SLICE_PATH)
+	await _capture_boss()
 	if is_instance_valid(arena):
 		arena.queue_free()
 	await _capture_fox_anims()
@@ -798,3 +805,68 @@ func _place_player(player: Player, at: Vector3, look_at: Vector3) -> void:
 
 func _phases(clip: StringName, phases: Array) -> Array:
 	return phases.map(func(p: float) -> Array: return [clip, p])
+
+
+## The Furnace Stag arena: the player's opening view (boss bar), then the stag
+## rearing, its shockwave, phase 2 (furnace open, barrage) and phase 3 lightning.
+func _capture_boss() -> void:
+	for c: Node in get_children():
+		if c is LevelRoot:
+			c.queue_free()
+	await get_tree().process_frame
+	var level := (load(BOSS_PATH) as PackedScene).instantiate() as LevelRoot
+	add_child(level)
+	await get_tree().create_timer(1.5).timeout
+	await _capture("boss_intro.png")
+	# Keep the fox alive: a respawn would rebuild the stag mid-shoot.
+	level.player.health.max_health = 100000.0
+	level.player.health.current = 100000.0
+	var stag := get_tree().get_nodes_in_group(&"bosses")[0] as FurnaceStag
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.make_current()
+	var side := func() -> void:
+		cam.global_position = stag.global_position + Vector3(11, 5, 3)
+		cam.look_at(stag.global_position + Vector3.UP * 2.0)
+	side.call()
+	stag.force_attack(&"stomp")
+	for _i: int in 300:
+		if stag.state == &"stomp_windup" and stag.state_time > stag.stomp_windup_time * 0.75:
+			break
+		await get_tree().physics_frame
+	await _capture("boss_rear.png")
+	for _i: int in 300:
+		if stag.last_shockwave != null:
+			break
+		await get_tree().physics_frame
+	cam.global_position = stag.global_position + Vector3(0, 14, 12)
+	cam.look_at(stag.global_position)
+	await get_tree().create_timer(0.5).timeout
+	await _capture("boss_shockwave.png")
+	stag.health.apply_damage(DamageInfo.create(stag.health.current - stag.health.max_health * 0.6, stag.global_position))
+	await get_tree().create_timer(stag.roar_time + 0.3).timeout
+	cam.global_position = stag.global_position + stag.forward() * 9.0 + Vector3(3, 3, 0)
+	cam.look_at(stag.global_position + Vector3.UP * 1.5)
+	await _capture("boss_phase2.png")
+	stag.force_attack(&"barrage")
+	for _i: int in 300:
+		if stag.state == &"recover":
+			break
+		await get_tree().physics_frame
+	side.call()
+	await get_tree().create_timer(0.4).timeout
+	await _capture("boss_barrage.png")
+	stag.health.apply_damage(DamageInfo.create(stag.health.current - stag.health.max_health * 0.3, stag.global_position))
+	await get_tree().create_timer(stag.roar_time + 0.3).timeout
+	stag.force_attack(&"strike")
+	for _i: int in 300:
+		if not stag.last_strikes.is_empty():
+			break
+		await get_tree().physics_frame
+	cam.global_position = level.player.global_position + Vector3(0, 11, -8)
+	cam.look_at(level.player.global_position)
+	await get_tree().create_timer(0.5).timeout
+	await _capture("boss_lightning.png")
+	cam.queue_free()
+	level.queue_free()
+	await get_tree().process_frame

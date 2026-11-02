@@ -20,11 +20,11 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `FoxModel` (rigged GLB in `assets/characters/ember/`; bakes its clips from code; `update(speed, on_floor, vy, hold)` + `play_action(clip)` + `aim()`; gun on `gun_mount` in the right hand, `FoxAimLayer` raises the arm, `FoxTwistLayer` turns the hips toward travel; showcase level + `--fox` sheets show every clip), `input/` (providers + `PlayerInputState`) |
 | `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
-| `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`. Scenes in `scenes/enemies/` |
+| `scripts/enemies/` | `Enemy` base (statuses, flight, targeting), one script per enemy, `LobProjectile`, `ScaleShard`, `Shockwave` (expanding ground ring you jump), `DelayedStrike` (marked spot that strikes after a delay). Boss: `FurnaceStag` (group `bosses`). Scenes in `scenes/enemies/` |
 | `scripts/weapons/` | `Weapon` base, `WeaponData`/`WeaponLevelStats`, one script per weapon, plus the things weapons leave behind (`Projectile`, `SwallowDart`, `PufferMine`, `Sentry`, `Bulwark`, `VenomGlob`, `MothLanternDecoy`, `Tracer`) |
 | `scripts/hazards/` | `Hazard` base + `FireTrap`, `LightningBarrier`, `Lava`, `ClockworkSweeper`, `SteamHammer` |
 | `scripts/world/` | `LevelRoot` (runtime setup, placed-enemy reset, level select), `Arena`, `Block` (@tool box with collision; `surface` role: GREYBOX flat `color`, or GROUND/PATH/PLATFORM/WALL/METAL textured from the level's `LevelTheme`), `SurfaceStyle` + `block_surface.gdshader` (world triplanar, top/side sets, grass lip, edge highlight), `GadgetGate` (Block per gadget id; conduit = copper door that sinks on `power()`), `Checkpoint`, `GravityRift` (stub), `Crate`, `Prop` (dressing: model or placeholder shape, optional box collision), `WaveManager` (wave table + `ENEMY_SCENES`) |
-| `scenes/levels/` | Level scenes (`slice_01.tscn`; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
+| `scenes/levels/` | Level scenes (`slice_01.tscn`; `boss_furnace_stag.tscn` = the boss arena; `anim_showcase.tscn` = fox animation gallery built by `AnimShowcase`: every FoxModel clip at 1× and ¼×, walk/run laps, a speed-ramp lane); listed by the pause menu, loaded with `run.cmd -- --level=<name>` |
 | `scripts/ui/` | `Hud`, `GadgetBar` (gadget slots: locked/unlocked/lit while in use, conduit charge pips), `PauseMenu`, `Reticle` (also charge arc), `WeaponWheel` (draws only; the player owns selection) |
 | `scripts/debug/debug_outline.gd` | Wireframe for every HitBox/HurtBox shape |
 | `scripts/debug/ai_debug_view.gd` | Per-enemy awareness overlay (`DebugSettings.show_ai`, F4): state label, sight cone, hearing/alert/leash rings, home, patrol, LOS, noise pulses, alert links |
@@ -96,6 +96,10 @@ D-pad up/F2 · next wave D-pad down/F3.
   `info.source_position` sits relative to the facing, so every damage path (hitscan, projectiles,
   blasts, staff) respects it. DoT skips it. Enemy straight-line projectiles: `ScaleShard` (joins
   `LobProjectile.GROUP`, reflects like lobs).
+- **Bosses** extend `Enemy` too and join group `bosses` (the HUD shows a bar for the first aware one,
+  with `phase_name()` if it has one). `FurnaceStag`: phases by health fraction, a roar between phases
+  (all hurtboxes invulnerable), attacks as `<name>_windup` -> `<name>` states picked by `_next_attack()`
+  per phase; `force_attack(name)` for tests/screenshots; `upend` only works mid stomp wind-up.
 - **Flyers** set `flying = true` (+ `hover_height`): gravity is off and `desired_velocity.y`
   steers vertically; use `hover_velocity(height)` to cruise. Frozen flyers fall and climb
   back after thawing. Lobbers share `LobProjectile.launch()` and `lead_target()`.

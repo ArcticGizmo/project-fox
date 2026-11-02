@@ -30,7 +30,7 @@ var _reflect_weapon: Weapon = null
 
 
 ## Throws a lob from `thrower` (its source, for reflection) into the thrower's parent.
-static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob_damage: float, lob_radius: float) -> LobProjectile:
+static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob_damage: float, lob_radius: float, glob_color: Color = Color(0.45, 0.9, 0.3)) -> LobProjectile:
 	var lob := LobProjectile.new()
 	lob.start = from
 	lob.end = to
@@ -38,6 +38,7 @@ static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob
 	lob.damage = lob_damage
 	lob.radius = lob_radius
 	lob.source = thrower
+	lob.color = glob_color
 	thrower.get_parent().add_child(lob)
 	Sfx.play(&"lob", from)
 	return lob
