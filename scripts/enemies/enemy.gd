@@ -37,6 +37,10 @@ const FREEZE_COLOR := Color(0.6, 0.88, 1.0)
 const CHILL_GLOW := Color(0.15, 0.45, 1.0)
 const POISON_COLOR := Color(0.4, 1.0, 0.2)
 const EXPOSED_COLOR := Color(0.75, 0.3, 1.0)
+## Damage taken while shielded by an ally (Chime Heron).
+const SHIELDED_DAMAGE_MULTIPLIER := 0.25
+## Pearl, not yellow: yellow means a telegraph (attack coming).
+const SHIELD_COLOR := Color(0.85, 0.92, 1.0)
 
 # Awareness states (aware == false). Noticing ends in `alert`, then `idle`.
 const REST := &"rest"
@@ -171,6 +175,9 @@ var frozen_left: float = 0.0
 var rooted_left: float = 0.0
 var staggered_left: float = 0.0
 var exposed_left: float = 0.0
+## Seconds of ally shield left (a Chime Heron renews it every frame it covers us).
+var shield_left: float = 0.0
+var _shield_bubble: MeshInstance3D
 var poison_stacks: int = 0
 var _poison_left: float = 0.0
 var _poison_tick: float = 0.0
@@ -1059,6 +1066,7 @@ func _update_statuses(delta: float) -> void:
 	rooted_left = maxf(0.0, rooted_left - delta)
 	staggered_left = maxf(0.0, staggered_left - delta)
 	exposed_left = maxf(0.0, exposed_left - delta)
+	shield_left = maxf(0.0, shield_left - delta)
 	if poison_stacks > 0:
 		_poison_left -= delta
 		_poison_tick += delta
@@ -1080,6 +1088,8 @@ func _modify_incoming(info: DamageInfo) -> void:
 		info.amount *= FROZEN_DAMAGE_MULTIPLIER
 	if is_exposed():
 		info.amount *= EXPOSED_DAMAGE_MULTIPLIER
+	if is_shielded():
+		info.amount *= SHIELDED_DAMAGE_MULTIPLIER
 
 
 func _spread_poison() -> void:
@@ -1105,6 +1115,8 @@ func status_summary() -> String:
 		parts.append("stagger %.1f" % staggered_left)
 	if is_exposed():
 		parts.append("exposed %.1f" % exposed_left)
+	if is_shielded():
+		parts.append("shielded")
 	if poison_stacks > 0:
 		parts.append("poison x%d" % poison_stacks)
 	return " ".join(parts)
@@ -1171,6 +1183,7 @@ func _update_visuals(delta: float) -> void:
 	_material.albedo_color = color.lerp(FREEZE_COLOR, 0.85 if is_frozen() else chill * 0.75)
 	_web.visible = is_rooted()
 	ice_block.visible = is_frozen() and not health.is_dead
+	_update_shield_bubble()
 	visual.rotation.x = sin(_age * 30.0) * 0.06 if is_staggered() else visual_pitch
 	var settle := 1.0 - exp(-12.0 * delta)
 	visual.rotation.y = lerp_angle(visual.rotation.y, visual_yaw, settle)
@@ -1239,6 +1252,8 @@ func _idle_flavour(_delta: float) -> void:
 
 ## Sound for a hit that landed (crit or plain). Armoured enemies override.
 func _hit_sound(info: DamageInfo) -> StringName:
+	if is_shielded():
+		return &"clank"
 	return &"crit" if info.is_critical else &"hit"
 
 
@@ -1249,3 +1264,38 @@ func _cue_telegraph() -> void:
 		Sfx.play(&"windup", get_aim_point())
 	elif telegraph <= 0.0:
 		_telegraph_cued = false
+
+
+## Covered by an ally's shield: takes SHIELDED_DAMAGE_MULTIPLIER damage.
+func is_shielded() -> bool:
+	return shield_left > 0.0 and not health.is_dead
+
+
+## Keep the shield up for `seconds` more (a shielder calls this every frame).
+func grant_shield(seconds: float) -> void:
+	shield_left = maxf(shield_left, seconds)
+
+
+func _update_shield_bubble() -> void:
+	var on := is_shielded()
+	if _shield_bubble == null:
+		if not on:
+			return
+		_shield_bubble = MeshInstance3D.new()
+		var sphere := SphereMesh.new()
+		var r := maxf(extents().x, maxf(extents().y, extents().z)) * 0.75
+		sphere.radius = r
+		sphere.height = r * 2.0
+		_shield_bubble.mesh = sphere
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(SHIELD_COLOR, 0.24)
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_shield_bubble.material_override = mat
+		_shield_bubble.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_shield_bubble.position.y = extents().y * 0.5
+		add_child(_shield_bubble)
+	_shield_bubble.visible = on
+	if on:
+		(_shield_bubble.material_override as StandardMaterial3D).albedo_color.a = 0.24 + 0.06 * sin(_age * 7.0)

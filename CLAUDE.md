@@ -120,7 +120,8 @@ D-pad up/F2 · next wave D-pad down/F3.
   strikes it on the return leg, so the hit lands behind frontal armour.
 - **Area damage** goes through `Explosion.detonate()`; position-dependent melee damage uses
   `HitBox.damage_modifier`.
-- **Status effects live on `Enemy`**: `add_chill`/`freeze`, `root`, `stagger`, `expose`,
+- **Status effects live on `Enemy`**: `add_chill`/`freeze`, `root`, `stagger`, `expose`, `grant_shield`
+  (ally shield from a Chime Heron: SHIELDED_DAMAGE_MULTIPLIER, pearl bubble, clank; renewed per frame),
   `add_poison`. The AI runs on `ai_speed()` (chill slows telegraphs too; frozen/staggered
   pause it and cancel hitboxes, then resume via `_state_after_flinch()`). `status_resistance`
   scales everything except expose/poison (0 = immune). New enemies get this for free; new

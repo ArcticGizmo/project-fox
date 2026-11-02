@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/chime_heron.gd" id="1_script"]
+
+[node name="ChimeHeron" type="CharacterBody3D"]
+script = ExtResource("1_script")

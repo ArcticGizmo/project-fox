@@ -82,6 +82,7 @@ func _ready() -> void:
 	await _capture_status(arena.get("player") as Player)
 	await _capture_flyers(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_pangolin(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
+	await _capture_heron(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	await _capture_hazards(arena.get("player") as Player)
 	await _capture_awareness(arena.get("player") as Player, arena.get_node("WaveManager") as WaveManager)
 	# Overview from above to check layout and enemy scale.
@@ -873,3 +874,28 @@ func _capture_boss() -> void:
 	cam.queue_free()
 	level.queue_free()
 	await get_tree().process_frame
+
+
+## A Chime Heron shielding a bull and a pangolin: bubbles and tethers.
+func _capture_heron(player: Player, waves: WaveManager) -> void:
+	var base := player.global_position
+	var heron := waves.spawn_enemy(&"heron", base + Vector3(0, 0, -14))
+	var bull := waves.spawn_enemy(&"bull", base + Vector3(-3.5, 0, -11))
+	var pang := waves.spawn_enemy(&"pangolin", base + Vector3(3.5, 0, -11))
+	for e: Enemy in [heron, bull, pang]:
+		e.set_physics_process(false)
+	await get_tree().physics_frame
+	# Running (visuals update every physics frame); 0.25 s is too short to wander off.
+	for e: Enemy in [heron, bull, pang]:
+		e.set_physics_process(true)
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.global_position = base + Vector3(5, 4, -3)
+	cam.look_at(base + Vector3(0, 1, -12))
+	cam.make_current()
+	await get_tree().create_timer(0.3).timeout
+	await _capture("heron_shield.png")
+	for e: Enemy in [heron, bull, pang]:
+		if is_instance_valid(e):
+			e.queue_free()
+	cam.queue_free()
