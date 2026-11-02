@@ -48,6 +48,8 @@ knockback = 1.0
 [resource]
 script = ExtResource("1_data")
 id = &"woodpecker_repeater"
+fire_sound = &"shot_repeater"
+fire_rumble = Vector3(0.15, 0.05, 0.05)
 display_name = "Woodpecker Repeater"
 description = "A clockwork woodpecker that hammers out rivets. Fires exactly where you aim; spread grows while you hold the trigger."
 color = Color(0.9, 0.25, 0.2, 1)

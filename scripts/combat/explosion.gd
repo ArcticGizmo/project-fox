@@ -35,4 +35,5 @@ static func detonate(world_node: Node3D, center: Vector3, radius: float, mask: i
 			hits += 1
 	DebugSettings.flash_sphere(center, radius, Color(1, 0.2, 0.1), 0.35)
 	NoiseEvent.emit(center, radius * NOISE_PER_RADIUS + NOISE_BASE, world_node)
+	Sfx.play(&"explosion", center, clampf(radius * 2.0 - 8.0, -8.0, 2.0))
 	return hits

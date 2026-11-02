@@ -92,6 +92,7 @@ func open() -> void:
 	if is_open:
 		return
 	is_open = true
+	Sfx.play(&"pause")
 	visible = true
 	_refresh()
 	get_tree().paused = true

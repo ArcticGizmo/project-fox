@@ -47,6 +47,8 @@ burn_duration = 4.0
 [resource]
 script = ExtResource("1_data")
 id = &"salamander_breath"
+fire_sound = &"shot_flame"
+fire_rumble = Vector3(0.25, 0, 0.08)
 noise_radius = 12.0
 display_name = "Salamander Breath"
 description = "A brass salamander that breathes a short cone of fire. Sets enemies alight at level 3."

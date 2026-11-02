@@ -52,6 +52,7 @@ var belly: HurtBox
 var bounces: int = 0
 var volley_count: int = 0
 var blocked_hits: int = 0
+var _last_hit_blocked: bool = false
 var _roll_dir: Vector3 = Vector3.FORWARD
 ## Starts ready: a pangolin that meets you up close rolls at once.
 var _since_roll: float = INF
@@ -171,6 +172,7 @@ func _modify_incoming(info: DamageInfo) -> void:
 	info.knockback *= 0.3
 	info.is_critical = false
 	blocked_hits += 1
+	_last_hit_blocked = true
 	var to := info.source_position - global_position
 	to.y = 0.0
 	GameFeel.impact(get_aim_point() + to.normalized() * extents().z * 0.5, ARMOUR_COLOR, 0.6, 0.12)
@@ -259,6 +261,7 @@ func _on_enter_state(new_state: StringName) -> void:
 			bounces = 0
 			_since_roll = 0.0
 			GameFeel.shake(0.1)
+			Sfx.play(&"roll", get_aim_point())
 		&"uncurl", &"dizzy":
 			snap_velocity(Vector3.ZERO)
 	if new_state == &"dizzy":
@@ -280,10 +283,12 @@ func _after_move(_delta: float) -> void:
 		GameFeel.impact(global_position + Vector3.UP * extents().y * 0.6 - n * extents().y * 0.5, ARMOUR_COLOR, 1.4, 0.2)
 		if bounces >= roll_bounces:
 			GameFeel.shake(0.4)
+			Sfx.play(&"impact_heavy", global_position)
 			enter_state(&"dizzy")
 			return
 		bounces += 1
 		GameFeel.shake(0.2)
+		Sfx.play(&"clank", global_position, 4.0)
 		_roll_dir = _roll_dir.bounce(n).normalized()
 		rotation.y = atan2(-_roll_dir.x, -_roll_dir.z)
 		snap_velocity(_roll_dir * roll_speed)
@@ -309,6 +314,7 @@ func _fire_volley() -> void:
 	var mouth := global_position + Vector3.UP * extents().y * 0.6 + forward() * (extents().z * 0.5 + 0.3)
 	for dir: Vector3 in shard_directions():
 		ScaleShard.launch(self, mouth, dir, shard_speed, shard_damage)
+	Sfx.play(&"volley", mouth)
 	_plates.scale = Vector3.ONE * 0.85
 
 
@@ -338,3 +344,9 @@ func _idle_flavour(_delta: float) -> void:
 	var sniff := smoothstep(0.2, 0.6, t) * (1.0 - smoothstep(1.8, 2.3, t))
 	visual_pitch = -0.12 * sniff
 	visual_yaw = 0.25 * sin(t * 4.0) * sniff
+
+
+func _hit_sound(info: DamageInfo) -> StringName:
+	var blocked := _last_hit_blocked
+	_last_hit_blocked = false
+	return &"clank" if blocked else super(info)

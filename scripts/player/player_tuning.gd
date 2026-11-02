@@ -232,3 +232,15 @@ func burrow_pop_velocity() -> float:
 
 func grapple_hop_velocity() -> float:
 	return sqrt(2.0 * gravity * grapple_release_hop_height)
+
+@export_group("Rumble")
+## Controller rumble as (weak motor, strong motor, seconds). Hits, hurt, slams
+## and wall impacts rumble through GameFeel.shake / hit_stop; firing is per weapon
+## (WeaponData.fire_rumble).
+@export var rumble_dodge: Vector3 = Vector3(0.25, 0.0, 0.06)
+## Landing after a fall: scaled by air time up to `land_rumble_full_air_time`.
+@export var rumble_land: Vector3 = Vector3(0.1, 0.45, 0.1)
+@export var land_rumble_full_air_time: float = 1.2
+@export var rumble_level_up: Vector3 = Vector3(0.6, 0.6, 0.35)
+@export var rumble_grapple: Vector3 = Vector3(0.3, 0.25, 0.1)
+@export var rumble_burrow: Vector3 = Vector3(0.2, 0.5, 0.2)

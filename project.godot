@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 InputSetup="*res://scripts/autoload/input_setup.gd"
 DebugSettings="*res://scripts/autoload/debug_settings.gd"
 GameFeel="*res://scripts/autoload/game_feel.gd"
+Sfx="*res://scripts/autoload/sfx.gd"
 
 [debug]
 

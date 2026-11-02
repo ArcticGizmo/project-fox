@@ -14,8 +14,9 @@ markers. Levels live in `scenes/levels/*.tscn` (placed enemies, checkpoints, gad
 
 | Path | What |
 |---|---|
-| `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, damage numbers, `impact()` puffs) |
+| `scripts/autoload/` | `InputSetup` (all bindings), `DebugSettings` (F1 outlines, `flash_sphere`), `GameFeel` (time scale, shake, rumble, damage numbers, `impact()` puffs), `Sfx` (pooled sound playback, `play(id, at)`) |
 | `scripts/core/layers.gd` | Physics layer bits: WORLD, PLAYER, ENEMY, PLAYER_HURTBOX, ENEMY_HURTBOX, REFLECTOR, CONDUCTOR (staff-strikeable sockets) |
+| `scripts/audio/` | `SfxBank`: placeholder sounds synthesised from recipes (swept tones + filtered noise); swap a recipe for a real stream later |
 | `scripts/combat/` | `HitBox`, `HurtBox`, `Health`, `DamageInfo`, `Explosion`, `AimAssist`, `NoiseEvent` |
 | `scripts/player/` | `Player` (movement, wheel, damage reactions in `_on_hurt`, `spawn_point`/`spawn_yaw`), `Gadgets` (registry: `player.has_gadget(id)`), `PlayerTuning`, `CameraRig`, `StaffMelee`, `FoxModel` (rigged GLB in `assets/characters/ember/`; bakes its clips from code; `update(speed, on_floor, vy, hold)` + `play_action(clip)` + `aim()`; gun on `gun_mount` in the right hand, `FoxAimLayer` raises the arm, `FoxTwistLayer` turns the hips toward travel; showcase level + `--fox` sheets show every clip), `input/` (providers + `PlayerInputState`) |
 | `scripts/gadgets/` | Gadget behaviour: `GrappleTail` (player component: ring targeting, reel, rope), `GrappleRing` (anchor, highlight), `LeafCloak` (player component: glide, wings), `SteamVent` (@tool updraft column), `BurrowClaws` (player component: dive, underground move, tunnel, dirt mound), `SoilPatch` (@tool soil disc, optional tunnel `exit`), `ConduitGauntlet` (player component: charge, socket strikes, chain lightning, staff glow), `ConduitSocket` (CONDUCTOR area forwarding staff strikes), `ConduitTerminal` (@tool copper post powering a `target`) |
@@ -124,6 +125,13 @@ D-pad up/F2 · next wave D-pad down/F3.
   bounce `LobProjectile`s back at their `source`. New enemy projectiles should do the same.
 - **Wheel pages**: 8 weapons per page (`Player.WHEEL_PAGE_SIZE`); page 2 holds the
   status/utility weapons.
+- **Rumble and sound.** `GameFeel.rumble(weak, strong, seconds)` (a weaker request never cuts a
+  stronger one short); `shake()` and `hit_stop()` rumble on their own, so most impacts need nothing
+  extra. Player rumbles are the `PlayerTuning` Rumble group; weapons set `WeaponData.fire_sound` and
+  `fire_rumble`. Sounds: `Sfx.play(&"id", pos)` (positional) or `Sfx.play(&"id")` (flat: UI, the
+  player's own gun); ids are `SfxBank` recipes (`test_feel` checks every literal id exists). Enemies
+  get hit/crit/death, the alert sting and a wind-up cue on every telegraph for free; armoured enemies
+  override `_hit_sound`. The bank builds on a thread at startup.
 - **Time scale belongs to `GameFeel`.** Use `set_slowmo(source, scale)` / `clear_slowmo()`
   / `hit_stop()`; never write `Engine.time_scale` directly. Physics still ticks at 60 Hz
   real-time when slowed, so input read in `_physics_process` stays responsive.

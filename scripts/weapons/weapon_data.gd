@@ -17,6 +17,10 @@ extends Resource
 @export var zoom_fov: float = 0.0
 ## How far each shot is heard by unaware enemies (NoiseEvent.emit). 0 = silent.
 @export var noise_radius: float = 16.0
+## SfxBank id played (flat) each time the player fires it.
+@export var fire_sound: StringName = &""
+## Controller rumble per shot: (weak motor, strong motor, seconds).
+@export var fire_rumble: Vector3 = Vector3.ZERO
 @export var xp_to_next_level: PackedInt32Array = PackedInt32Array()
 @export var levels: Array[WeaponLevelStats] = []
 

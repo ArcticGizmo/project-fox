@@ -47,6 +47,8 @@ deploy_health = 120.0
 [resource]
 script = ExtResource("1_data")
 id = &"moth_lantern"
+fire_sound = &"deploy_chime"
+fire_rumble = Vector3(0.1, 0.2, 0.08)
 noise_radius = 6.0
 display_name = "Moth Lantern"
 description = "Plants a glowing decoy that draws nearby enemies away from you. Bursts when broken or when its light runs out."

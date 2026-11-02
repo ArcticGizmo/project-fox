@@ -73,6 +73,7 @@ func power() -> void:
 	is_powered = true
 	_apply_lamp()
 	GameFeel.impact(global_position + Vector3.UP * HEAD_HEIGHT, Color(LIVE_LAMP, 0.7), 1.6, 0.3)
+	Sfx.play(&"power_on", global_position + Vector3.UP * HEAD_HEIGHT)
 	var t := target_node()
 	if t != null:
 		if t.has_method(&"power"):
@@ -84,6 +85,7 @@ func power() -> void:
 
 func _clank() -> void:
 	GameFeel.impact(global_position + Vector3.UP * HEAD_HEIGHT, Color(0.6, 0.55, 0.5, 0.5), 0.6, 0.12)
+	Sfx.play(&"clank", global_position + Vector3.UP * HEAD_HEIGHT)
 	if _head != null:
 		var tw := create_tween()
 		tw.tween_property(_head, "rotation:z", 0.12, 0.05)

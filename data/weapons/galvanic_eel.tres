@@ -47,6 +47,8 @@ knockback = 1.5
 [resource]
 script = ExtResource("1_data")
 id = &"galvanic_eel"
+fire_sound = &"shot_zap"
+fire_rumble = Vector3(0.5, 0.1, 0.12)
 display_name = "Galvanic Eel"
 description = "An electric eel in a brass coil. Its bolt jumps between nearby enemies, losing a little power each jump."
 color = Color(0.3, 1, 0.85, 1)

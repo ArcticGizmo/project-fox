@@ -94,6 +94,7 @@ func _on_enter_state(new_state: StringName) -> void:
 	if new_state == &"charge":
 		_charge_dir = forward()
 		GameFeel.shake(0.1)
+		Sfx.play(&"charge", get_aim_point())
 	elif new_state == &"recover" or new_state == &"stunned":
 		snap_velocity(Vector3.ZERO)
 
@@ -107,6 +108,7 @@ func _after_move(_delta: float) -> void:
 			continue
 		if col.get_normal().dot(_charge_dir) < -0.6:
 			GameFeel.shake(0.6)
+			Sfx.play(&"impact_heavy", global_position)
 			GameFeel.impact(global_position + _charge_dir * extents().z * 0.5 + Vector3.UP, Color(1, 0.9, 0.6), 2.0, 0.25)
 			enter_state(&"stunned")
 			return

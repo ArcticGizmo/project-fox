@@ -81,6 +81,10 @@ func trigger(held: bool, aim: AimInfo) -> void:
 		_cooldown = stats().fire_interval
 		_fire(aim)
 		NoiseEvent.emit(global_position, data.noise_radius, self)
+		if wielder != null and wielder.is_in_group(&"player"):
+			if data.fire_sound != &"":
+				Sfx.play(data.fire_sound)
+			GameFeel.rumble(data.fire_rumble.x, data.fire_rumble.y, data.fire_rumble.z)
 		fired.emit()
 		ammo_changed.emit(ammo, max_ammo())
 	_trigger_update(held, aim)

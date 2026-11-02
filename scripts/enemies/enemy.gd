@@ -213,6 +213,8 @@ var _patrol_index: int = 0
 var perceived_distance: float = INF
 ## True when the player is there but hidden (burrowed): target is null for it.
 var target_hidden: bool = false
+## A wind-up cue has sounded for the current telegraph.
+var _telegraph_cued: bool = false
 
 
 func _ready() -> void:
@@ -474,6 +476,7 @@ func _physics_process(delta: float) -> void:
 		enter_state(RETURN_HOME)
 	else:
 		_tick_state(ai_delta)
+	_cue_telegraph()
 
 	_move_velocity = _move_velocity.move_toward(desired_velocity, acceleration * delta)
 	_knockback = _knockback.move_toward(Vector3.ZERO, 25.0 * delta)
@@ -854,6 +857,7 @@ func _begin_alert(spread: bool) -> void:
 	_alert_delay = -1.0
 	suspicion = 1.0
 	enter_state(ALERT)
+	Sfx.play(&"alert", get_aim_point())
 	if spread:
 		_alert_neighbours()
 
@@ -1108,6 +1112,7 @@ func _on_damaged(amount: float, info: DamageInfo) -> void:
 	if info.knockback_up > 0.0 and is_on_floor():
 		velocity.y = info.knockback_up * (1.0 - knockback_resistance)
 	GameFeel.damage_number(get_aim_point() + Vector3.UP * extents().y * 0.5, amount, info.is_critical)
+	Sfx.play(_hit_sound(info), get_aim_point())
 	if flinch_on_hit and not health.is_dead and not is_disabled() and _can_flinch():
 		enter_state(FLINCH)
 
@@ -1129,6 +1134,7 @@ func _on_died(info: DamageInfo) -> void:
 			(child as HurtBox).set_deferred(&"monitorable", false)
 	_label.visible = false
 	_on_death()
+	Sfx.play(&"enemy_die", get_aim_point())
 	died.emit(self)
 	GameFeel.impact(get_aim_point(), color, extents().length() * 1.2, 0.3)
 	var tw := create_tween()
@@ -1217,3 +1223,17 @@ func _on_death() -> void:
 ## forward lunge squash (those mean "attack coming").
 func _idle_flavour(_delta: float) -> void:
 	pass
+
+
+## Sound for a hit that landed (crit or plain). Armoured enemies override.
+func _hit_sound(info: DamageInfo) -> StringName:
+	return &"crit" if info.is_critical else &"hit"
+
+
+## One rising wind-up cue each time a telegraph starts glowing.
+func _cue_telegraph() -> void:
+	if telegraph > 0.0 and not _telegraph_cued:
+		_telegraph_cued = true
+		Sfx.play(&"windup", get_aim_point())
+	elif telegraph <= 0.0:
+		_telegraph_cued = false

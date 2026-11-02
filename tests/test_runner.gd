@@ -51,10 +51,17 @@ func _ready() -> void:
 			await get_tree().physics_frame
 			DebugSettings.show_boxes = false
 			GameFeel.reset()
+			Sfx.reset()
 			get_tree().paused = false
 
 	print("")
 	print("%d passed, %d failed (%d ms)" % [passed, failed, Time.get_ticks_msec() - start_ms])
+	# Let the audio thread drop stopped voices (real time: --fixed-fps frames are
+	# near-instant), or their playbacks leak at exit.
+	Sfx.stop_all()
+	for _i: int in 3:
+		await get_tree().process_frame
+		OS.delay_msec(50)
 	get_tree().quit(failed)
 
 

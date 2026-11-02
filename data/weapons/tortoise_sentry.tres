@@ -57,6 +57,8 @@ sub_interval = 0.3
 [resource]
 script = ExtResource("1_data")
 id = &"tortoise_sentry"
+fire_sound = &"deploy_heavy"
+fire_rumble = Vector3(0.1, 0.5, 0.12)
 noise_radius = 8.0
 display_name = "Tortoise Sentry"
 description = "Deploys a clockwork tortoise turret that shoots nearby enemies on its own. More turrets, faster shots and homing rounds as it levels."

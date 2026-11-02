@@ -56,6 +56,8 @@ knockback = 3.0
 [resource]
 script = ExtResource("1_data")
 id = &"hornet_swarm"
+fire_sound = &"shot_hornet"
+fire_rumble = Vector3(0.2, 0, 0.06)
 noise_radius = 12.0
 display_name = "Hornet Swarm"
 description = "A fan of clockwork hornets that curve into your target."

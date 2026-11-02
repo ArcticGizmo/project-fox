@@ -81,6 +81,8 @@ var wheel_highlight: int = 0
 ## Page of WHEEL_PAGE_SIZE weapons shown on the wheel; number keys use it too.
 var wheel_page: int = 0
 var _wheel_cursor: Vector2 = Vector2.ZERO
+## Highlight the wheel last ticked for (a tick sounds on each change).
+var _wheel_heard: int = -1
 
 var _coyote: float = 0.0
 var _jump_buffer: float = 0.0
@@ -152,6 +154,7 @@ func _ready() -> void:
 	melee.hit_box.hit_landed.connect(_on_staff_hit)
 	melee.slam_box.hit_landed.connect(_on_staff_hit)
 	melee.hit_box.hit_landed.connect(conduit.on_staff_hit)
+	_connect_feedback()
 
 	health = Health.new()
 	health.name = "Health"
@@ -357,6 +360,8 @@ func _move(delta: float) -> void:
 		_dodge_time = tuning.dodge_duration
 		_dodge_cooldown = tuning.dodge_duration + tuning.dodge_cooldown
 		_dodge_iframes = tuning.dodge_iframes
+		Sfx.play(&"dodge")
+		_rumble(tuning.rumble_dodge)
 		if not on_floor:
 			_air_dodge_used = true
 			velocity.y = maxf(velocity.y, 0.0)
@@ -404,10 +409,12 @@ func _move(delta: float) -> void:
 	if _jump_buffer > 0.0 and not melee.is_busy() and not _launched:
 		if on_floor or _coyote > 0.0:
 			velocity.y = tuning.jump_velocity()
+			Sfx.play(&"jump")
 			_jump_buffer = 0.0
 			_coyote = 0.0
 		elif _air_jumps_left > 0:
 			velocity.y = tuning.double_jump_velocity()
+			Sfx.play(&"double_jump")
 			_air_jumps_left -= 1
 			fox_model.play_action(&"DoubleJump")
 			_jump_buffer = 0.0
@@ -793,6 +800,8 @@ func _update_wheel() -> void:
 		wheel_page = page_of(current_weapon_index)
 		_wheel_cursor = Vector2.ZERO
 		GameFeel.set_slowmo(WHEEL_SLOWMO, tuning.wheel_time_scale)
+		Sfx.play(&"wheel_open")
+		_wheel_heard = wheel_highlight
 		wheel_toggled.emit(true)
 	elif not input.wheel_held and wheel_open:
 		close_wheel(true)
@@ -811,6 +820,9 @@ func _update_wheel() -> void:
 		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(input.move, slots)
 	elif _wheel_cursor.length() >= tuning.wheel_mouse_threshold:
 		wheel_highlight = wheel_page * WHEEL_PAGE_SIZE + WeaponWheel.index_for_direction(_wheel_cursor, slots)
+	if wheel_highlight != _wheel_heard:
+		_wheel_heard = wheel_highlight
+		Sfx.play(&"wheel_select")
 
 
 func wheel_page_count() -> int:
@@ -888,8 +900,36 @@ func debug_level_current_weapon() -> void:
 		w.add_xp(w.xp_needed() - w.xp)
 
 
+## Sounds and rumble for events the components report.
+func _connect_feedback() -> void:
+	melee.swung.connect(func(_index: int) -> void: Sfx.play(&"swing"))
+	melee.slammed.connect(func(at: Vector3) -> void: Sfx.play(&"impact_heavy", at))
+	fox_model.landed.connect(func(air_time: float) -> void:
+		var k := clampf(air_time / tuning.land_rumble_full_air_time, 0.0, 1.0)
+		Sfx.play(&"land", null, linear_to_db(0.4 + 0.6 * k))
+		GameFeel.rumble(tuning.rumble_land.x * k, tuning.rumble_land.y * k, tuning.rumble_land.z))
+	grapple.started.connect(func(_ring: GrappleRing) -> void:
+		Sfx.play(&"grapple")
+		_rumble(tuning.rumble_grapple))
+	cloak.opened.connect(func() -> void: Sfx.play(&"glide"))
+	var dig := func(_a: Variant = null, _b: Variant = null) -> void:
+		Sfx.play(&"dig")
+		_rumble(tuning.rumble_burrow)
+	burrow.dived.connect(dig)
+	burrow.tunnelled.connect(dig)
+	burrow.surfaced.connect(dig)
+	conduit.absorbed.connect(func(_source: Node3D) -> void: Sfx.play(&"conduit_charge"))
+	conduit.discharged.connect(func(_chain: Array[Enemy]) -> void: Sfx.play(&"shot_zap", null, 4.0))
+
+
+func _rumble(r: Vector3) -> void:
+	GameFeel.rumble(r.x, r.y, r.z)
+
+
 func _on_weapon_leveled(level: int, w: Weapon) -> void:
 	GameFeel.impact(global_position + Vector3.UP, w.data.color, 3.0, 0.4)
+	Sfx.play(&"level_up")
+	_rumble(tuning.rumble_level_up)
 	weapon_leveled.emit(w, level)
 
 
@@ -923,6 +963,7 @@ func _on_hurt(info: DamageInfo) -> void:
 	hurt_box.invulnerable = true
 	_flash = 1.0
 	fox_model.play_action(&"Hurt")
+	Sfx.play(&"player_hurt")
 	GameFeel.shake(0.5)
 	GameFeel.hit_stop(0.05)
 	# On the grapple line small hits are shrugged off; big ones knock you off it.

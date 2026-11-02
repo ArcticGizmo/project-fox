@@ -39,6 +39,7 @@ static func launch(thrower: Node3D, from: Vector3, to: Vector3, time: float, lob
 	lob.radius = lob_radius
 	lob.source = thrower
 	thrower.get_parent().add_child(lob)
+	Sfx.play(&"lob", from)
 	return lob
 
 

@@ -9,8 +9,20 @@ extends Node
 
 signal shake_requested(strength: float)
 
+## Rumble from shake and hit-stop: strength per unit of shake, and per hit-stop.
+const SHAKE_RUMBLE := Vector2(0.5, 1.0)
+const HIT_STOP_RUMBLE := Vector2(0.45, 0.7)
+
 var hit_stop_enabled: bool = true
 var damage_numbers_enabled: bool = true
+var rumble_enabled: bool = true
+## Scales every rumble (an options slider later).
+var rumble_strength: float = 1.0
+## (weak, strong, seconds) of the last rumble started, for tests.
+var last_rumble: Vector3 = Vector3.ZERO
+
+var _rumble_end_ms: int = 0
+var _rumble_level: float = 0.0
 
 var _hit_stop_end_ms: int = 0
 var _hit_stop_scale: float = 1.0
@@ -29,7 +41,11 @@ func _process(_delta: float) -> void:
 
 ## Briefly slows time so heavy hits "land". Duration is in real seconds.
 func hit_stop(duration: float, time_scale: float = 0.05) -> void:
-	if not hit_stop_enabled or duration <= 0.0:
+	if duration <= 0.0:
+		return
+	# Heavy hits always thump the pad, even with time-stopping off (tests).
+	rumble(HIT_STOP_RUMBLE.x, HIT_STOP_RUMBLE.y, duration + 0.06)
+	if not hit_stop_enabled:
 		return
 	_hit_stop_scale = time_scale
 	_hit_stop_end_ms = maxi(_hit_stop_end_ms, Time.get_ticks_msec() + int(duration * 1000.0))
@@ -52,6 +68,11 @@ func reset() -> void:
 	_slowmo.clear()
 	_hit_stop_end_ms = 0
 	_apply_time_scale()
+	_rumble_end_ms = 0
+	_rumble_level = 0.0
+	last_rumble = Vector3.ZERO
+	for pad: int in Input.get_connected_joypads():
+		Input.stop_joy_vibration(pad)
 
 
 func _apply_time_scale() -> void:
@@ -65,6 +86,25 @@ func _apply_time_scale() -> void:
 
 func shake(strength: float) -> void:
 	shake_requested.emit(strength)
+	var s := clampf(strength, 0.0, 1.0)
+	rumble(SHAKE_RUMBLE.x * s, SHAKE_RUMBLE.y * s, 0.08 + 0.25 * s)
+
+
+## Controller vibration on every connected pad: `weak` is the high-frequency
+## motor (buzz), `strong` the low one (thump). A weaker request never cuts off a
+## stronger one that is still running.
+func rumble(weak: float, strong: float, duration: float) -> void:
+	if not rumble_enabled or duration <= 0.0 or (weak <= 0.0 and strong <= 0.0):
+		return
+	var now := Time.get_ticks_msec()
+	var level := maxf(weak, strong)
+	if now < _rumble_end_ms and level < _rumble_level:
+		return
+	_rumble_level = level
+	_rumble_end_ms = now + int(duration * 1000.0)
+	last_rumble = Vector3(weak, strong, duration)
+	for pad: int in Input.get_connected_joypads():
+		Input.start_joy_vibration(pad, clampf(weak * rumble_strength, 0.0, 1.0), clampf(strong * rumble_strength, 0.0, 1.0), duration)
 
 
 func damage_number(world_pos: Vector3, amount: float, critical: bool = false) -> void:

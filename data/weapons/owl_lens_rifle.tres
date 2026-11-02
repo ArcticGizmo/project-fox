@@ -49,6 +49,8 @@ hit_stop = 0.06
 [resource]
 script = ExtResource("1_data")
 id = &"owl_lens_rifle"
+fire_sound = &"shot_rifle"
+fire_rumble = Vector3(0.3, 0.9, 0.18)
 noise_radius = 30.0
 display_name = "Owl-Lens Rifle"
 description = "A brass owl's eye focused into a piercing beam. Weak-spot hits crit."

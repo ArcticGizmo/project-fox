@@ -18,6 +18,9 @@ extends Node3D
 ## Locomotion picks a clip by ground speed (with hysteresis between walk and run) and
 ## scales its playback so the feet keep pace with the body.
 
+## Touched down after more than LAND_MIN_AIR_TIME in the air (sound, rumble).
+signal landed(air_time: float)
+
 const SCENE: PackedScene = preload("res://assets/characters/ember/Ember_the_Foxling.glb")
 const SKELETON_PATH := "SmartRigArmature/Skeleton3D:%s"
 ## Authored height of the GLB (ear tips), scaled up to the player's capsule.
@@ -237,6 +240,8 @@ func update(speed: float, on_floor: bool, vertical_speed: float = 0.0, hold: Str
 	if not on_floor:
 		_air_time += _dt()
 	elif not _was_on_floor:
+		if _air_time > LAND_MIN_AIR_TIME:
+			landed.emit(_air_time)
 		if _air_time > LAND_MIN_AIR_TIME and speed < RUN_EXIT_SPEED:
 			play_action(&"Land")
 		_air_time = 0.0

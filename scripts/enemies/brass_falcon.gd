@@ -122,6 +122,7 @@ func _on_enter_state(new_state: StringName) -> void:
 			_dive_dir = (dive_target - from).normalized()
 			_dive_time = (from.distance_to(dive_target) + dive_overshoot) / dive_speed
 			GameFeel.shake(0.05)
+			Sfx.play(&"dive", from)
 		&"recover", &"grounded":
 			snap_velocity(Vector3.ZERO)
 
