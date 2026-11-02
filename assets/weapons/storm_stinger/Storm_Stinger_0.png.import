@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bl04j4crv0k7l"
-path.s3tc="res://.godot/imported/Spectral_Gatling_Blaster_0.png-9196e7e528a6dd14bd2659f9df19c663.s3tc.ctex"
+uid="uid://cvv65s0ou3iyt"
+path.s3tc="res://.godot/imported/Storm_Stinger_0.png-bfc88268a5b3d1b40945f46598e0929b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "75a4322794fb1db8a0ca9c1a017a735b"
+"md5": "bde206e9afa405408cafbf2199940adb"
 }
 
 [deps]
 
-source_file="res://imported_models/Spectral_Gatling_Blaster/Spectral_Gatling_Blaster_0.png"
-dest_files=["res://.godot/imported/Spectral_Gatling_Blaster_0.png-9196e7e528a6dd14bd2659f9df19c663.s3tc.ctex"]
+source_file="res://assets/weapons/storm_stinger/Storm_Stinger_0.png"
+dest_files=["res://.godot/imported/Storm_Stinger_0.png-bfc88268a5b3d1b40945f46598e0929b.s3tc.ctex"]
 
 [params]
 

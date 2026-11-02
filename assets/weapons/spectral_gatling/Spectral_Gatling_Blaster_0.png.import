@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5gn76hsy8w61"
-path.s3tc="res://.godot/imported/Runic_Gear_Cannon_0.png-5443f7238a5b056c1b873321fd885a92.s3tc.ctex"
+uid="uid://bl04j4crv0k7l"
+path.s3tc="res://.godot/imported/Spectral_Gatling_Blaster_0.png-928ef1d822a0ed3e461c51f3a86af26c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "24062e675b8120e8576b7a5f578e6cf7"
+"md5": "75a4322794fb1db8a0ca9c1a017a735b"
 }
 
 [deps]
 
-source_file="res://imported_models/Runic_Gear_Cannon/Runic_Gear_Cannon_0.png"
-dest_files=["res://.godot/imported/Runic_Gear_Cannon_0.png-5443f7238a5b056c1b873321fd885a92.s3tc.ctex"]
+source_file="res://assets/weapons/spectral_gatling/Spectral_Gatling_Blaster_0.png"
+dest_files=["res://.godot/imported/Spectral_Gatling_Blaster_0.png-928ef1d822a0ed3e461c51f3a86af26c.s3tc.ctex"]
 
 [params]
 

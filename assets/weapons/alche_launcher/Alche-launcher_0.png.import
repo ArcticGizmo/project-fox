@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cvv65s0ou3iyt"
-path.s3tc="res://.godot/imported/Storm_Stinger_0.png-0aabd4cfa4972aff2abba2d12b3db0ad.s3tc.ctex"
+uid="uid://cqo24v4aex1sg"
+path.s3tc="res://.godot/imported/Alche-launcher_0.png-fcb2001e45042780c8d959c1c24c7a49.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "bde206e9afa405408cafbf2199940adb"
+"md5": "21a625a3237b4bf9de7e41ecbf94994a"
 }
 
 [deps]
 
-source_file="res://imported_models/Storm_Stinger/Storm_Stinger_0.png"
-dest_files=["res://.godot/imported/Storm_Stinger_0.png-0aabd4cfa4972aff2abba2d12b3db0ad.s3tc.ctex"]
+source_file="res://assets/weapons/alche_launcher/Alche-launcher_0.png"
+dest_files=["res://.godot/imported/Alche-launcher_0.png-fcb2001e45042780c8d959c1c24c7a49.s3tc.ctex"]
 
 [params]
 

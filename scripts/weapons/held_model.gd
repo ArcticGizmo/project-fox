@@ -17,8 +17,9 @@ static func build(scene: PackedScene, grip: Vector3, length: float) -> Node3D:
 		bounds = box if first else bounds.merge(box)
 		first = false
 	var k := length / maxf(bounds.size.x, 0.001)
-	# Barrel -X -> -Z: a quarter turn clockwise seen from above.
-	var basis := Basis(Vector3.UP, -PI * 0.5).scaled(Vector3.ONE * k)
+	# Barrel -X -> -Z (a quarter turn about Y), then a quarter roll about the barrel: with
+	# the arm raised to aim (FoxModel aim pose) the mount's -X is up, its +Y the fox's right.
+	var basis := (Basis(Vector3.BACK, PI * 0.5) * Basis(Vector3.UP, -PI * 0.5)).scaled(Vector3.ONE * k)
 	inner.transform = Transform3D(basis, -(basis * grip))
 	pivot.add_child(inner)
 	return pivot

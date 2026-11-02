@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqfjv51b2r32r"
-path.s3tc="res://.godot/imported/Tinker_Bee-zooka_0.png-ddf889f54d9efd0aed5dcb9956b226b1.s3tc.ctex"
+path.s3tc="res://.godot/imported/Tinker_Bee-zooka_0.png-14909ffcd970d54e3c9632b8e26a2bfe.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -14,8 +14,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://imported_models/Tinker_Bee-zooka/Tinker_Bee-zooka_0.png"
-dest_files=["res://.godot/imported/Tinker_Bee-zooka_0.png-ddf889f54d9efd0aed5dcb9956b226b1.s3tc.ctex"]
+source_file="res://assets/weapons/tinker_bee_zooka/Tinker_Bee-zooka_0.png"
+dest_files=["res://.godot/imported/Tinker_Bee-zooka_0.png-14909ffcd970d54e3c9632b8e26a2bfe.s3tc.ctex"]
 
 [params]
 

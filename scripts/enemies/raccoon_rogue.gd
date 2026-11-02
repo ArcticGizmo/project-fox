@@ -183,14 +183,6 @@ func _state_after_flinch() -> StringName:
 	return &"flee" if loot > 0 else &"dart"
 
 
-func _after_move(_delta: float) -> void:
-	if is_frozen():
-		rig.anim.speed_scale = 0.0
-		return
-	rig.set_travel(Vector3(velocity.x, 0.0, velocity.z))
-	rig.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y)
-
-
 ## Glances about, shifting its weight; the clip does most of the work.
 func _idle_flavour(_delta: float) -> void:
 	visual_yaw = 0.35 * sin(state_time * 0.9) * smoothstep(0.0, 1.0, fmod(state_time, 4.0) - 1.0)

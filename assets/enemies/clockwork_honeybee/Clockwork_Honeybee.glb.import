@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://65j308bfge4b"
-path="res://.godot/imported/Storm_Stinger.glb-1c5d6a8c56325cf10865ce419a5a9b72.scn"
+uid="uid://p1l5o0pvc74q"
+path="res://.godot/imported/Clockwork_Honeybee.glb-2112f3c9e4c83c6eab4ee28044e4825a.scn"
 
 [deps]
 
-source_file="res://imported_models/Storm_Stinger/Storm_Stinger.glb"
-dest_files=["res://.godot/imported/Storm_Stinger.glb-1c5d6a8c56325cf10865ce419a5a9b72.scn"]
+source_file="res://assets/enemies/clockwork_honeybee/Clockwork_Honeybee.glb"
+dest_files=["res://.godot/imported/Clockwork_Honeybee.glb-2112f3c9e4c83c6eab4ee28044e4825a.scn"]
 
 [params]
 
@@ -35,7 +35,7 @@ animation/fps=30
 animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
-import_script/path=""
+import_script/path="res://tools/import/base_origin.gd"
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""

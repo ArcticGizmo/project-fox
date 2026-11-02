@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c6yvqslx7pwm2"
-path="res://.godot/imported/Runic_Gear_Cannon.glb-10eb13091531e2f46cfdee4da94d8118.scn"
+uid="uid://65j308bfge4b"
+path="res://.godot/imported/Storm_Stinger.glb-35aa832fa2794c2e0bb0b75fb39cd8e4.scn"
 
 [deps]
 
-source_file="res://imported_models/Runic_Gear_Cannon/Runic_Gear_Cannon.glb"
-dest_files=["res://.godot/imported/Runic_Gear_Cannon.glb-10eb13091531e2f46cfdee4da94d8118.scn"]
+source_file="res://assets/weapons/storm_stinger/Storm_Stinger.glb"
+dest_files=["res://.godot/imported/Storm_Stinger.glb-35aa832fa2794c2e0bb0b75fb39cd8e4.scn"]
 
 [params]
 

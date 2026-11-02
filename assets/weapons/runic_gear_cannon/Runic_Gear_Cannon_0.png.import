@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckjuymppeio1m"
-path.s3tc="res://.godot/imported/Clockwork_Honeybee_0.png-65ec03d12e871d7c653f5fb17de6aa09.s3tc.ctex"
+uid="uid://b5gn76hsy8w61"
+path.s3tc="res://.godot/imported/Runic_Gear_Cannon_0.png-0d0ccfd1e3afd31562a53700a3790539.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "ee70739c0e4e13855f23fbd232f8086c"
+"md5": "24062e675b8120e8576b7a5f578e6cf7"
 }
 
 [deps]
 
-source_file="res://imported_models/Clockwork_Honeybee/Clockwork_Honeybee_0.png"
-dest_files=["res://.godot/imported/Clockwork_Honeybee_0.png-65ec03d12e871d7c653f5fb17de6aa09.s3tc.ctex"]
+source_file="res://assets/weapons/runic_gear_cannon/Runic_Gear_Cannon_0.png"
+dest_files=["res://.godot/imported/Runic_Gear_Cannon_0.png-0d0ccfd1e3afd31562a53700a3790539.s3tc.ctex"]
 
 [params]
 

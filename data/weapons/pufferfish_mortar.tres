@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
 [ext_resource type="Script" path="res://scripts/weapons/pufferfish_mortar.gd" id="3_behaviour"]
+[ext_resource type="PackedScene" path="res://assets/weapons/bubble_blaster/Bubble_Blaster.glb" id="4_model"]
 
 [sub_resource type="Resource" id="Lv1"]
 script = ExtResource("2_stats")
@@ -62,3 +63,6 @@ color = Color(0.95, 0.55, 0.7, 1)
 weapon_script = ExtResource("3_behaviour")
 xp_to_next_level = PackedInt32Array(60, 150, 280)
 levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])
+model = ExtResource("4_model")
+model_grip = Vector3(0.17, -0.14, 0)
+model_length = 0.65

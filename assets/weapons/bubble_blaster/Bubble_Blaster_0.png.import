@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqo24v4aex1sg"
-path.s3tc="res://.godot/imported/Alche-launcher_0.png-7bf687a7fdcc12bf1b23bc1f304a5d11.s3tc.ctex"
+uid="uid://1n68g3ueka26"
+path.s3tc="res://.godot/imported/Bubble_Blaster_0.png-0631d0c12312e07aa0564ef9b5b035ad.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "21a625a3237b4bf9de7e41ecbf94994a"
+"md5": "3ae309f9e46cac9b94a4692922f81cb0"
 }
 
 [deps]
 
-source_file="res://imported_models/Alche-launcher/Alche-launcher_0.png"
-dest_files=["res://.godot/imported/Alche-launcher_0.png-7bf687a7fdcc12bf1b23bc1f304a5d11.s3tc.ctex"]
+source_file="res://assets/weapons/bubble_blaster/Bubble_Blaster_0.png"
+dest_files=["res://.godot/imported/Bubble_Blaster_0.png-0631d0c12312e07aa0564ef9b5b035ad.s3tc.ctex"]
 
 [params]
 

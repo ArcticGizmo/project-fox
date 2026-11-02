@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://8gqyqp0pdimk"
-path="res://.godot/imported/Alche-launcher.glb-ad357a3ac6efcad1af16b8fe975f8b5e.scn"
+uid="uid://c6yvqslx7pwm2"
+path="res://.godot/imported/Runic_Gear_Cannon.glb-c61174d5957dcba252d8736c69f9e7e0.scn"
 
 [deps]
 
-source_file="res://imported_models/Alche-launcher/Alche-launcher.glb"
-dest_files=["res://.godot/imported/Alche-launcher.glb-ad357a3ac6efcad1af16b8fe975f8b5e.scn"]
+source_file="res://assets/weapons/runic_gear_cannon/Runic_Gear_Cannon.glb"
+dest_files=["res://.godot/imported/Runic_Gear_Cannon.glb-c61174d5957dcba252d8736c69f9e7e0.scn"]
 
 [params]
 

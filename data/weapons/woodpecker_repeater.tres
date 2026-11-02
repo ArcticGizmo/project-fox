@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/weapons/weapon_data.gd" id="1_data"]
 [ext_resource type="Script" path="res://scripts/weapons/weapon_level_stats.gd" id="2_stats"]
 [ext_resource type="Script" path="res://scripts/weapons/woodpecker_repeater.gd" id="3_behaviour"]
+[ext_resource type="PackedScene" path="res://assets/weapons/spectral_gatling/Spectral_Gatling_Blaster.glb" id="4_model"]
 
 [sub_resource type="Resource" id="Lv1"]
 script = ExtResource("2_stats")
@@ -63,3 +64,6 @@ weapon_script = ExtResource("3_behaviour")
 uses_aim_assist = false
 xp_to_next_level = PackedInt32Array(80, 180, 320)
 levels = Array[ExtResource("2_stats")]([SubResource("Lv1"), SubResource("Lv2"), SubResource("Lv3"), SubResource("Lv4")])
+model = ExtResource("4_model")
+model_grip = Vector3(0.4, 0.05, 0)
+model_length = 0.65

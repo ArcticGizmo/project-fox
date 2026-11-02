@@ -151,6 +151,11 @@ func test_firing_raises_the_gun_arm_and_it_drops_after() -> void:
 	pad.next.fire_held = true
 	await wait_seconds(0.3)
 	assert_near(player.fox_model.aim_layer.influence, 1.0, 0.01, "arm up while firing")
+	# HeldModel rolls guns upright for this frame: mount -Z ahead, mount -X up.
+	var mount := player.fox_model.gun_mount.global_basis.orthonormalized()
+	var ahead := -player.global_basis.z
+	assert_true((mount * Vector3.FORWARD).dot(ahead) > 0.95, "gun mount points ahead")
+	assert_true((mount * Vector3.LEFT).dot(Vector3.UP) > 0.95, "gun mount's -X is up")
 	pad.next.fire_held = false
 	await wait_seconds(player.tuning.fire_facing_time + 0.3)
 	assert_eq(player.fox_model.aim_layer.influence, 0.0, "arm back down")
@@ -227,4 +232,6 @@ func test_weapons_with_a_model_hold_it_by_the_grip() -> void:
 			first = false
 		assert_near(bounds.size.z, w.data.model_length, 0.02, "%s: scaled to its length along the barrel" % w.data.id)
 		assert_true(bounds.grow(0.02).has_point(Vector3.ZERO), "%s: the grip (origin) is on the model" % w.data.id)
-		assert_true(bounds.get_center().z < 0.0, "%s: barrel points down the arm (-Z)" % w.data.id)
+		var turn := (held.get_child(0) as Node3D).basis.orthonormalized()
+		assert_true((turn * Vector3.LEFT).is_equal_approx(Vector3.FORWARD), "%s: barrel (model -X) points down the arm (-Z)" % w.data.id)
+		assert_true((turn * Vector3.UP).is_equal_approx(Vector3.LEFT), "%s: top up in the aim pose (mount -X)" % w.data.id)

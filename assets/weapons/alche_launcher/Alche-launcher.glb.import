@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://o6gk6jpcwkwc"
-path="res://.godot/imported/Bubble_Blaster.glb-56caeb8cb39f3f0802606248d64655fa.scn"
+uid="uid://8gqyqp0pdimk"
+path="res://.godot/imported/Alche-launcher.glb-7847088f701b0f669603a32d9a1265db.scn"
 
 [deps]
 
-source_file="res://imported_models/Bubble_Blaster/Bubble_Blaster.glb"
-dest_files=["res://.godot/imported/Bubble_Blaster.glb-56caeb8cb39f3f0802606248d64655fa.scn"]
+source_file="res://assets/weapons/alche_launcher/Alche-launcher.glb"
+dest_files=["res://.godot/imported/Alche-launcher.glb-7847088f701b0f669603a32d9a1265db.scn"]
 
 [params]
 

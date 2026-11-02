@@ -3,7 +3,7 @@ extends Node
 ## and quits. Lets an agent check visuals without anyone at the keyboard.
 ##   godot --path . res://tools/screenshot.tscn -- --out=screenshots --wait=2.5
 ##   ... -- --slice     only the greybox slice shots (slice_*, grapple_*, burrow_*, glide_*, conduit_*)
-##   ... -- --models    only the imported-model shots (held_*, beetle_*, rogue_*)
+##   ... -- --models    only the imported-model shots (held_*, beetle_*, rogue_*, bee_*, sentinel_*)
 
 const SLICE_PATH := "res://scenes/levels/slice_01.tscn"
 const BOSS_PATH := "res://scenes/levels/boss_furnace_stag.tscn"
@@ -1099,6 +1099,51 @@ func _capture_models(player: Player, waves: WaveManager) -> void:
 	cam.look_at(rogue.global_position + Vector3.UP * 0.7)
 	await _capture("rogue_flee.png")
 	rogue.queue_free()
+
+	player.god_mode = true
+	var bees: Array[ClockworkHoneybee] = []
+	for i: int in 3:
+		bees.append(waves.spawn_enemy(&"bee", base + Vector3(-3.0 + 3.0 * i, 2.0, -8)) as ClockworkHoneybee)
+	cam.global_position = base + Vector3(5, 2.5, 3)
+	cam.look_at(base + Vector3(0, 1.5, -4))
+	await get_tree().create_timer(1.2).timeout
+	_frame(cam, player.global_position, bees[1].global_position)
+	await _capture("bee_swarm.png")
+	for _i: int in 400:
+		var winding := bees.filter(func(b: ClockworkHoneybee) -> bool: return is_instance_valid(b) and b.state == &"windup" and b.state_time > b.windup_time * 0.7)
+		if not winding.is_empty():
+			break
+		await get_tree().physics_frame
+	_frame(cam, player.global_position, bees[1].global_position)
+	await _capture("bee_windup.png")
+	for b: ClockworkHoneybee in bees:
+		if is_instance_valid(b):
+			b.queue_free()
+
+	var sentinel := waves.spawn_enemy(&"sentinel", base + Vector3(0, 0, -12)) as IronhornSentinel
+	cam.global_position = base + Vector3(6, 2.5, -2)
+	cam.look_at(base + Vector3(0, 1.2, -6))
+	await get_tree().create_timer(1.0).timeout
+	_frame(cam, player.global_position, sentinel.global_position)
+	await _capture("sentinel_advance.png")
+	for _i: int in 600:
+		if not is_instance_valid(sentinel) or sentinel.state == &"slam_windup" and sentinel.state_time > sentinel.slam_windup * 0.8:
+			break
+		await get_tree().physics_frame
+	_frame(cam, player.global_position, sentinel.global_position)
+	await _capture("sentinel_slam_windup.png")
+	await get_tree().create_timer(0.35).timeout
+	await _capture("sentinel_shockwave.png")
+	sentinel.queue_free()
 	player.god_mode = false
 	waves.set_physics_process(true)
 	cam.queue_free()
+
+
+## Points `cam` at the pair from the side, far enough back to fit both.
+func _frame(cam: Camera3D, a: Vector3, b: Vector3) -> void:
+	var mid := (a + b) * 0.5 + Vector3.UP * 1.0
+	var span := Vector3(b.x - a.x, 0.0, b.z - a.z)
+	var side := span.cross(Vector3.UP).normalized() if span.length() > 0.1 else Vector3.RIGHT
+	cam.global_position = mid + side * maxf(5.0, span.length() * 0.9) + Vector3.UP * 2.0
+	cam.look_at(mid)

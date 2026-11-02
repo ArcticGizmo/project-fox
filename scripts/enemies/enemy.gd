@@ -572,7 +572,19 @@ func _physics_process(delta: float) -> void:
 	elif rift == null:
 		velocity.y -= gravity * delta
 	move_and_slide()
+	if model is FoxModel:
+		_drive_rig(model as FoxModel)
 	_after_move(delta)
+
+
+## Rigged models (a FoxModel from _make_model) follow the body: locomotion clips from the
+## velocity, hips turned toward travel; a frozen enemy's clip stops.
+func _drive_rig(rig: FoxModel) -> void:
+	if is_frozen():
+		rig.anim.speed_scale = 0.0
+		return
+	rig.set_travel(Vector3(velocity.x, 0.0, velocity.z))
+	rig.update(Vector2(velocity.x, velocity.z).length(), is_on_floor(), velocity.y)
 
 
 func enter_state(new_state: StringName) -> void:

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c4b43urt6cn84"
-path="res://.godot/imported/Tinker_Bee-zooka.glb-893460b16b9f78146249bc3a4626e239.scn"
+uid="uid://duhw82m4nxnfu"
+path="res://.godot/imported/Spectral_Gatling_Blaster.glb-4f994fc5931cb54b03d7b33b4549b791.scn"
 
 [deps]
 
-source_file="res://imported_models/Tinker_Bee-zooka/Tinker_Bee-zooka.glb"
-dest_files=["res://.godot/imported/Tinker_Bee-zooka.glb-893460b16b9f78146249bc3a4626e239.scn"]
+source_file="res://assets/weapons/spectral_gatling/Spectral_Gatling_Blaster.glb"
+dest_files=["res://.godot/imported/Spectral_Gatling_Blaster.glb-4f994fc5931cb54b03d7b33b4549b791.scn"]
 
 [params]
 

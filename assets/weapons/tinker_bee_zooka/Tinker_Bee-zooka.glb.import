@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://p1l5o0pvc74q"
-path="res://.godot/imported/Clockwork_Honeybee.glb-a7946853b51e83038f963d739d6b2691.scn"
+uid="uid://c4b43urt6cn84"
+path="res://.godot/imported/Tinker_Bee-zooka.glb-957beb9d473cccd039292a0216453f90.scn"
 
 [deps]
 
-source_file="res://imported_models/Clockwork_Honeybee/Clockwork_Honeybee.glb"
-dest_files=["res://.godot/imported/Clockwork_Honeybee.glb-a7946853b51e83038f963d739d6b2691.scn"]
+source_file="res://assets/weapons/tinker_bee_zooka/Tinker_Bee-zooka.glb"
+dest_files=["res://.godot/imported/Tinker_Bee-zooka.glb-957beb9d473cccd039292a0216453f90.scn"]
 
 [params]
 

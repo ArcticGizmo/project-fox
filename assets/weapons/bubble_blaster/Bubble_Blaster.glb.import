@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://duhw82m4nxnfu"
-path="res://.godot/imported/Spectral_Gatling_Blaster.glb-d35603d182dc9f8b50315cff3dd9f456.scn"
+uid="uid://o6gk6jpcwkwc"
+path="res://.godot/imported/Bubble_Blaster.glb-d1d4da6f9f70b3b239351bc0dcd362ef.scn"
 
 [deps]
 
-source_file="res://imported_models/Spectral_Gatling_Blaster/Spectral_Gatling_Blaster.glb"
-dest_files=["res://.godot/imported/Spectral_Gatling_Blaster.glb-d35603d182dc9f8b50315cff3dd9f456.scn"]
+source_file="res://assets/weapons/bubble_blaster/Bubble_Blaster.glb"
+dest_files=["res://.godot/imported/Bubble_Blaster.glb-d1d4da6f9f70b3b239351bc0dcd362ef.scn"]
 
 [params]
 

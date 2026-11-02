@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cig58c05ahrx"
-path.s3tc="res://.godot/imported/Ironhorn_Sentinel_Image_0.png-7c6d4959f5b3068411e3e1265185cdb0.s3tc.ctex"
+uid="uid://ckjuymppeio1m"
+path.s3tc="res://.godot/imported/Clockwork_Honeybee_0.png-e6d0c9a35270d5d052156a876f378dd2.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "01db456a9a799c54ef92084345515314"
+"md5": "ee70739c0e4e13855f23fbd232f8086c"
 }
 
 [deps]
 
-source_file="res://imported_models/Ironhorn_Sentinel/Ironhorn_Sentinel_Image_0.png"
-dest_files=["res://.godot/imported/Ironhorn_Sentinel_Image_0.png-7c6d4959f5b3068411e3e1265185cdb0.s3tc.ctex"]
+source_file="res://assets/enemies/clockwork_honeybee/Clockwork_Honeybee_0.png"
+dest_files=["res://.godot/imported/Clockwork_Honeybee_0.png-e6d0c9a35270d5d052156a876f378dd2.s3tc.ctex"]
 
 [params]
 

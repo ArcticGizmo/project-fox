@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b2nuj7pbeqp7l"
-path="res://.godot/imported/Ironhorn_Sentinel.glb-3936823be041df05e773ad1410af43dc.scn"
+path="res://.godot/imported/Ironhorn_Sentinel.glb-c621856786b52401b6bf89b7406413a0.scn"
 
 [deps]
 
-source_file="res://imported_models/Ironhorn_Sentinel/Ironhorn_Sentinel.glb"
-dest_files=["res://.godot/imported/Ironhorn_Sentinel.glb-3936823be041df05e773ad1410af43dc.scn"]
+source_file="res://assets/enemies/ironhorn_sentinel/Ironhorn_Sentinel.glb"
+dest_files=["res://.godot/imported/Ironhorn_Sentinel.glb-c621856786b52401b6bf89b7406413a0.scn"]
 
 [params]
 

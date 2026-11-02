@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1n68g3ueka26"
-path.s3tc="res://.godot/imported/Bubble_Blaster_0.png-12aadd2e157e1a9902c55ddd94ba20c8.s3tc.ctex"
+uid="uid://cig58c05ahrx"
+path.s3tc="res://.godot/imported/Ironhorn_Sentinel_Image_0.png-7ce963b07912e89351ee9095a96ca588.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "3ae309f9e46cac9b94a4692922f81cb0"
+"md5": "01db456a9a799c54ef92084345515314"
 }
 
 [deps]
 
-source_file="res://imported_models/Bubble_Blaster/Bubble_Blaster_0.png"
-dest_files=["res://.godot/imported/Bubble_Blaster_0.png-12aadd2e157e1a9902c55ddd94ba20c8.s3tc.ctex"]
+source_file="res://assets/enemies/ironhorn_sentinel/Ironhorn_Sentinel_Image_0.png"
+dest_files=["res://.godot/imported/Ironhorn_Sentinel_Image_0.png-7ce963b07912e89351ee9095a96ca588.s3tc.ctex"]
 
 [params]
 
