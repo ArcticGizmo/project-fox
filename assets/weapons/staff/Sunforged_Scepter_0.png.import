@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1f5f1jhl4n5e"
-path="res://.godot/imported/Sunforged_Scepter_0.png-af91521d36aad5a06e8c6e3887f3afc3.ctex"
+path.s3tc="res://.godot/imported/Sunforged_Scepter_0.png-af91521d36aad5a06e8c6e3887f3afc3.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "93dcfc23d527a469853d9f725ad330c3"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/weapons/staff/Sunforged_Scepter_0.png"
-dest_files=["res://.godot/imported/Sunforged_Scepter_0.png-af91521d36aad5a06e8c6e3887f3afc3.ctex"]
+dest_files=["res://.godot/imported/Sunforged_Scepter_0.png-af91521d36aad5a06e8c6e3887f3afc3.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
